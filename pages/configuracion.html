@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración - Parqueadero</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        
+        .elegant-input { 
+            background: #ffffff; 
+            border: 1px solid #cbd5e1; 
+            color: #334155; 
+            transition: all 0.3s ease; 
+        }
+        .elegant-input:focus { 
+            border-color: #3b82f6; 
+            outline: none; 
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); 
+        }
+
+        /* Estilos de Navegación (Tabs) */
+        .nav-tab {
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+        .nav-tab:hover {
+            background-color: #f1f5f9;
+            color: #475569;
+        }
+        .nav-tab.active {
+            background-color: #eff6ff;
+            color: #2563eb;
+            border-left-color: #2563eb;
+            font-weight: 600;
+        }
+        
+        /* Utilidades */
+        .hidden-tab { display: none; }
+        .visible-tab { display: block; animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="text-slate-700 antialiased flex h-screen overflow-hidden">
+
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-white border-r border-slate-200 flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20">
+        <div class="h-16 flex items-center px-8 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+                    <i class="fa-solid fa-square-parking text-sm"></i>
+                </div>
+                <h1 class="text-xl font-bold text-slate-800 tracking-tight">PARKING<span class="text-blue-600">SYS</span></h1>
+            </div>
+        </div>
+        <nav class="flex-1 overflow-y-auto py-6 px-4 space-y-1">
+            <p class="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Menú</p>
+            <a href="../dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition-colors group"><i class="fa-solid fa-chart-line w-5 text-slate-400 group-hover:text-blue-500"></i> <span>Dashboard</span></a>
+            <a href="clientes.html" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition-colors group"><i class="fa-solid fa-users w-5 text-slate-400 group-hover:text-blue-500"></i> <span>Clientes</span></a>
+            <a href="puestos.html" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition-colors group"><i class="fa-solid fa-layer-group w-5 text-slate-400 group-hover:text-blue-500"></i> <span>Puestos</span></a>
+            <a href="caja.html" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition-colors group"><i class="fa-solid fa-cash-register w-5 text-slate-400 group-hover:text-blue-500"></i> <span>Caja</span></a>
+            <a href="gastos.html" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition-colors group"><i class="fa-solid fa-receipt w-5 text-slate-400 group-hover:text-blue-500"></i> <span>Gastos</span></a>
+            <a href="historial.html" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition-colors group"><i class="fa-solid fa-clock-rotate-left w-5 text-slate-400 group-hover:text-blue-500"></i> <span>Historial</span></a>
+            
+            <!-- ACTIVO -->
+            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-600 rounded-xl font-medium transition-colors group"><i class="fa-solid fa-gear w-5"></i> <span>Configuración</span></a>
+        </nav>
+        <div class="p-4 border-t border-slate-100">
+            <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition cursor-pointer">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-600 to-yellow-400 border-2 border-white shadow-sm"></div>
+                <div><p class="text-sm font-semibold text-slate-800">Admin</p><p class="text-xs text-emerald-500">En línea</p></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative bg-slate-50/30">
+        
+        <!-- Background decorativo -->
+        <div class="absolute inset-0 bg-slate-900 opacity-5 z-0 pointer-events-none" style="background-image: url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v-2h-4v-4zm-2-6V2h-2v6h2zm-2-8V-6h-2v6h2zm-2-8V-4h-2v6h2zm-2-6V4h-2v4h2z\'/%3E%3C/g%3E%3C/svg%3E');"></div>
+
+        <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 z-30 sticky top-0">
+            <h2 class="text-xl font-bold text-slate-800">Configuración del Sistema</h2>
+            <div class="flex items-center gap-3">
+                <button onclick="guardarTodo()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-semibold shadow-md transition flex items-center gap-2">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+                </button>
+                <span class="text-sm font-medium text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm" id="fecha-actual"></span>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-8 z-10">
+            <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8">
+                
+                <!-- BARRA LATERAL DE PESTAÑAS -->
+                <div class="lg:col-span-1 space-y-2">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <button onclick="switchTab('general')" id="tab-general" class="nav-tab active w-full text-left px-4 py-3 flex items-center gap-3 border-l-4">
+                            <i class="fa-solid fa-building w-5"></i>
+                            <span>General</span>
+                        </button>
+                        <button onclick="switchTab('tarifas')" id="tab-tarifas" class="nav-tab w-full text-left px-4 py-3 flex items-center gap-3 border-l-4">
+                            <i class="fa-solid fa-money-bill-wave w-5"></i>
+                            <span>Tarifas</span>
+                        </button>
+                        <button onclick="switchTab('perfil')" id="tab-perfil" class="nav-tab w-full text-left px-4 py-3 flex items-center gap-3 border-l-4">
+                            <i class="fa-solid fa-user-shield w-5"></i>
+                            <span>Perfil Admin</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Tarjeta de Resumen -->
+                    <div class="bg-blue-600 rounded-xl p-6 text-white shadow-lg shadow-blue-500/30">
+                        <p class="text-blue-100 text-xs font-bold uppercase mb-2">Versión del Sistema</p>
+                        <h3 class="text-3xl font-bold">v2.0.5</h3>
+                        <p class="text-blue-100 text-xs mt-2">Tarifas Extendidas</p>
+                    </div>
+                </div>
+
+                <!-- CONTENIDO DE LAS PESTAÑAS -->
+                <div class="lg:col-span-3">
+                    
+                    <!-- TAB: GENERAL -->
+                    <div id="content-general" class="visible-tab bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+                        <h3 class="text-lg font-bold text-slate-800 mb-6 pb-2 border-b border-slate-100">Información del Negocio</h3>
+                        <form id="formGeneral" class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre del Parqueadero</label>
+                                    <input type="text" id="confNombre" value="PARKING SYS" class="elegant-input w-full px-4 py-2.5 rounded-lg text-sm font-semibold">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">NIT / RUT</label>
+                                    <input type="text" id="confNit" value="900.123.456-7" class="elegant-input w-full px-4 py-2.5 rounded-lg text-sm font-mono">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Dirección</label>
+                                <input type="text" id="confDireccion" value="Calle 123 # 45-67, Bogotá" class="elegant-input w-full px-4 py-2.5 rounded-lg text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono de Contacto</label>
+                                <input type="tel" id="confTelefono" value="+57 300 123 4567" class="elegant-input w-full px-4 py-2.5 rounded-lg text-sm">
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- TAB: TARIFAS (ACTUALIZADO) -->
+                    <div id="content-tarifas" class="hidden-tab bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+                        <div class="flex justify-between items-center mb-6 pb-2 border-b border-slate-100">
+                            <h3 class="text-lg font-bold text-slate-800">Tabla de Tarifas</h3>
+                            <div class="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">Configura los costos para cada periodo</div>
+                        </div>
+                        
+                        <div class="space-y-6">
+                            
+                            <!-- Tarifa Carro -->
+                            <div class="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+                                        <i class="fa-solid fa-car-side"></i>
+                                    </div>
+                                    <h4 class="font-bold text-slate-700">Automóvil / Camioneta</h4>
+                                </div>
+                                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                    <!-- Hora -->
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hora</label>
+                                        <div class="relative">
+                                            <span class="absolute left-0 top-2 text-slate-400 text-xs font-bold">$</span>
+                                            <input type="number" id="tarifaCarroHora" value="5000" class="elegant-input w-full pl-4 pr-2 py-1.5 rounded text-xs font-mono font-bold">
+                                        </div>
+                                    </div>
+                                    <!-- Noche -->
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Noche</label>
+                                        <div class="relative">
+                                            <span class="absolute left-0 top-2 text-slate-400 text-xs font-bold">$</span>
+                                            <input type="number" id="tarifaCarroNoche" value="12000" class="elegant-input w-full pl-4 pr-2 py-1.5 rounded text-xs font-mono font-bold">
+                                        </div>
+                                    </div>
+                                    <!-- Semana -->
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Semana</label>
+                                        <div class="relative">
+                                            <span class="absolute left-0 top-2 text-slate-400 text-xs font-bold">$</span>
+                                            <input type="number" id="tarifaCarroSemana" value="40000" class="elegant-input w-full pl-4 pr-2 py-1.5 rounded text-xs font-mono font-bold">
+                                        </div>
+                                    </div>
+                                    <!-- Quincena -->
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Quincena</label>
+                                        <div class="relative">
+                                            <span class="absolute left-0 top-2 text-slate-400 text-xs font-bold">$</span>
+                                            <input type="number" id="tarifaCarroQuincenal" value="75000" class="elegant-input w-full pl-4 pr-2 py-1.5 rounded text-xs font-mono font-bold">
+                                        </div>
+                                    </div>
+                                    <!-- Mes -->
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Mes</label>
+                                        <div class="relative">
+                                            <span class="absolute left-0 top-2 text-slate-400 text-xs font-bold">$</span>
+                                            <input type="number" id="tarifaCarroMensual" value="140000" class="elegant-input w-full pl-4 pr-2 py-1.5 rounded text-xs font-mono font-bold">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tarifa Moto -->
+                            <div class="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <div class="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center">
+                                        <i class="fa-solid fa-motorcycle"></i>
+                                    </div>
+                                    <h4 class="font-bold text-slate-700">Motocicleta</h4>
+                                </div>
+                                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hora</label><div class="relative"><span class="absolute left-0 top-2 text-slate-400 text-xs font-bold">$</span><input type="number" id="tarifaMotoHora" value="2500" class="elegant-input w-full pl-4 pr-2 py-1.5 rounded text-xs font-mono font-bold"></div></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Noche</label><div class="relative"><span class="absolute left-0 top-2 text-slate-400 text-xs font-bold">$</span><input type="number" id="tarifaMotoNoche" value="6000" class="elegant-input w-full pl-4 pr-2 py-1.5 rounded text-xs font-mono font-bold"></div></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Semana</label><div class="relative"><span class="absolute left-0 top-2 text-slate-400 text-xs font-bold">$</span><input type="number" id="tarifaMotoSemana" value="20000" class="elegant-input w-full pl-4 pr-2 py-1.5 rounded text-xs font-mono font-bold"></div></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Quincena</label><div class="relative"><span class="absolute left-0 top-2 text-slate-400 text-xs font-bold">$</span><input type="number" id="tarifaMotoQuincenal" value="35000" class="elegant-input w-full pl-4 pr-2 py-1.5 rounded text-xs font-mono font-bold"></div></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Mes</label><div class="relative"><span class="absolute left-0 top-2 text-slate-400 text-xs font-bold">$</span><input type="number" id="tarifaMotoMensual" value="65000" class="elegant-input w-full pl-4 pr-2 py-1.5 rounded text-xs font-mono font-bold"></div></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tarifa Bicicleta -->
+                            <div class="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
+                                        <i class="fa-solid fa-bicycle"></i>
+                                    </div>
+                                    <h4 class="font-bold text-slate-700">Bicicleta</h4>
+                                </div>
+                                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hora</label><div class="relative"><span class="absolute left-0 top-2 text-slate-400 text-xs font-bold">$</span><input type="number" id="tarifaBiciHora" value="1000" class="elegant-input w-full pl-4 pr-2 py-1.5 rounded text-xs font-mono font-bold"></div></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Noche</label><div class="relative"><span class="absolute left-0 top-2 text-slate-400 text-xs font-bold">$</span><input type="number" id="tarifaBiciNoche" value="2000" class="elegant-input w-full pl-4 pr-2 py-1.5 rounded text-xs font-mono font-bold"></div></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Semana</label><div class="relative"><span class="absolute left-0 top-2 text-slate-400 text-xs font-bold">$</span><input type="number" id="tarifaBiciSemana" value="8000" class="elegant-input w-full pl-4 pr-2 py-1.5 rounded text-xs font-mono font-bold"></div></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Quincena</label><div class="relative"><span class="absolute left-0 top-2 text-slate-400 text-xs font-bold">$</span><input type="number" id="tarifaBiciQuincenal" value="15000" class="elegant-input w-full pl-4 pr-2 py-1.5 rounded text-xs font-mono font-bold"></div></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Mes</label><div class="relative"><span class="absolute left-0 top-2 text-slate-400 text-xs font-bold">$</span><input type="number" id="tarifaBiciMensual" value="25000" class="elegant-input w-full pl-4 pr-2 py-1.5 rounded text-xs font-mono font-bold"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB: PERFIL -->
+                    <div id="content-perfil" class="hidden-tab bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+                        <h3 class="text-lg font-bold text-slate-800 mb-6 pb-2 border-b border-slate-100">Perfil del Administrador</h3>
+                        
+                        <div class="flex flex-col md:flex-row gap-8 items-start">
+                            <div class="relative">
+                                <div class="w-24 h-24 rounded-full bg-slate-200 overflow-hidden border-2 border-slate-300">
+                                    <img src="https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff" alt="Avatar" class="w-full h-full object-cover">
+                                </div>
+                                <button class="absolute bottom-0 right-0 bg-white rounded-full p-1.5 shadow-md text-blue-600 hover:text-blue-800 transition" title="Cambiar Foto">
+                                    <i class="fa-solid fa-camera text-sm"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="flex-1 w-full space-y-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre Completo</label>
+                                        <input type="text" id="perfNombre" value="Administrador Principal" class="elegant-input w-full px-4 py-2.5 rounded-lg text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Correo Electrónico</label>
+                                        <input type="email" id="perfEmail" value="admin@parkingsys.com" class="elegant-input w-full px-4 py-2.5 rounded-lg text-sm">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nuevo Password</label>
+                                    <input type="password" id="perfPass" placeholder="Dejar en blanco para mantener" class="elegant-input w-full px-4 py-2.5 rounded-lg text-sm">
+                                </div>
+                                <div class="flex items-center gap-2 pt-2">
+                                    <input type="checkbox" id="perfNotif" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                                    <label for="perfNotif" class="text-sm text-slate-600">Recibir notificaciones de correo</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-3"></div>
+
+    <!-- JAVASCRIPT INCRUSTADO ACTUALIZADO -->
+    <script>
+        // CLAVE PARA ALMACENAMIENTO
+        const STORAGE_KEY = 'parking_sys_config';
+
+        // Configuración por defecto (ACTUALIZADA CON NUEVAS TARIFAS)
+        const defaultConfig = {
+            nombre: 'PARKING SYS',
+            nit: '900.123.456-7',
+            direccion: 'Calle 123 # 45-67, Bogotá',
+            telefono: '+57 300 123 4567',
+            // Tarifas Carro
+            tarifaCarroHora: 5000,
+            tarifaCarroNoche: 12000,
+            tarifaCarroSemana: 40000,
+            tarifaCarroQuincenal: 75000,
+            tarifaCarroMensual: 140000,
+            // Tarifas Moto
+            tarifaMotoHora: 2500,
+            tarifaMotoNoche: 6000,
+            tarifaMotoSemana: 20000,
+            tarifaMotoQuincenal: 35000,
+            tarifaMotoMensual: 65000,
+            // Tarifas Bici
+            tarifaBiciHora: 1000,
+            tarifaBiciNoche: 2000,
+            tarifaBiciSemana: 8000,
+            tarifaBiciQuincenal: 15000,
+            tarifaBiciMensual: 25000,
+            // Perfil
+            perfNombre: 'Administrador Principal',
+            perfEmail: 'admin@parkingsys.com',
+            perfNotif: false
+        };
+
+        // 1. CARGAR CONFIGURACIÓN
+        function loadConfig() {
+            const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+            const config = saved || defaultConfig;
+
+            // General
+            document.getElementById('confNombre').value = config.nombre;
+            document.getElementById('confNit').value = config.nit;
+            document.getElementById('confDireccion').value = config.direccion;
+            document.getElementById('confTelefono').value = config.telefono;
+
+            // Tarifas Carro
+            document.getElementById('tarifaCarroHora').value = config.tarifaCarroHora;
+            document.getElementById('tarifaCarroNoche').value = config.tarifaCarroNoche;
+            document.getElementById('tarifaCarroSemana').value = config.tarifaCarroSemana;
+            document.getElementById('tarifaCarroQuincenal').value = config.tarifaCarroQuincenal;
+            document.getElementById('tarifaCarroMensual').value = config.tarifaCarroMensual;
+
+            // Tarifas Moto
+            document.getElementById('tarifaMotoHora').value = config.tarifaMotoHora;
+            document.getElementById('tarifaMotoNoche').value = config.tarifaMotoNoche;
+            document.getElementById('tarifaMotoSemana').value = config.tarifaMotoSemana;
+            document.getElementById('tarifaMotoQuincenal').value = config.tarifaMotoQuincenal;
+            document.getElementById('tarifaMotoMensual').value = config.tarifaMotoMensual;
+
+            // Tarifas Bici
+            document.getElementById('tarifaBiciHora').value = config.tarifaBiciHora;
+            document.getElementById('tarifaBiciNoche').value = config.tarifaBiciNoche;
+            document.getElementById('tarifaBiciSemana').value = config.tarifaBiciSemana;
+            document.getElementById('tarifaBiciQuincenal').value = config.tarifaBiciQuincenal;
+            document.getElementById('tarifaBiciMensual').value = config.tarifaBiciMensual;
+
+            // Perfil
+            document.getElementById('perfNombre').value = config.perfNombre;
+            document.getElementById('perfEmail').value = config.perfEmail;
+            document.getElementById('perfNotif').checked = config.perfNotif;
+        }
+
+        // 2. CAMBIAR PESTAÑA
+        window.switchTab = function(tabName) {
+            ['general', 'tarifas', 'perfil'].forEach(t => {
+                const el = document.getElementById('content-' + t);
+                const btn = document.getElementById('tab-' + t);
+                if (el) el.classList.add('hidden-tab');
+                if (el) el.classList.remove('visible-tab');
+                if (btn) btn.classList.remove('active');
+            });
+
+            const activeContent = document.getElementById('content-' + tabName);
+            const activeBtn = document.getElementById('tab-' + tabName);
+            if (activeContent) {
+                activeContent.classList.remove('hidden-tab');
+                activeContent.classList.add('visible-tab');
+            }
+            if (activeBtn) activeBtn.classList.add('active');
+        };
+
+        // 3. GUARDAR TODO
+        window.guardarTodo = function() {
+            // Recopilar datos completos
+            const newConfig = {
+                nombre: document.getElementById('confNombre').value,
+                nit: document.getElementById('confNit').value,
+                direccion: document.getElementById('confDireccion').value,
+                telefono: document.getElementById('confTelefono').value,
+                // Tarifas Carro
+                tarifaCarroHora: document.getElementById('tarifaCarroHora').value,
+                tarifaCarroNoche: document.getElementById('tarifaCarroNoche').value,
+                tarifaCarroSemana: document.getElementById('tarifaCarroSemana').value,
+                tarifaCarroQuincenal: document.getElementById('tarifaCarroQuincenal').value,
+                tarifaCarroMensual: document.getElementById('tarifaCarroMensual').value,
+                // Tarifas Moto
+                tarifaMotoHora: document.getElementById('tarifaMotoHora').value,
+                tarifaMotoNoche: document.getElementById('tarifaMotoNoche').value,
+                tarifaMotoSemana: document.getElementById('tarifaMotoSemana').value,
+                tarifaMotoQuincenal: document.getElementById('tarifaMotoQuincenal').value,
+                tarifaMotoMensual: document.getElementById('tarifaMotoMensual').value,
+                // Tarifas Bici
+                tarifaBiciHora: document.getElementById('tarifaBiciHora').value,
+                tarifaBiciNoche: document.getElementById('tarifaBiciNoche').value,
+                tarifaBiciSemana: document.getElementById('tarifaBiciSemana').value,
+                tarifaBiciQuincenal: document.getElementById('tarifaBiciQuincenal').value,
+                tarifaBiciMensual: document.getElementById('tarifaBiciMensual').value,
+                // Perfil
+                perfNombre: document.getElementById('perfNombre').value,
+                perfEmail: document.getElementById('perfEmail').value,
+                perfNotif: document.getElementById('perfNotif').checked
+            };
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(newConfig));
+
+            showToast("Configuración guardada correctamente", "success");
+            
+            const btn = document.querySelector('button[onclick="guardarTodo()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-check"></i> Guardado`;
+            btn.classList.replace('bg-blue-600', 'bg-emerald-600');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.replace('bg-emerald-600', 'bg-blue-600');
+            }, 2000);
+        };
+
+        // 4. TOAST NOTIFICATION
+        window.showToast = function(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const bgClass = type === 'success' ? 'bg-emerald-600' : 'bg-red-600';
+            const icon = type === 'success' ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-circle-exclamation"></i>';
+            toast.className = `${bgClass} text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 transform transition-all duration-500 translate-x-10 opacity-0`;
+            toast.innerHTML = `${icon} <span class="font-medium text-sm tracking-wide">${message}</span>`;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.remove('translate-x-10', 'opacity-0'));
+            setTimeout(() => {
+                toast.classList.add('translate-x-10', 'opacity-0');
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        };
+
+        // INICIALIZACIÓN
+        document.getElementById('fecha-actual').textContent = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        loadConfig();
+    </script>
+</body>
+</html>

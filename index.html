@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | ELIMAR PARKING</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        primary: '#3b82f6',
+                        accent: '#f97316',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Fondo Oscuro Profesional */
+        body { background-color: #0f172a; } /* Slate 900 */
+        
+        /* Animación de error (Sacudida) */
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+    </style>
+</head>
+<body class="text-slate-200 antialiased h-screen w-full flex items-center justify-center p-4">
+
+    <!-- Contenedor del Login -->
+    <div class="w-full max-w-md relative z-10">
+        
+        <!-- Logo / Header -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl shadow-2xl shadow-blue-500/30 mb-4">
+                <i class="fa-solid fa-square-parking text-2xl text-white"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-white tracking-tight">ELIMAR <span class="text-blue-400 font-light">PARKING</span></h1>
+            <p class="text-slate-400 text-sm">Ingresa tus credenciales para continuar</p>
+        </div>
+
+        <!-- Tarjeta de Login -->
+        <div id="loginCard" class="bg-slate-800/50 backdrop-blur-xl border border border-white/10 rounded-2xl p-8 shadow-2xl">
+            <form id="loginForm" onsubmit="event.preventDefault(); login()">
+                
+                <!-- Usuario -->
+                <div class="mb-5">
+                    <label class="block text-xs font-bold text-blue-400 uppercase mb-1">Usuario</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-user text-slate-400 group-focus-within:text-blue-400"></i>
+                        </div>
+                        <input type="text" id="user" placeholder="admin" value="admin" 
+                               class="w-full bg-slate-900/50 border border-slate-600 text-white rounded-xl py-3 pl-10 pr-4 text-sm placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all" required>
+                    </div>
+                </div>
+
+                <!-- Contraseña -->
+                <div class="mb-6">
+                    <label class="block text-xs font-bold text-blue-400 uppercase mb-1">Contraseña</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-lock text-slate-400 group-focus-within:text-blue-400"></i>
+                        </div>
+                        <!-- Input Password -->
+                        <input type="password" id="pass" placeholder="•••••••••" value="1234"
+                               class="w-full bg-slate-900/50 border border-slate-600 text-white rounded-xl py-3 pl-10 pr-12 text-sm placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all" required>
+                        
+                        <!-- Botón Ojo -->
+                        <button type="button" onclick="togglePassword()" class="absolute right-2 top-3 text-slate-400 hover:text-white transition-colors focus:outline-none">
+                            <i class="fa-regular fa-eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mensaje de Error (Oculto por defecto) -->
+                <div id="errorMensaje" class="hidden mb-4 p-3 bg-red-500/20 text-red-200 text-red-100 text-sm rounded-lg text-center border border-red-500/30">
+                    <i class="fa-solid fa-circle-exclamation mr-2"></i> Usuario o contraseña incorrectos.
+                </div>
+
+                <!-- Botón Login -->
+                <button type="submit" id="btnLogin" class="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-blue-500/40 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+                    <span>Ingresar</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+        </div>
+
+        <!-- Texto inferior -->
+        <div class="text-center mt-6">
+            <p class="text-slate-500 text-xs">
+                © 2023 ELIMAR PARKING SYSTEMS. <br>
+                Todos los derechos reservados.
+            </p>
+        </div>
+    </div>
+
+    <!-- Script Login (Integrado) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // CONFIGURACIÓN DE SEGURIDAD
+            const USER_VALIDO = 'admin';
+            const PASS_VALIDO = '1234';
+
+            // 1. FUNCIÓN TOGGLE PASSWORD (Ver/Ocultar)
+            window.togglePassword = function() {
+                const passInput = document.getElementById('pass');
+                const eyeIcon = document.getElementById('eyeIcon');
+                const type = passInput.getAttribute('type');
+                const isPassword = type === 'password';
+
+                if (isPassword) {
+                    // Mostrar texto
+                    passInput.setAttribute('type', 'text');
+                    eyeIcon.classList.remove('fa-eye');
+                    eyeIcon.classList.add('fa-eye-slash');
+                } else {
+                    // Ocultar texto
+                    passInput.setAttribute('type', 'password');
+                    eyeIcon.classList.remove('fa-eye-slash');
+                    eyeIcon.classList.add('fa-eye');
+                }
+            };
+
+            // 2. FUNCIÓN LOGIN
+            window.login = function() {
+                const user = document.getElementById('user').value.trim();
+                const pass = document.getElementById('pass').value;
+                const errorDiv = document.getElementById('loginCard'); // Usamos el div contenedor para la animación
+                const errorMensaje = document.getElementById('errorMensaje');
+
+                // Intentar login
+                if (user === USER_VALIDO && pass === PASS_VALIDO) {
+                    // ÉXITO
+                    localStorage.setItem('isLoggedIn', 'true');
+                    localStorage.setItem('userName', user);
+                    
+                    // Efecto de carga en el botón
+                    const btn = document.getElementById('btnLogin');
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verificando...';
+                    
+                    // Simular demora de red
+                    setTimeout(() => {
+                        // Ajusta la ruta según estructura de carpetas
+                        // Si index.html y dashboard.html están en la raíz:
+                        window.location.href = 'dashboard.html';
+                        // Si dashboard.html está en una carpeta 'pages', usa: window.location.href = 'pages/dashboard.html';
+                    }, 800);
+
+                } else {
+                    // ERROR
+                    
+                    // 1. Mostrar mensaje
+                    errorMensaje.classList.remove('hidden');
+                    
+                    // 2. Animación de "Shake" (Sacudida)
+                    errorDiv.classList.add('shake');
+                    
+                    // 3. Ocultar mensaje después de 2 segundos
+                    setTimeout(() => {
+                        errorDiv.classList.remove('shake');
+                        errorMensaje.classList.add('hidden');
+                    }, 2000);
+                }
+            };
+
+            // 3. COMPROBACIÓN DE SESIÓN
+            // Si intentas recargar esta página ya estando logueado, te manda al dashboard directamente.
+            function checkSession() {
+                const isLogged = localStorage.getItem('isLoggedIn');
+                const currentPath = window.location.pathname;
+
+                // Si estamos en la página de Login y ya estamos logueados, redirigir al dashboard
+                if (currentPath.includes('index.html') && isLogged) {
+                    // Ajusta la ruta según donde tengas tu dashboard.html
+                    window.location.href = 'dashboard.html'; 
+                }
+            }
+
+            // Verificar sesión al cargar
+            checkSession();
+
+        });
+    </script>
+</body>
+</html>

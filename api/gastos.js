@@ -1,0 +1,141 @@
+import { db } from "./db.js"
+
+export default async function handler(req, res){
+
+try{
+
+// ======================================
+// GET → LISTAR GASTOS
+// ======================================
+
+if(req.method === "GET"){
+
+const result = await db.execute(
+"SELECT * FROM gastos ORDER BY id DESC"
+)
+
+return res.status(200).json(result.rows)
+
+}
+
+
+// ======================================
+// POST → CREAR GASTO
+// ======================================
+
+if(req.method === "POST"){
+
+const { concept, category, amount, date } = req.body
+
+if(!concept || !amount){
+
+return res.status(400).json({
+error:"Concepto y monto son obligatorios"
+})
+
+}
+
+await db.execute({
+sql:`INSERT INTO gastos
+(concept, category, amount, date)
+VALUES (?,?,?,?)`,
+args:[
+concept,
+category || "General",
+amount,
+date || new Date().toISOString().split("T")[0]
+]
+})
+
+return res.status(200).json({
+success:true
+})
+
+}
+
+
+// ======================================
+// PUT → ACTUALIZAR GASTO
+// ======================================
+
+if(req.method === "PUT"){
+
+const { id, concept, category, amount, date } = req.body
+
+if(!id){
+
+return res.status(400).json({
+error:"ID requerido"
+})
+
+}
+
+await db.execute({
+sql:`UPDATE gastos
+SET concept=?,
+category=?,
+amount=?,
+date=?
+WHERE id=?`,
+args:[
+concept,
+category,
+amount,
+date,
+id
+]
+})
+
+return res.status(200).json({
+success:true
+})
+
+}
+
+
+// ======================================
+// DELETE → ELIMINAR GASTO
+// ======================================
+
+if(req.method === "DELETE"){
+
+const { id } = req.query
+
+if(!id){
+
+return res.status(400).json({
+error:"ID requerido"
+})
+
+}
+
+await db.execute({
+sql:"DELETE FROM gastos WHERE id=?",
+args:[id]
+})
+
+return res.status(200).json({
+success:true
+})
+
+}
+
+
+// ======================================
+
+return res.status(405).json({
+error:"Metodo no permitido"
+})
+
+}catch(error){
+
+console.error("ERROR API GASTOS:",error)
+
+return res.status(500).json({
+error:"Error interno del servidor",
+detail:error.message
+})
+
+}
+
+}

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Puestos | ParkingSys</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+
+    .custom-input {
+      width: 100%; padding: 10px 12px 10px 40px;
+      border-radius: 8px; border: 1px solid #cbd5e1;
+      background-color: #f8fafc; font-size: 14px; transition: all 0.2s ease;
+    }
+    .custom-input:focus {
+      outline: none; border-color: #6366f1;
+      background-color: #fff; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+    .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+
+    .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+
+    /* Responsive Table Magic */
+    @media (max-width: 1024px) {
+      table, thead, tbody, th, td, tr { display: block; }
+      thead tr { position: absolute; top: -9999px; left: -9999px; }
+      tr { 
+        background: white; border: 1px solid #e2e8f0; 
+        margin-bottom: 16px; border-radius: 12px; 
+        padding: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+      }
+      td { 
+        border: none; position: relative; 
+        padding-left: 0; padding-right: 0;
+        padding-top: 8px; padding-bottom: 8px;
+        display: flex; justify-content: space-between; align-items: center;
+        text-align: right; border-bottom: 1px dashed #f1f5f9;
+      }
+      td:last-child { border-bottom: none; }
+      td:before { 
+        content: attr(data-label); 
+        font-weight: 600; color: #64748b; 
+        text-align: left; margin-right: 12px; font-size: 13px;
+      }
+      td[data-label="Acciones"] { justify-content: flex-end; padding-top: 12px; }
+    }
+  </style>
+</head>
+
+<body class="flex h-screen overflow-hidden text-slate-700">
+
+  <!-- SIDEBAR (COPIADO EXACTO DE CLIENTES) -->
+  <aside class="hidden lg:flex w-64 bg-white border-r border-slate-200 flex-col shadow-sm z-20">
+    <div class="h-16 flex items-center px-6 border-b border-slate-100">
+      <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200">
+        <i class="fa-solid fa-square-parking text-white text-sm"></i>
+      </div>
+      <h1 class="text-lg font-bold text-slate-800">Parking<span class="text-indigo-600">Sys</span></h1>
+    </div>
+
+    <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+      <a href="/dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-chart-pie w-5"></i> Dashboard</a>
+      <a href="/pages/clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-users w-5"></i> Clientes</a>
+      
+      <!-- ACTIVO -->
+      <a href="/pages/puestos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100">
+        <i class="fa-solid fa-layer-group w-5"></i> Puestos
+      </a>
+
+      <a href="/pages/caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-cash-register w-5"></i> Caja</a>
+      <a href="/pages/gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-receipt w-5"></i> Gastos</a>
+    </nav>
+    
+    <div class="p-4 border-t border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold">A</div>
+        <div class="text-xs"><p class="font-bold">Admin</p></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
+    
+    <!-- HEADER -->
+    <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-10">
+      <div class="flex items-center gap-4">
+        <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+          <i class="fa-solid fa-bars text-xl"></i>
+        </button>
+        <div>
+          <h2 class="text-lg lg:text-xl font-bold text-slate-800">Mapa de Puestos</h2>
+          <span class="hidden sm:inline text-xs text-slate-500">Control de ocupación en tiempo real</span>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-3">
+        <div class="text-xs font-bold bg-slate-800 text-white px-3 py-1.5 rounded-full shadow-md">
+          <i class="fa-solid fa-car-tunnel mr-1"></i> <span id="totalCount">0</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- SCROLL CONTENT -->
+    <div class="flex-1 overflow-y-auto p-4 lg:p-8 custom-scroll">
+      <div class="max-w-6xl mx-auto grid grid-cols-1 xl:grid-cols-12 gap-6">
+        
+        <!-- FORMULARIO -->
+        <div class="xl:col-span-4 order-2 xl:order-1">
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sticky top-4">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+              <div class="p-2 bg-slate-800 text-white rounded-lg"><i class="fa-solid fa-plus"></i></div>
+              <h3 class="font-bold text-slate-800 text-lg">Nuevo Puesto</h3>
+            </div>
+
+            <form onsubmit="event.preventDefault(); crearPuesto();" class="space-y-5">
+              <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Identificador</label>
+                <div class="relative">
+                  <i class="fa-solid fa-map-pin input-icon"></i>
+                  <input id="numeroPuesto" placeholder="Ej: P-01, A1, B2" required class="custom-input font-mono" autocomplete="off">
+                </div>
+              </div>
+              
+              <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-4 rounded-lg shadow-lg shadow-slate-300 transition-all flex items-center justify-center gap-2">
+                <i class="fa-solid fa-check"></i> Crear Puesto
+              </button>
+            </form>
+
+            <div class="mt-6 bg-slate-50 border border-slate-200 rounded-lg p-4">
+              <h4 class="text-slate-700 font-bold text-sm mb-2">Estado del Parqueadero</h4>
+              <div class="flex gap-2 text-xs">
+                <div class="flex-1 bg-emerald-100 text-emerald-700 p-2 rounded text-center font-bold">LIBRE</div>
+                <div class="flex-1 bg-rose-100 text-rose-700 p-2 rounded text-center font-bold">OCUPADO</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TABLA PUESTOS -->
+        <div class="xl:col-span-8 order-1 xl:order-2">
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
+            <div class="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+              <h3 class="font-bold text-slate-700 text-xs uppercase tracking-widest">Inventario de Puestos</h3>
+              <div class="text-xs text-slate-400"><i class="fa-solid fa-clock"></i> Actualizado ahora</div>
+            </div>
+
+            <div class="overflow-x-auto custom-scroll flex-1">
+              <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-100 hidden lg:table-header-group">
+                  <tr>
+                    <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Puesto</th>
+                    <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Estado</th>
+                    <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Asignado A</th>
+                    <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Hora Entrada</th>
+                    <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-right">Control</th>
+                  </tr>
+                </thead>
+                <tbody id="tableBody">
+                  <!-- JS Render -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- PAGINACIÓN -->
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+              <button id="btnPrev" onclick="changePage('prev')" class="px-3 py-1.5 text-xs font-bold text-slate-600 bg-white border border-slate-300 rounded hover:bg-slate-100 disabled:opacity-50 transition-colors">
+                <i class="fa-solid fa-chevron-left mr-1"></i> ANTERIOR
+              </button>
+              <span id="pageInfo" class="text-xs font-bold text-slate-500">PÁGINA 1 DE 1</span>
+              <button id="btnNext" onclick="changePage('next')" class="px-3 py-1.5 text-xs font-bold text-slate-600 bg-white border border-slate-300 rounded hover:bg-slate-100 disabled:opacity-50 transition-colors">
+                SIGUIENTE <i class="fa-solid fa-chevron-right ml-1"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- MENÚ MÓVIL -->
+  <div id="mobileMenu" class="fixed inset-0 bg-slate-900/50 z-40 hidden lg:hidden backdrop-blur-sm">
+    <div class="bg-white w-64 h-full shadow-xl flex flex-col p-4">
+      <div class="flex items-center justify-between mb-8">
+        <h1 class="text-lg font-bold text-slate-800">Menú</h1>
+        <button onclick="toggleMenu()" class="text-slate-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+      </div>
+      <nav class="space-y-2">
+        <a href="/dashboard.html" class="block px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-50 font-medium"><i class="fa-solid fa-chart-pie w-6"></i> Dashboard</a>
+        <a href="/pages/clientes.html" class="block px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-50 font-medium"><i class="fa-solid fa-users w-6"></i> Clientes</a>
+        <a href="/pages/puestos.html" class="block px-4 py-3 rounded-lg bg-indigo-50 text-indigo-700 font-bold"><i class="fa-solid fa-layer-group w-6"></i> Puestos</a>
+        <a href="/pages/caja.html" class="block px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-50 font-medium"><i class="fa-solid fa-cash-register w-6"></i> Caja</a>
+      </nav>
+    </div>
+  </div>
+
+  <!-- MODAL OCUPAR -->
+  <div id="modalOcupar" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-50 transition-opacity opacity-0">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0 duration-200">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-2xl">
+        <h3 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-car-side text-indigo-500 mr-2"></i> Asignar Vehículo</h3>
+        <button onclick="cerrarModalOcupar()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-6 space-y-4">
+        <p class="text-sm text-slate-500">Seleccione el cliente que ocupará este puesto:</p>
+        <div class="relative">
+          <i class="fa-solid fa-users absolute left-3 top-3.5 text-slate-400"></i>
+          <select id="clienteSelect" class="custom-input pl-10 appearance-none">
+            <!-- Options cargados por JS -->
+          </select>
+          <i class="fa-solid fa-chevron-down absolute right-4 top-3.5 text-xs text-slate-400 pointer-events-none"></i>
+        </div>
+      </div>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-3">
+        <button onclick="cerrarModalOcupar()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200 transition-colors">Cancelar</button>
+        <button onclick="confirmarOcupar()" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 shadow-md transition-colors">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/puestos.js"></script>
+</body>
+</html>
