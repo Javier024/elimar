@@ -1,300 +1,467 @@
-// =============================
-// VARIABLES
-// =============================
 let allSpots = [];
-let allClients = [];
-let currentPage = 1;
-const itemsPerPage = 5;
+let clientesCache = [];
+let currentFilterStatus = 'todos'; 
+let puestoSeleccionado = null;
 
-// =============================
-// UTILIDADES
-// =============================
+// --- UTILIDADES ---
 function mostrarToast(mensaje, tipo = 'success') {
   const toastExistente = document.getElementById('custom-toast');
   if (toastExistente) toastExistente.remove();
-
   const toast = document.createElement('div');
   toast.id = 'custom-toast';
-  
-  const colores = tipo === 'error' 
-    ? 'bg-red-50 text-red-800 border-red-200' 
-    : 'bg-emerald-50 text-emerald-800 border-emerald-200';
-  
-  const icono = tipo === 'error' 
-    ? '<i class="fa-solid fa-circle-exclamation"></i>' 
-    : '<i class="fa-solid fa-circle-check"></i>';
-
+  const colores = tipo === 'error' ? 'bg-red-50 text-red-800 border-red-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200';
+  const icono = tipo === 'error' ? '<i class="fa-solid fa-circle-exclamation"></i>' : '<i class="fa-solid fa-circle-check"></i>';
   toast.className = `fixed top-5 right-5 z-[60] flex items-center gap-3 px-6 py-4 rounded-xl shadow-xl border ${colores} transform transition-all duration-300 translate-x-full opacity-0 max-w-sm`;
   toast.innerHTML = `<span class="text-lg shrink-0">${icono}</span><span class="font-medium text-sm">${mensaje}</span>`;
   document.body.appendChild(toast);
-
   requestAnimationFrame(() => toast.classList.remove('translate-x-full', 'opacity-0'));
-  setTimeout(() => {
-    toast.classList.add('translate-x-full', 'opacity-0');
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
+  setTimeout(() => { toast.classList.add('translate-x-full', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
 }
 
-// Convertir Timestamp numérico a HH:MM:SS
-function formatTime(timestamp) {
-  if (!timestamp) return '-';
-  const date = new Date(timestamp * 1000);
-  return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second:'2-digit' });
+// --- HELPERS DE FECHA ---
+function formatearFecha(isoStr) {
+  if(!isoStr) return '';
+  return new Date(isoStr).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }
 
-// =============================
-// INICIO
-// =============================
+function formatearFechaHora(isoStr) {
+  if(!isoStr) return '';
+  const fecha = new Date(isoStr);
+  return fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) + ' ' + 
+         fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+}
+
+// --- INICIO ---
 document.addEventListener("DOMContentLoaded", () => {
   cargarPuestos();
-  cargarClientesParaSelect();
+  cargarClientesCache();
+  
+  const searchInput = document.getElementById("searchInput");
+  if(searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      renderMapa(e.target.value.toLowerCase());
+    });
+  }
 });
 
-// =============================
-// CARGAR DATOS
-// =============================
+async function cargarClientesCache() {
+  try {
+    const res = await fetch("/api/clientes");
+    clientesCache = await res.json();
+  } catch (e) { console.error("Error cargando clientes", e); }
+}
+
+// --- FILTROS ---
+window.filtrarMapa = function(filtro) {
+  currentFilterStatus = filtro;
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    if(btn.dataset.filter === filtro) {
+      btn.classList.add('bg-slate-800', 'text-white');
+      btn.classList.remove('bg-white', 'text-slate-600', 'border');
+    } else {
+      btn.classList.remove('bg-slate-800', 'text-white');
+      btn.classList.add('bg-white', 'text-slate-600', 'border');
+    }
+  });
+  renderMapa();
+}
+
+// --- DATA ---
 async function cargarPuestos() {
   try {
     const res = await fetch("/api/puestos");
-    if (!res.ok) throw new Error("Error al cargar puestos");
+    if (!res.ok) throw new Error("Error API");
     allSpots = await res.json();
-    allSpots.sort((a, b) => a.id - b.id); // Orden lógico
-    currentPage = 1;
-    renderTable();
-  } catch (error) {
-    console.error(error);
-    mostrarToast("Error cargando puestos", "error");
+    
+    allSpots.sort((a, b) => {
+      const numA = parseInt(a.numero.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.numero.replace(/\D/g, '')) || 0;
+      return numA - numB;
+    });
+    
+    const kpi = {
+      libres: allSpots.filter(s => s.estado === 'libre').length,
+      ocupados: allSpots.filter(s => s.estado === 'ocupado').length,
+      reservados: allSpots.filter(s => s.estado === 'reservado').length,
+      total: allSpots.length
+    };
+    
+    if(document.getElementById('kpi-libres')) document.getElementById('kpi-libres').innerText = kpi.libres;
+    if(document.getElementById('kpi-ocupados')) document.getElementById('kpi-ocupados').innerText = kpi.ocupados;
+    if(document.getElementById('kpi-reservados')) document.getElementById('kpi-reservados').innerText = kpi.reservados;
+    if(document.getElementById('totalCount')) document.getElementById('totalCount').innerText = kpi.total;
+
+    renderMapa();
+  } catch (error) { 
+    console.error(error); 
+    mostrarToast("Error cargando mapa", "error"); 
   }
 }
 
-async function cargarClientesParaSelect() {
-  try {
-    const res = await fetch("/api/clientes");
-    allClients = await res.json();
-  } catch (error) {
-    console.error("Error cargando clientes", error);
+// --- RENDERIZADO ---
+function renderMapa(busquedaTerm = "") {
+  const container = document.getElementById("map-container");
+  if(!container) return;
+  container.innerHTML = "";
+
+  let datosFiltrados = allSpots;
+
+  if (currentFilterStatus !== 'todos') {
+    datosFiltrados = allSpots.filter(s => s.estado === currentFilterStatus);
   }
-}
 
-// =============================
-// RENDER TABLA
-// =============================
-function renderTable() {
-  const tbody = document.getElementById("tableBody");
-  const countSpan = document.getElementById("totalCount");
-  tbody.innerHTML = "";
+  if (busquedaTerm) {
+    datosFiltrados = datosFiltrados.filter(s => 
+      s.numero.toLowerCase().includes(busquedaTerm) || 
+      (s.cliente_placa && s.cliente_placa.toLowerCase().includes(busquedaTerm))
+    );
+  }
 
-  if (allSpots.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400">No hay puestos registrados.</td></tr>`;
-    countSpan.innerText = "0";
-    updatePaginationControls();
+  if (datosFiltrados.length === 0) {
+    container.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center text-slate-400 py-20"><i class="fa-solid fa-car-tunnel text-4xl mb-2"></i><p class="text-lg font-medium">No se encontraron puestos.</p></div>`;
     return;
   }
 
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const pageData = allSpots.slice(startIndex, endIndex);
+  datosFiltrados.forEach(spot => {
+    // DETECTAR AUSENCIA
+    let esAusencia = false;
+    let infoAusencia = null;
+    let hayPasajero = false;
 
-  countSpan.innerText = allSpots.length;
-
-  pageData.forEach(spot => {
-    const tr = document.createElement("tr");
-    tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0 group";
-
-    const isOcupado = spot.estado === 'ocupado';
-    
-    // DISEÑO ESPECÍFICO PARQUEADERO
-    // Libre: Verde brillante, Ocupado: Rojo intenso
-    const statusClass = isOcupado 
-      ? 'bg-rose-100 text-rose-700 border-rose-200' 
-      : 'bg-emerald-100 text-emerald-700 border-emerald-200';
-    
-    const statusIcon = isOcupado ? 'fa-car-side' : 'fa-square-check';
-
-    // Info del Cliente
-    let clienteDisplay = '-';
-    let iconoVehiculo = '';
-    
-    if (isOcupado) {
-      const nombre = spot.cliente_nombre || 'Desconocido';
-      const placa = spot.cliente_placa || '';
-      const tipo = spot.cliente_tipo || 'Carro';
-      
-      // Icono según el tipo del cliente
-      if(tipo === 'Moto') iconoVehiculo = '<i class="fa-solid fa-motorcycle text-xs mr-1 opacity-70"></i>';
-      else if(tipo === 'Camioneta') iconoVehiculo = '<i class="fa-solid fa-truck-pickup text-xs mr-1 opacity-70"></i>';
-      else iconoVehiculo = '<i class="fa-solid fa-car text-xs mr-1 opacity-70"></i>';
-
-      clienteDisplay = `
-        <div class="flex flex-col">
-          <span class="font-medium text-slate-700">${iconoVehiculo} ${nombre}</span>
-          <span class="text-[10px] text-slate-400 font-mono">${placa}</span>
-        </div>
-      `;
+    if (spot.llave_caracteristicas) {
+      try {
+        const parsed = JSON.parse(spot.llave_caracteristicas);
+        if (parsed.tipo === 'ausencia') {
+          esAusencia = true;
+          infoAusencia = parsed;
+          if(spot.estado === 'ocupado') hayPasajero = true; 
+        }
+      } catch(e) {}
     }
 
-    // Hora (formateada desde numérico)
-    const horaDisplay = formatTime(spot.hora_inicio);
+    let colorClass = "parking-card libre"; 
+    let btnAction = '';
+    let infoCliente = '<span class="text-slate-400 text-xs font-medium">Disponible</span>';
+    
+    // Botón de editar (siempre visible arriba derecha)
+    const btnEditar = `<button onclick="event.stopPropagation(); editarPuesto(${spot.id}, '${spot.numero}')" class="absolute top-2 right-2 text-slate-400 hover:text-indigo-600 p-1.5 rounded-full hover:bg-white transition-colors z-10" title="Editar Puesto"><i class="fa-solid fa-pen-to-square text-sm"></i></button>`;
 
-    // Botones
-    const actionBtn = isOcupado
-      ? `<button onclick="liberarPuesto(${spot.id})" class="text-amber-600 hover:text-amber-700 hover:bg-amber-50 p-2 rounded-lg transition-all border border-transparent hover:border-amber-100" title="Liberar / Cobrar"><i class="fa-solid fa-file-invoice-dollar"></i></button>`
-      : `<button onclick="abrirModalOcupar(${spot.id})" class="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 p-2 rounded-lg transition-all border border-transparent hover:border-emerald-100" title="Asignar Vehículo"><i class="fa-solid fa-key"></i></button>`;
+    if (esAusencia) {
+      colorClass = "parking-card ausencia"; 
+      infoCliente = `<div class="text-amber-600 font-bold text-xs"><i class="fa-regular fa-clock"></i> Ausencia</div><div class="text-[10px] text-slate-500">Regresa: ${formatearFecha(infoAusencia.fecha_regreso)}</div>`;
+      if (hayPasajero) {
+         infoCliente += `<div class="mt-1 text-[10px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded border border-red-200 inline-block"><i class="fa-solid fa-user-secret"></i> Ocupado por Pasajero</div>`;
+      }
+      btnAction = `<button onclick="event.stopPropagation(); abrirModalEntrada(${spot.id}, true)" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded font-bold text-xs shadow-sm">Asignar Pasajero</button>`;
+    } else if (spot.estado === 'ocupado') {
+      colorClass = "parking-card ocupado";
+      
+      // FECHA DE REGISTRO VISUAL
+      const fechaRegistro = spot.fecha_registro ? formatearFechaHora(spot.fecha_registro) : '';
+      
+      infoCliente = `
+        <div class="font-bold text-slate-700 text-sm truncate">${spot.cliente_nombre}</div>
+        <div class="text-[10px] font-mono text-slate-500 uppercase bg-slate-100 px-1.5 py-0.5 rounded inline-block border border-slate-200">${spot.cliente_placa || '---'}</div>
+        ${fechaRegistro ? `<div class="text-[9px] text-slate-400 mt-1.5 flex items-center gap-1"><i class="fa-regular fa-calendar-check"></i> Entrada: ${fechaRegistro}</div>` : ''}
+      `;
+      btnAction = `<button onclick="event.stopPropagation(); abrirModalSalida(${spot.id}, ${spot.cliente_id})" class="w-full py-2 bg-white/20 hover:bg-white/30 text-white rounded font-bold text-xs backdrop-blur-sm">Salir / Ausencia</button>`;
+    } else if (spot.estado === 'reservado') {
+      colorClass = "parking-card reservado";
+      infoCliente = `<div class="font-bold text-slate-700 text-sm truncate">Reservado</div><div class="text-[10px] font-mono text-slate-500 uppercase">${spot.cliente_placa || '---'}</div>`;
+      btnAction = `<button onclick="event.stopPropagation(); abrirModalEntrada(${spot.id}, false)" class="w-full py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded font-bold text-xs shadow-sm">Ingresar</button>`;
+    } else {
+      btnAction = `<button onclick="event.stopPropagation(); abrirModalEntrada(${spot.id}, false)" class="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded font-bold text-xs shadow-sm">Ingresar</button>`;
+    }
 
-    tr.innerHTML = `
-      <td class="px-6 py-4 font-mono text-slate-500 font-bold tracking-widest" data-label="Puesto">
-        #${spot.numero}
-      </td>
-      <td class="px-6 py-4" data-label="Estado">
-        <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide border ${statusClass} shadow-sm">
-          <i class="fa-solid ${statusIcon}"></i> ${spot.estado}
-        </span>
-      </td>
-      <td class="px-6 py-4 text-sm text-slate-600" data-label="Cliente">
-        ${clienteDisplay}
-      </td>
-      <td class="px-6 py-4 text-sm font-mono text-slate-500" data-label="Entrada">
-        <span class="bg-slate-100 px-2 py-1 rounded text-slate-600">${horaDisplay}</span>
-      </td>
-      <td class="px-6 py-4 text-right" data-label="Acciones">
-        <div class="flex items-center justify-end gap-2">
-          ${actionBtn}
-          <button onclick="eliminarPuesto(${spot.id})" class="text-slate-400 hover:text-rose-500 hover:bg-rose-50 p-2 rounded-lg transition-all" title="Eliminar Puesto"><i class="fa-solid fa-trash-can"></i></button>
+    const card = document.createElement("div");
+    card.className = colorClass;
+    card.innerHTML = `
+      <div class="relative flex-1 flex flex-col justify-between p-4">
+        ${btnEditar}
+        <div class="flex justify-between items-start">
+          <div>
+            <span class="text-xs font-bold uppercase text-slate-400 tracking-wider">Puesto</span>
+            <h3 class="text-2xl font-bold text-slate-700">${spot.numero}</h3>
+          </div>
+          <div class="text-2xl opacity-40">
+             ${esAusencia ? '<i class="fa-solid fa-clock text-amber-500"></i>' : (spot.estado === 'ocupado' ? '<i class="fa-solid fa-car-side"></i>' : '<i class="fa-solid fa-check"></i>')}
+          </div>
         </div>
-      </td>
+        <div class="mt-2 border-t border-slate-100 pt-2">${infoCliente}</div>
+      </div>
+      <div class="p-2 pt-0 mt-auto">${btnAction}</div>
     `;
-    tbody.appendChild(tr);
+    
+    card.onclick = () => { if(!esAusencia && spot.estado === 'libre') abrirModalEntrada(spot.id, false); };
+    container.appendChild(card);
   });
-
-  updatePaginationControls();
 }
 
-// =============================
-// PAGINACIÓN
-// =============================
-function updatePaginationControls() {
-  const btnPrev = document.getElementById("btnPrev");
-  const btnNext = document.getElementById("btnNext");
-  const pageInfo = document.getElementById("pageInfo");
-  const totalPages = Math.ceil(allSpots.length / itemsPerPage);
+// --- FUNCIONES DE GESTIÓN (Editar / Eliminar) ---
 
-  pageInfo.innerText = `Página ${currentPage} de ${totalPages || 1}`;
-  btnPrev.disabled = currentPage === 1;
-  btnNext.disabled = currentPage === totalPages || totalPages === 0;
-
-  if (btnPrev.disabled) btnPrev.classList.add("opacity-50", "cursor-not-allowed");
-  else btnPrev.classList.remove("opacity-50", "cursor-not-allowed");
-
-  if (btnNext.disabled) btnNext.classList.add("opacity-50", "cursor-not-allowed");
-  else btnNext.classList.remove("opacity-50", "cursor-not-allowed");
-}
-
-window.changePage = function(direction) {
-  const totalPages = Math.ceil(allSpots.length / itemsPerPage);
-  if (direction === 'prev' && currentPage > 1) currentPage--;
-  else if (direction === 'next' && currentPage < totalPages) currentPage++;
-  renderTable();
+window.editarPuesto = function(id, numeroActual) {
+  const nuevoNumero = prompt("Editar número de puesto:", numeroActual);
+  if (!nuevoNumero || nuevoNumero === numeroActual) return;
+  
+  fetch("/api/puestos", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: id, accion: "editar_numero", nuevo_numero: nuevoNumero })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      mostrarToast("Puesto actualizado");
+      cargarPuestos();
+    } else {
+      alert("Error: " + (data.error || "Desconocido"));
+    }
+  })
+  .catch(e => mostrarToast("Error de conexión", "error"));
 };
 
-// =============================
-// ACCIONES CRUD
-// =============================
-window.crearPuesto = async function() {
-  const numero = document.getElementById("numeroPuesto").value.trim();
-  if (!numero) return mostrarToast("Ingrese un número", "error");
+window.eliminarPuesto = function(id) {
+  if (!confirm("¿Estás seguro de ELIMINAR este puesto?\n\nEsta acción borrará el puesto y no se puede deshacer.")) return;
+  
+  fetch(`/api/puestos?id=${id}`, { method: "DELETE" })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      mostrarToast("Puesto eliminado");
+      cargarPuestos();
+    } else {
+      mostrarToast("Error al eliminar", "error");
+    }
+  })
+  .catch(e => mostrarToast("Error de conexión", "error"));
+};
 
+// --- MODALES Y ASIGNACIÓN ---
+
+window.abrirModalEntrada = function(id, esPasajero) {
+  puestoSeleccionado = allSpots.find(s => s.id === id);
+  if(!puestoSeleccionado) return;
+
+  document.getElementById("modalSpotNumber").innerText = esPasajero ? "Asignar Pasajero" : "Puesto #" + puestoSeleccionado.numero;
+  document.getElementById("modalNombre").value = '';
+  document.getElementById("modalPlaca").value = '';
+  document.getElementById("modalTipo").value = 'Carro';
+
+  const modal = document.getElementById("modalAsignar");
+  const content = document.getElementById("modalContent");
+  modal.classList.remove("hidden");
+  modal.classList.add("flex");
+  setTimeout(() => {
+    content.classList.remove("scale-95", "opacity-0");
+    content.classList.add("scale-100", "opacity-100");
+  }, 10);
+}
+
+window.filtrarClientesModal = function() {
+  const query = document.getElementById("modalNombre").value.toLowerCase();
+  const lista = document.getElementById("listaResultadosClientes");
+  lista.innerHTML = '';
+  
+  if (query.length < 1) { lista.classList.add('hidden'); return; }
+
+  const filtrados = clientesCache.filter(c => c.nombre.toLowerCase().includes(query) || c.placa.toLowerCase().includes(query));
+  
+  if (filtrados.length > 0) {
+    filtrados.forEach(c => {
+      const div = document.createElement("div");
+      div.className = "p-3 hover:bg-indigo-50 cursor-pointer border-b border-slate-100 flex justify-between";
+      div.innerHTML = `<span class="font-medium text-sm">${c.nombre}</span> <span class="text-xs text-slate-500">${c.placa}</span>`;
+      div.onclick = () => seleccionarClienteModal(c);
+      lista.appendChild(div);
+    });
+    lista.classList.remove('hidden');
+  } else {
+    lista.classList.add('hidden');
+  }
+}
+
+window.seleccionarClienteModal = function(cliente) {
+  document.getElementById("modalNombre").value = cliente.nombre;
+  document.getElementById("modalPlaca").value = cliente.placa;
+  document.getElementById("modalTipo").value = cliente.tipo_vehiculo;
+  document.getElementById("listaResultadosClientes").classList.add('hidden');
+}
+
+window.abrirModalSalida = function(id, clienteId) {
+  if (!confirm("¿El cliente se va por varios días? (Ausencia Temporal)\n\nSi solo se va definitivamente, cancele y use la opción del menú.")) return;
+  
+  const fecha = prompt("Fecha de regreso (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+  if (!fecha) return;
+
+  procesarSalidaTemporal(id, fecha);
+}
+
+window.liberarPuesto = async function(id) {
+  if (!confirm("¿Dar salida definitiva y liberar puesto?")) return;
+  try {
+    const res = await fetch("/api/puestos?id=" + id, { method: "PATCH" });
+    if (res.ok) {
+      mostrarToast("Puesto liberado");
+      cargarPuestos();
+    }
+  } catch (e) { mostrarToast("Error", "error"); }
+}
+
+async function procesarSalidaTemporal(id, fecha) {
   try {
     const res = await fetch("/api/puestos", {
-      method: "POST",
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ numero })
+      body: JSON.stringify({
+        id: id,
+        accion: "salida_temporal",
+        fecha_regreso: fecha
+      })
     });
-
     const data = await res.json();
     if (data.success) {
-      document.getElementById("numeroPuesto").value = "";
+      mostrarToast("Ausencia activada. Puesto libre.");
       cargarPuestos();
-      mostrarToast("Puesto agregado al mapa");
     } else {
-      mostrarToast(data.error, "error");
+      mostrarToast("Error: " + (data.error || "Desconocido"), "error");
     }
-  } catch (error) {
+  } catch (e) {
+    console.error(e);
     mostrarToast("Error de conexión", "error");
   }
 }
 
-let puestoAOcuparId = null;
-
-window.abrirModalOcupar = function(id) {
-  puestoAOcuparId = id;
-  const select = document.getElementById("clienteSelect");
-  select.innerHTML = '<option value="">-- Seleccione cliente --</option>';
+window.confirmarAsignar = async function() {
+  const nombre = document.getElementById("modalNombre").value.trim();
+  const placa = document.getElementById("modalPlaca").value.trim().toUpperCase();
+  const tipo = document.getElementById("modalTipo").value;
   
-  allClients.forEach(c => {
-    const option = document.createElement("option");
-    option.value = c.id;
-    option.text = `${c.nombre} - ${c.placa} (${c.tipo_vehiculo})`;
-    select.appendChild(option);
-  });
+  if (!nombre || !placa) {
+    mostrarToast("Nombre y Placa son obligatorios", "error");
+    return;
+  }
 
-  const modal = document.getElementById("modalOcupar");
-  modal.classList.remove("hidden");
-  setTimeout(() => {
-    modal.firstElementChild.classList.remove("scale-95", "opacity-0");
-    modal.firstElementChild.classList.add("scale-100", "opacity-100");
-  }, 10);
+  try {
+    // 1. Crear/Buscar Cliente
+    const resCliente = await fetch("/api/clientes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nombre, placa, tipo_vehiculo: tipo })
+    });
+    const dataCliente = await resCliente.json();
+
+    let clienteId = dataCliente.id; 
+    if (!clienteId) {
+       const clientes = await (await fetch("/api/clientes")).json();
+       const encontrado = clientes.find(c => c.placa === placa);
+       if(encontrado) clienteId = encontrado.id;
+    }
+
+    if (!clienteId) return mostrarToast("Error obteniendo ID cliente", "error");
+
+    // --- PERSISTENCIA DE AUSENCIA ---
+    let llavePayload = null;
+
+    if (puestoSeleccionado.llave_caracteristicas) {
+      try {
+        const infoActual = JSON.parse(puestoSeleccionado.llave_caracteristicas);
+        // Si hay ausencia activa, la mantenemos en la llave para no borrarla
+        if (infoActual.tipo === 'ausencia') {
+          llavePayload = puestoSeleccionado.llave_caracteristicas; 
+        }
+      } catch(e) {}
+    }
+
+    // 2. Asignar Puesto
+    const resPuesto = await fetch("/api/puestos", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        id: puestoSeleccionado.id, 
+        cliente_id: clienteId, 
+        estado: 'ocupado',
+        llave: llavePayload
+      })
+    });
+
+    if (resPuesto.ok) {
+      mostrarToast("Vehículo asignado");
+      cerrarModalAsignar();
+      cargarPuestos();
+    } else {
+      mostrarToast("Error asignando puesto", "error");
+    }
+  } catch (e) {
+    console.error(e);
+    mostrarToast("Error de conexión", "error");
+  }
 }
 
-window.confirmarOcupar = async function() {
-  const clienteId = document.getElementById("clienteSelect").value;
-  if (!clienteId) return mostrarToast("Seleccione cliente", "error");
+window.cerrarModalAsignar = function() {
+  const modal = document.getElementById("modalAsignar");
+  const content = document.getElementById("modalContent");
+  content.classList.add("scale-95", "opacity-0");
+  content.classList.remove("scale-100", "opacity-100");
+  setTimeout(() => { modal.classList.add("hidden"); modal.classList.remove("flex"); }, 200);
+}
+
+window.crearPuestoRapido = async function() {
+  const numero = prompt("Número del nuevo puesto:");
+  if (!numero) return; 
+  try {
+    const res = await fetch("/api/puestos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ numero }) });
+    const data = await res.json();
+    if (data.success) {
+      mostrarToast("Puesto creado");
+      cargarPuestos();
+    } else {
+      mostrarToast("Error: " + (data.error || "Desconocido"), "error");
+    }
+  } catch (e) { mostrarToast("Error", "error"); }
+}
+
+// --- REGRESOS ---
+window.gestionarRegresos = function() {
+  const puestosAusencia = allSpots.filter(s => {
+    if (!s.llave_caracteristicas) return false;
+    try { return JSON.parse(s.llave_caracteristicas).tipo === 'ausencia'; } catch(e) { return false; }
+  });
+
+  if (puestosAusencia.length === 0) return alert("No hay ausencias activas.");
+
+  let msg = "Seleccione ID de puesto para REGRESO:\n\n";
+  puestosAusencia.forEach(p => {
+    const info = JSON.parse(p.llave_caracteristicas);
+    msg += `${p.id}. Puesto #${p.numero} (Regresa: ${info.fecha_regreso})\n`;
+  });
+  
+  const sel = prompt(msg);
+  if (sel) procesarRegreso(sel);
+}
+
+async function procesarRegreso(puestoId) {
+  if(!confirm("¿Restaurar cliente dueño y desalojar pasajero?")) return;
+  
+  const spot = allSpots.find(s => s.id == puestoId);
+  if(!spot) return;
+  const info = JSON.parse(spot.llave_caracteristicas);
+  const clienteOriginalId = info.cliente_id_original;
 
   try {
     const res = await fetch("/api/puestos", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: puestoAOcuparId, cliente_id: clienteId })
+      body: JSON.stringify({
+        id: puestoId,
+        cliente_id: clienteOriginalId,
+        estado: 'ocupado',
+        llave: null 
+      })
     });
 
-    const data = await res.json();
-    if (data.success) {
-      cerrarModalOcupar();
+    if (res.ok) {
+      mostrarToast("Cliente restaurado correctamente");
       cargarPuestos();
-      mostrarToast("Vehículo estacionado");
     }
-  } catch (e) { mostrarToast("Error", "error"); }
-}
-
-window.cerrarModalOcupar = function() {
-  const modal = document.getElementById("modalOcupar");
-  modal.firstElementChild.classList.remove("scale-100", "opacity-100");
-  modal.firstElementChild.classList.add("scale-95", "opacity-0");
-  setTimeout(() => modal.classList.add("hidden"), 200);
-}
-
-window.liberarPuesto = async function(id) {
-  if (!confirm("¿Liberar puesto?")) return;
-  try {
-    await fetch("/api/puestos?id=" + id, { method: "PATCH" });
-    cargarPuestos();
-    mostrarToast("Puesto liberado");
-  } catch (e) { mostrarToast("Error", "error"); }
-}
-
-window.eliminarPuesto = async function(id) {
-  if (!confirm("¿Eliminar puesto?")) return;
-  try {
-    await fetch("/api/puestos?id=" + id, { method: "DELETE" });
-    
-    const totalPages = Math.ceil(allSpots.length / itemsPerPage);
-    if (currentPage === totalPages && (allSpots.length - 1) % itemsPerPage === 0 && currentPage > 1) {
-      currentPage--;
-    }
-    cargarPuestos();
-    mostrarToast("Puesto eliminado");
-  } catch (e) { mostrarToast("Error", "error"); }
-}
-
-window.toggleMenu = function() {
-  document.getElementById('mobileMenu').classList.toggle('hidden');
+  } catch (e) { mostrarToast("Error en regreso", "error"); }
 }

@@ -3,155 +3,194 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historial - Parqueadero</title>
+    <title>Historial | ParkingSys</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    },
-                }
-            }
-        }
-    </script>
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        
-        .elegant-input { background: #ffffff; border: 1px solid #cbd5e1; color: #334155; transition: all 0.3s ease; }
-        .elegant-input:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-        
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        .custom-input { background: #ffffff; border: 1px solid #cbd5e1; color: #334155; transition: all 0.2s; padding: 8px 12px; border-radius: 8px; width: 100%; }
+        .custom-input:focus { border-color: #6366f1; outline: none; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 20px; }
         
-        .page-btn { transition: all 0.2s; }
-        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        @media (max-width: 1024px) {
+          table, thead, tbody, th, td, tr { display: block; }
+          thead tr { position: absolute; top: -9999px; left: -9999px; }
+          tr { background: white; border: 1px solid #e2e8f0; margin-bottom: 16px; border-radius: 12px; padding: 16px; }
+          td { border: none; position: relative; padding: 8px 0; display: flex; justify-content: space-between; align-items: center; text-align: right; border-bottom: 1px dashed #f1f5f9; }
+          td:last-child { border-bottom: none; }
+          td:before { content: attr(data-label); font-weight: 600; color: #64748b; text-align: left; margin-right: 12px; font-size: 13px; }
+        }
     </style>
 </head>
 <body class="text-slate-700 antialiased flex h-screen overflow-hidden">
 
-    <!-- SIDEBAR -->
-    <aside class="w-64 bg-white border-r border-slate-200 flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20">
-        <div class="h-16 flex items-center px-8 border-b border-slate-100">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
-                    <i class="fa-solid fa-square-parking text-sm"></i>
-                </div>
-                <h1 class="text-xl font-bold text-slate-800 tracking-tight">PARKING<span class="text-blue-600">SYS</span></h1>
+    <!-- SIDEBAR UNIFICADO -->
+    <aside class="hidden lg:flex w-64 bg-white border-r border-slate-200 flex-col shadow-sm z-20">
+        <div class="h-16 flex items-center px-6 border-b border-slate-100">
+            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200">
+                <i class="fa-solid fa-square-parking text-white text-sm"></i>
             </div>
+            <h1 class="text-lg font-bold text-slate-800">Parking<span class="text-indigo-600">Sys</span></h1>
         </div>
-        <nav class="flex-1 overflow-y-auto py-6 px-4 space-y-1">
-            <p class="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Menú</p>
-            <a href="../dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition-colors group"><i class="fa-solid fa-chart-line w-5 text-slate-400 group-hover:text-blue-500"></i> <span>Dashboard</span></a>
-            <a href="clientes.html" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition-colors group"><i class="fa-solid fa-users w-5 text-slate-400 group-hover:text-blue-500"></i> <span>Clientes</span></a>
-            <a href="puestos.html" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition-colors group"><i class="fa-solid fa-layer-group w-5 text-slate-400 group-hover:text-blue-500"></i> <span>Puestos</span></a>
-            <a href="caja.html" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition-colors group"><i class="fa-solid fa-cash-register w-5 text-slate-400 group-hover:text-blue-500"></i> <span>Caja</span></a>
-            <a href="gastos.html" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition-colors group"><i class="fa-solid fa-receipt w-5 text-slate-400 group-hover:text-blue-500"></i> <span>Gastos</span></a>
-            
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <a href="/dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-chart-pie w-5"></i> Dashboard</a>
+            <a href="/pages/clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-users w-5"></i> Clientes</a>
+            <a href="/pages/puestos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-layer-group w-5"></i> Puestos</a>
+            <a href="/pages/caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-cash-register w-5"></i> Caja</a>
+            <a href="/pages/gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-receipt w-5"></i> Gastos</a>
             <!-- ACTIVO -->
-            <a href="historial.html" class="flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-600 rounded-xl font-medium transition-colors group"><i class="fa-solid fa-clock-rotate-left w-5"></i> <span>Historial</span></a>
-            
-            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-medium transition-colors group"><i class="fa-solid fa-gear w-5 text-slate-400 group-hover:text-blue-500"></i> <span>Configuración</span></a>
+            <a href="/pages/historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100">
+                <i class="fa-solid fa-clock-rotate-left w-5"></i> Historial
+            </a>
         </nav>
         <div class="p-4 border-t border-slate-100">
-            <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition cursor-pointer">
-                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-600 to-yellow-400 border-2 border-white shadow-sm"></div>
-                <div><p class="text-sm font-semibold text-slate-800">Admin</p><p class="text-xs text-emerald-500">En línea</p></div>
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold">A</div>
+                <div class="text-xs"><p class="font-bold">Admin</p></div>
             </div>
         </div>
     </aside>
 
     <!-- MAIN -->
-    <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
-        <header class="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 z-30 sticky top-0">
-            <h2 class="text-xl font-bold text-slate-800">Historial de Movimientos</h2>
-            <div class="flex items-center gap-3">
-                <span class="text-sm font-medium text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm" id="fecha-actual"></span>
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
+        <!-- HEADER -->
+        <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-10">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button>
+                <h2 class="text-lg lg:text-xl font-bold text-slate-800">Historial de Movimientos</h2>
             </div>
+            <span id="fecha-actual" class="text-xs lg:text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200"></span>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-8">
+        <div class="flex-1 overflow-y-auto p-4 lg:p-8 custom-scroll">
             
-            <!-- KPI CARDS -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex flex-col">
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Visitas</span>
-                    <span class="text-3xl font-bold text-slate-800 mt-1" id="kpiVisits">0</span>
+            <!-- KPIs -->
+            <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div><span class="text-xs font-bold text-slate-400 uppercase block">Total Registros</span><span class="text-2xl font-bold text-slate-800 block mt-1" id="kpiVisits">0</span></div>
+                    <i class="fa-solid fa-list-ol text-slate-200 text-2xl"></i>
                 </div>
-                <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex flex-col border-l-4 border-l-emerald-500">
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Recaudado</span>
-                    <span class="text-2xl font-bold text-emerald-600 mt-1 font-mono" id="kpiRevenue">$0.00</span>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between border-l-4 border-l-emerald-500">
+                    <div><span class="text-xs font-bold text-slate-400 uppercase block">Recaudado</span><span class="text-xl font-bold text-emerald-600 font-mono block mt-1" id="kpiRevenue">$0</span></div>
+                    <i class="fa-solid fa-money-bill-trend-up text-emerald-100 text-2xl"></i>
                 </div>
-                <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex flex-col">
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Promedio Estadía</span>
-                    <span class="text-3xl font-bold text-slate-800 mt-1" id="kpiAvgTime">0h</span>
-                </div>
-                <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex flex-col border-l-4 border-l-red-500">
-                    <span class="text-xs font-bold text-red-500 uppercase tracking-wider flex items-center gap-2">
-                        <i class="fa-solid fa-file-invoice-dollar"></i> Pendientes
-                    </span>
-                    <span class="text-3xl font-bold text-red-600 mt-1" id="kpiPending">0</span>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between border-l-4 border-l-amber-500">
+                    <div><span class="text-xs font-bold text-slate-400 uppercase block">En Parqueo</span><span class="text-2xl font-bold text-amber-600 block mt-1" id="kpiActive">0</span></div>
+                    <i class="fa-solid fa-car text-amber-100 text-2xl"></i>
                 </div>
             </div>
 
-            <!-- BARRA DE FILTROS -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6 flex flex-wrap gap-4 items-center">
-                <div class="flex items-center gap-2">
-                    <span class="text-xs font-bold text-slate-500">Desde:</span>
-                    <input type="date" id="filterDateStart" class="elegant-input px-3 py-1.5 rounded text-sm">
+            <!-- BARRA DE HERRAMIENTAS (Filtros + Acciones) -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6 flex flex-col xl:flex-row gap-4 items-center justify-between">
+                <div class="flex flex-wrap gap-3 items-center w-full xl:w-auto">
+                    <input type="date" id="filterDateStart" class="custom-input text-sm w-32" onchange="applyFilters()">
+                    <input type="date" id="filterDateEnd" class="custom-input text-sm w-32" onchange="applyFilters()">
+                    
+                    <div class="relative">
+                        <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                        <input type="text" id="filterPlate" placeholder="Placa..." class="custom-input pl-8 text-sm w-32 xl:w-48" onkeyup="applyFilters()">
+                    </div>
+
+                    <!-- SELECTOR DE TIPO (NUEVO) -->
+                    <select id="filterType" class="custom-input text-sm w-32 xl:w-40 cursor-pointer" onchange="applyFilters()">
+                        <option value="all">Todo Tipo</option>
+                        <option value="Carro">Carro</option>
+                        <option value="Moto">Moto</option>
+                        <option value="Camioneta">Camioneta</option>
+                    </select>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-xs font-bold text-slate-500">Hasta:</span>
-                    <input type="date" id="filterDateEnd" class="elegant-input px-3 py-1.5 rounded text-sm">
+
+                <div class="flex items-center gap-2 w-full xl:w-auto">
+                    <!-- BOTÓN MANUAL (NUEVO) -->
+                    <button onclick="openModalAddHistory()" class="flex-1 xl:flex-none bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Manual
+                    </button>
+
+                    <!-- SELECTOR DE DESCARGA (NUEVO) -->
+                    <select id="downloadType" class="custom-input text-sm w-auto cursor-pointer">
+                        <option value="all">Descargar Todo</option>
+                        <option value="Carro">Solo Carros</option>
+                        <option value="Moto">Solo Motos</option>
+                        <option value="Camioneta">Solo Camionetas</option>
+                    </select>
+                    <button onclick="downloadReport()" class="flex-1 xl:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-download"></i> CSV
+                    </button>
                 </div>
-                <div class="h-8 w-px bg-slate-200 mx-2 hidden md:block"></div>
-                <div class="relative flex-1 max-w-xs">
-                    <input type="text" id="filterPlate" placeholder="Buscar por Placa..." class="elegant-input pl-9 pr-4 py-1.5 rounded-full text-sm focus:ring-blue-500">
-                    <i class="fa-solid fa-search absolute left-3 top-2 text-gray-400 text-xs"></i>
-                </div>
-                <button onclick="applyFilters()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition flex items-center gap-2 shadow-md">
-                    <i class="fa-solid fa-filter"></i> Filtrar
-                </button>
             </div>
 
-            <!-- TABLA HISTORIAL -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-full flex flex-col">
-                <div class="overflow-x-auto flex-1">
+            <!-- TABLA -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col min-h-[500px]">
+                <div class="overflow-x-auto flex-1 custom-scroll">
                     <table class="w-full text-left border-collapse">
-                        <thead class="bg-slate-50 text-slate-500 text-xs uppercase sticky top-0 z-10">
+                        <thead class="bg-slate-50 text-slate-500 text-xs uppercase sticky top-0 hidden lg:table-header-group">
                             <tr>
                                 <th class="px-6 py-3 font-semibold">Fecha</th>
                                 <th class="px-6 py-3 font-semibold">Entrada</th>
                                 <th class="px-6 py-3 font-semibold">Salida</th>
                                 <th class="px-6 py-3 font-semibold">Placa</th>
-                                <th class="px-6 py-3 font-semibold">Vehículo</th>
+                                <th class="px-6 py-3 font-semibold">Tipo</th>
                                 <th class="px-6 py-3 font-semibold">Duración</th>
                             </tr>
                         </thead>
-                        <tbody id="historyTableBody" class="text-sm text-slate-700 divide-y divide-slate-100">
-                            <!-- JS Render -->
-                        </tbody>
+                        <tbody id="historyTableBody" class="text-sm text-slate-700 divide-y divide-slate-100"></tbody>
                     </table>
                 </div>
-
-                <!-- Paginación -->
                 <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <span class="text-xs text-slate-500" id="paginationInfo">Mostrando 0 a 0 de 0 registros</span>
-                    <div class="flex items-center gap-1" id="paginationControls"></div>
+                    <span class="text-xs text-slate-500 font-medium" id="paginationInfo"></span>
+                    <div class="flex items-center gap-2" id="paginationControls"></div>
                 </div>
             </div>
-
         </div>
     </main>
 
-    <!-- Enlace al JS externo -->
-    <script src="../parqueo/js/historial.js"></script>
+    <!-- MENÚ MÓVIL -->
+    <div id="mobileMenu" class="fixed inset-0 bg-slate-900/50 z-40 hidden lg:hidden backdrop-blur-sm">
+        <div class="bg-white w-64 h-full shadow-xl flex flex-col p-4">
+            <div class="flex items-center justify-between mb-8"><h1 class="text-lg font-bold text-slate-800">Menú</h1><button onclick="toggleMenu()" class="text-slate-500"><i class="fa-solid fa-xmark text-xl"></i></button></div>
+            <nav class="space-y-2">
+                <a href="/pages/historial.html" class="block px-4 py-3 rounded-lg bg-indigo-50 text-indigo-700 font-bold"><i class="fa-solid fa-clock-rotate-left w-6"></i> Historial</a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- MODAL AGREGAR MANUAL (NUEVO) -->
+    <div id="modalAddHistory" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-50 transition-opacity opacity-0">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0 duration-200">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-2xl">
+                <h3 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-pen-to-square text-indigo-500 mr-2"></i> Registro Manual</h3>
+                <button onclick="closeModalAddHistory()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <form id="manualForm">
+                    <div class="relative">
+                        <i class="fa-solid fa-car absolute left-3 top-3 text-slate-400"></i>
+                        <input id="manualPlate" type="text" placeholder="Placa del Vehículo" class="custom-input pl-10 uppercase" required>
+                    </div>
+                    <div class="relative">
+                        <i class="fa-solid fa-list absolute left-3 top-3 text-slate-400"></i>
+                        <select id="manualType" class="custom-input pl-10 appearance-none cursor-pointer">
+                            <option value="Carro">Carro</option>
+                            <option value="Moto">Moto</option>
+                            <option value="Camioneta">Camioneta</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down absolute right-4 top-3.5 text-xs text-slate-400 pointer-events-none"></i>
+                    </div>
+                    <div class="relative">
+                        <i class="fa-solid fa-map-pin absolute left-3 top-3 text-slate-400"></i>
+                        <input id="manualSpot" type="text" placeholder="Puesto (Opcional)" class="custom-input pl-10">
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-3">
+                <button onclick="closeModalAddHistory()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200 transition-colors">Cancelar</button>
+                <button onclick="saveManualHistory()" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 shadow-md transition-colors">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/historial.js"></script>
 </body>
 </html>
