@@ -28,19 +28,15 @@
     <style>
         body { 
             font-family: 'Inter', sans-serif; 
-            /* Asegurar que el body tenga el color oscuro por defecto */
             background-color: #0f172a; 
-            /* Asegurar que sea clicable */
             pointer-events: auto !important;
         }
         
-        /* Forzar z-index en el contenedor para que esté arriba de todo */
         #loginContainer {
             position: relative;
             z-index: 50;
         }
 
-        /* Animación de error (Sacudida) */
         .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes shake {
             10%, 90% { transform: translate3d(-1px, 0, 0); }
@@ -52,30 +48,20 @@
 </head>
 <body class="text-slate-200 antialiased h-screen w-full flex items-center justify-center p-4">
 
-    <!-- SCRIPT DE LIMPIEZA FORZADA (Anti-Gris) -->
     <script>
         (function() {
-            // 1. Forzar fondo oscuro por si el CSS falla
             document.body.style.backgroundColor = '#0f172a';
-            
-            // 2. Buscar y eliminar cualquier elemento con position fixed que no sea parte del diseño
             const allElements = document.querySelectorAll('*');
             allElements.forEach(el => {
                 const style = window.getComputedStyle(el);
-                // Si es un elemento fijo, con z-index alto, y NO es un modal esperado
                 if (style.position === 'fixed' && style.zIndex > 10 && el.id !== 'mobileMenu') {
-                    // Lo ocultamos por si acaso
                     el.style.display = 'none';
                 }
             });
         })();
     </script>
 
-    <!-- Contenedor del Login -->
-    <!-- Añadido ID 'loginContainer' y z-50 -->
     <div id="loginContainer" class="w-full max-w-md relative z-50">
-        
-        <!-- Logo / Header -->
         <div class="text-center mb-8">
             <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl shadow-2xl shadow-blue-500/30 mb-4">
                 <i class="fa-solid fa-square-parking text-2xl text-white"></i>
@@ -84,11 +70,8 @@
             <p class="text-slate-400 text-sm">Ingresa tus credenciales para continuar</p>
         </div>
 
-        <!-- Tarjeta de Login -->
         <div id="loginCard" class="bg-slate-800/50 backdrop-blur-xl border border border-white/10 rounded-2xl p-8 shadow-2xl">
             <form id="loginForm" onsubmit="event.preventDefault(); login()">
-                
-                <!-- Usuario -->
                 <div class="mb-5">
                     <label class="block text-xs font-bold text-blue-400 uppercase mb-1">Usuario</label>
                     <div class="relative group">
@@ -100,30 +83,24 @@
                     </div>
                 </div>
 
-                <!-- Contraseña -->
                 <div class="mb-6">
                     <label class="block text-xs font-bold text-blue-400 uppercase mb-1">Contraseña</label>
                     <div class="relative group">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <i class="fa-solid fa-lock text-slate-400 group-focus-within:text-blue-400"></i>
                         </div>
-                        <!-- Input Password -->
                         <input type="password" id="pass" placeholder="•••••••••" value="1234"
                                class="w-full bg-slate-900/50 border border-slate-600 text-white rounded-xl py-3 pl-10 pr-12 text-sm placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all" required>
-                        
-                        <!-- Botón Ojo -->
                         <button type="button" onclick="togglePassword()" class="absolute right-2 top-3 text-slate-400 hover:text-white transition-colors focus:outline-none z-10">
                             <i class="fa-regular fa-eye" id="eyeIcon"></i>
                         </button>
                     </div>
                 </div>
 
-                <!-- Mensaje de Error (Oculto por defecto) -->
                 <div id="errorMensaje" class="hidden mb-4 p-3 bg-red-500/20 text-red-200 text-red-100 text-sm rounded-lg text-center border border-red-500/30">
                     <i class="fa-solid fa-circle-exclamation mr-2"></i> Usuario o contraseña incorrectos.
                 </div>
 
-                <!-- Botón Login -->
                 <button type="submit" id="btnLogin" class="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-blue-500/40 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 z-10 relative">
                     <span>Ingresar</span>
                     <i class="fa-solid fa-arrow-right"></i>
@@ -131,7 +108,6 @@
             </form>
         </div>
 
-        <!-- Texto inferior -->
         <div class="text-center mt-6">
             <p class="text-slate-500 text-xs">
                 © 2023 ELIMAR PARKING SYSTEMS. <br>
@@ -140,22 +116,16 @@
         </div>
     </div>
 
-    <!-- Script Login (Integrado) -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            
-            // CONFIGURACIÓN DE SEGURIDAD
             const USER_VALIDO = 'admin';
             const PASS_VALIDO = '1234';
 
-            // 1. FUNCIÓN TOGGLE PASSWORD (Ver/Ocultar)
             window.togglePassword = function() {
                 const passInput = document.getElementById('pass');
                 const eyeIcon = document.getElementById('eyeIcon');
                 const type = passInput.getAttribute('type');
-                const isPassword = type === 'password';
-
-                if (isPassword) {
+                if (type === 'password') {
                     passInput.setAttribute('type', 'text');
                     eyeIcon.classList.remove('fa-eye');
                     eyeIcon.classList.add('fa-eye-slash');
@@ -166,33 +136,22 @@
                 }
             };
 
-            // 2. FUNCIÓN LOGIN
             window.login = function() {
                 const user = document.getElementById('user').value.trim();
                 const pass = document.getElementById('pass').value;
                 const errorDiv = document.getElementById('loginCard'); 
                 const errorMensaje = document.getElementById('errorMensaje');
 
-                // Intentar login
                 if (user === USER_VALIDO && pass === PASS_VALIDO) {
-                    // ÉXITO
                     localStorage.setItem('isLoggedIn', 'true');
                     localStorage.setItem('userName', user);
-                    
                     const btn = document.getElementById('btnLogin');
-                    const originalText = btn.innerHTML;
                     btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verificando...';
-                    btn.disabled = true; // Evitar doble click
-                    
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 800);
-
+                    btn.disabled = true; 
+                    setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
                 } else {
-                    // ERROR
                     errorMensaje.classList.remove('hidden');
                     errorDiv.classList.add('shake');
-                    
                     setTimeout(() => {
                         errorDiv.classList.remove('shake');
                         errorMensaje.classList.add('hidden');
@@ -200,18 +159,14 @@
                 }
             };
 
-            // 3. COMPROBACIÓN DE SESIÓN
             function checkSession() {
                 const isLogged = localStorage.getItem('isLoggedIn');
                 const currentPath = window.location.pathname;
-
                 if (currentPath.includes('index.html') && isLogged) {
                     window.location.href = 'dashboard.html'; 
                 }
             }
-
             checkSession();
-
         });
     </script>
 </body>

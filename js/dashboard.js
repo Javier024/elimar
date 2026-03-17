@@ -35,16 +35,24 @@ function mostrarFecha() {
 
 function toggleMenu() {
     const menu = document.getElementById('mobileMenu');
-    if (!menu) return;
+    const menuContent = document.getElementById('mobileMenuContent');
+    if (!menu || !menuContent) return;
+    const isHidden = menu.classList.contains('hidden');
 
-    // Usamos style.display directamente para evitar conflictos con Tailwind 'hidden'
-    // y asegurar que el menú se abra/cierre siempre.
-    if (menu.style.display === 'none' || menu.style.display === '') {
-        menu.style.display = 'flex';
-        console.log("Menú abierto");
+    if (isHidden) {
+        menu.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            menu.classList.remove('opacity-0');
+            menuContent.classList.remove('-translate-x-full');
+        });
+        document.body.style.overflow = 'hidden';
     } else {
-        menu.style.display = 'none';
-        console.log("Menú cerrado");
+        menu.classList.add('opacity-0');
+        menuContent.classList.add('-translate-x-full');
+        setTimeout(() => {
+            menu.classList.add('hidden');
+            document.body.style.overflow = '';
+        }, 300);
     }
 }
 
@@ -60,15 +68,9 @@ async function cargarDatosDashboard() {
     ocultarError();
 
     try {
-        console.log("Fetching /api/dashboard...");
         const respuesta = await fetch('/api/dashboard');
-        
-        if (!respuesta.ok) {
-            throw new Error(`Error HTTP: ${respuesta.status}`);
-        }
-        
+        if (!respuesta.ok) throw new Error(`Error HTTP: ${respuesta.status}`);
         const datos = await respuesta.json();
-        console.log("Datos recibidos:", datos);
 
         if (datos.kpi) {
             actualizarKPI('vehiculos', datos.kpi.vehiculos || 0);
@@ -86,22 +88,17 @@ async function cargarDatosDashboard() {
             if (datos.chartFinanzas && Array.isArray(datos.chartFinanzas)) {
                 renderizarGraficoFinanzas(datos.chartFinanzas);
             }
-        } catch (err) {
-            console.error("Error renderizando gráfico finanzas:", err);
-        }
+        } catch (err) { console.error("Error renderizando finanzas:", err); }
 
         try {
             renderizarGraficoOcupacion(datos.kpi ? datos.kpi.ocupacionPorcentaje : 0);
-        } catch (err) {
-            console.error("Error renderizando gráfico ocupación:", err);
-        }
+        } catch (err) { console.error("Error renderizando ocupación:", err); }
 
     } catch (error) {
         console.error('Error cargando dashboard:', error);
         mostrarError(error.message || "Error de conexión desconocido");
     } finally {
         mostrarLoaders(false);
-        console.log("Dashboard: Carga finalizada.");
     }
 }
 
@@ -112,10 +109,7 @@ function actualizarKPI(key, valor) {
 
 function mostrarLoaders(mostrar) {
     const loaders = document.querySelectorAll('.loader');
-    loaders.forEach(l => {
-        if(mostrar) l.classList.remove('hidden');
-        else l.classList.add('hidden');
-    });
+    loaders.forEach(l => { if(mostrar) l.classList.remove('hidden'); else l.classList.add('hidden'); });
 }
 
 function mostrarError(mensaje) {
@@ -132,7 +126,6 @@ function ocultarError() {
     if(banner) banner.classList.add('hidden');
 }
 
-// --- CHART.JS ---
 let chartFinanzasInstance = null;
 let chartOcupacionInstance = null;
 
@@ -141,63 +134,31 @@ function renderizarGraficoFinanzas(data) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     
-    if (!Array.isArray(data)) {
-        console.warn("chartFinanzas no es un array:", data);
-        return;
-    }
+    if (!Array.isArray(data)) return;
 
     const mapaDatos = {};
-    
     data.forEach(item => {
-        if (!mapaDatos[item.date]) {
-            mapaDatos[item.date] = { ingresos: 0, gastos: 0 };
-        }
-        if (item.type === 'ingreso') {
-            mapaDatos[item.date].ingresos += (item.amount || 0);
-        } else if (item.type === 'gasto') {
-            mapaDatos[item.date].gastos += (item.amount || 0);
-        }
+        if (!mapaDatos[item.date]) mapaDatos[item.date] = { ingresos: 0, gastos: 0 };
+        if (item.type === 'ingreso') mapaDatos[item.date].ingresos += (item.amount || 0);
+        else if (item.type === 'gasto') mapaDatos[item.date].gastos += (item.amount || 0);
     });
 
     const fechas = Object.keys(mapaDatos).sort();
     const datosIngresos = fechas.map(f => mapaDatos[f].ingresos);
     const datosGastos = fechas.map(f => mapaDatos[f].gastos);
 
-    if (chartFinanzasInstance) {
-        chartFinanzasInstance.destroy();
-    }
+    if (chartFinanzasInstance) chartFinanzasInstance.destroy();
 
     chartFinanzasInstance = new Chart(ctx, {
         type: 'line',
         data: {
             labels: fechas,
             datasets: [
-                { 
-                    label: 'Ingresos', 
-                    data: datosIngresos, 
-                    borderColor: '#4f46e5', 
-                    backgroundColor: 'rgba(79, 70, 229, 0.1)', 
-                    tension: 0.4, 
-                    fill: true 
-                },
-                { 
-                    label: 'Gastos', 
-                    data: datosGastos, 
-                    borderColor: '#f43f5e', 
-                    backgroundColor: 'rgba(244, 63, 94, 0.05)', 
-                    borderDash: [5, 5], 
-                    tension: 0.4 
-                }
+                { label: 'Ingresos', data: datosIngresos, borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', tension: 0.4, fill: true },
+                { label: 'Gastos', data: datosGastos, borderColor: '#f43f5e', backgroundColor: 'rgba(244, 63, 94, 0.05)', borderDash: [5, 5], tension: 0.4 }
             ]
         },
-        options: { 
-            responsive: true, 
-            maintainAspectRatio: false, 
-            scales: { 
-                y: { beginAtZero: true, grid: { borderDash: [2, 2] } }, 
-                x: { grid: { display: false } } 
-            } 
-        }
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { borderDash: [2, 2] } }, x: { grid: { display: false } } } }
     });
 }
 
@@ -206,25 +167,14 @@ function renderizarGraficoOcupacion(porcentaje) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
-    if (chartOcupacionInstance) {
-        chartOcupacionInstance.destroy();
-    }
+    if (chartOcupacionInstance) chartOcupacionInstance.destroy();
 
     chartOcupacionInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: ['Ocupado', 'Disponible'],
-            datasets: [{ 
-                data: [porcentaje, 100 - porcentaje], 
-                backgroundColor: ['#4f46e5', '#f1f5f9'], 
-                borderWidth: 0 
-            }]
+            datasets: [{ data: [porcentaje, 100 - porcentaje], backgroundColor: ['#4f46e5', '#f1f5f9'], borderWidth: 0 }]
         },
-        options: { 
-            responsive: true, 
-            maintainAspectRatio: false, 
-            cutout: '75%', 
-            plugins: { legend: { display: false } } 
-        }
+        options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false } } }
     });
 }

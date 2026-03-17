@@ -4,57 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | ParkingSys</title>
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
     <style>
-        /* --- ESTILOS BASE --- */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        
         .chart-container { position: relative; height: 300px; width: 100%; }
         .stat-card { transition: transform 0.2s ease; }
         .stat-card:hover { transform: translateY(-2px); }
-
-        /* --- PARCHE VISUAL (Anti-Gris) --- */
-        /* Fuerza al menú móvil a ocultarse por CSS nativo */
-        #mobileMenu {
-            display: none !important;
-        }
-        
-        /* Asegura que el contenido sea clicable */
-        main, .stat-card, a, button, input {
-            pointer-events: auto !important;
-        }
-
-        .loader {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #4f46e5;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        #mobileMenu { display: none !important; }
+        main, .stat-card, a, button, input { pointer-events: auto !important; }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #4f46e5; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="text-slate-700 antialiased flex h-screen overflow-hidden bg-slate-50">
-
-    <!-- SCRIPT DE LIMPIEZA FORZADA (Se ejecuta inmediatamente) -->
     <script>
         (function() {
-            // 1. Buscar y eliminar el menú móvil para siempre
-            const menu = document.getElementById('mobileMenu');
-            if (menu) {
-                menu.remove();
-            }
-            // 2. Asegurar fondo blanco
+            const menu = document.getElementById('mobileMenu'); if(menu) menu.remove();
             document.body.style.backgroundColor = '#ffffff';
         })();
     </script>
@@ -68,172 +37,87 @@
             <h1 class="text-lg font-bold text-slate-800">Parking<span class="text-indigo-600">Sys</span></h1>
         </div>
         <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-            
-            <a href="/dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100">
-                <i class="fa-solid fa-chart-pie w-5"></i> Dashboard
-            </a>
-
-            <a href="/pages/clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">
-                <i class="fa-solid fa-users w-5"></i> Clientes
-            </a>
-            
-            <a href="/pages/puestos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">
-                <i class="fa-solid fa-layer-group w-5"></i> Puestos
-            </a>
-            
-            <a href="/pages/caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">
-                <i class="fa-solid fa-cash-register w-5"></i> Caja
-            </a>
-            
-            <a href="/pages/gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">
-                <i class="fa-solid fa-receipt w-5"></i> Gastos
-            </a>
-            
-            <a href="/pages/historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">
-                <i class="fa-solid fa-clock-rotate-left w-5"></i> Historial
-            </a>
-
-            <a href="/pages/configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">
-                <i class="fa-solid fa-gear w-5"></i> Configuración
-            </a>
+            <a href="/dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100"><i class="fa-solid fa-chart-pie w-5"></i> Dashboard</a>
+            <a href="/pages/clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-users w-5"></i> Clientes</a>
+            <a href="/pages/puestos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-layer-group w-5"></i> Puestos</a>
+            <a href="/pages/caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-cash-register w-5"></i> Caja</a>
+            <a href="/pages/gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-receipt w-5"></i> Gastos</a>
+            <a href="/pages/historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-clock-rotate-left w-5"></i> Historial</a>
+            <a href="/pages/configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-gear w-5"></i> Configuración</a>
         </nav>
-
         <div class="p-4 border-t border-slate-100 space-y-3">
             <div class="flex items-center gap-3 px-2">
                 <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold border-2 border-white">A</div>
-                <div>
-                    <p class="text-sm font-bold text-slate-800">Admin</p>
-                    <p class="text-xs text-emerald-500">Conectado</p>
-                </div>
+                <div><p class="text-sm font-bold text-slate-800">Admin</p><p class="text-xs text-emerald-500">Conectado</p></div>
             </div>
-            <button onclick="cerrarSesion()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors shadow-md">
-                <i class="fa-solid fa-power-off"></i> Cerrar Sesión
-            </button>
+            <button onclick="cerrarSesion()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors shadow-md"><i class="fa-solid fa-power-off"></i> Cerrar Sesión</button>
         </div>
     </aside>
 
     <!-- MAIN -->
     <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full bg-white">
-        
-        <!-- HEADER -->
         <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-10 shadow-sm">
-            <div class="flex items-center gap-4">
-                <h2 class="text-lg lg:text-xl font-bold text-slate-800">Resumen General</h2>
-            </div>
-            <div class="flex items-center gap-3">
-                <span id="fecha-actual" class="text-xs lg:text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">Cargando...</span>
-            </div>
+            <div class="flex items-center gap-4"><h2 class="text-lg lg:text-xl font-bold text-slate-800">Resumen General</h2></div>
+            <div class="flex items-center gap-3"><span id="fecha-actual" class="text-xs lg:text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">Cargando...</span></div>
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 lg:p-8 bg-slate-50">
-            
-            <!-- KPIs GRID -->
+            <!-- KPIs -->
             <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
-                
                 <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                    <div class="flex justify-between items-start">
-                        <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fa-solid fa-car"></i></div>
-                    </div>
-                    <div class="mt-2">
-                        <h3 class="text-2xl font-bold text-slate-800" data-kpi="vehiculos">0</h3>
-                        <p class="text-xs text-slate-500">Dentro</p>
-                    </div>
+                    <div class="flex justify-between items-start"><div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fa-solid fa-car"></i></div></div>
+                    <div class="mt-2"><h3 class="text-2xl font-bold text-slate-800" data-kpi="vehiculos">0</h3><p class="text-xs text-slate-500">Dentro</p></div>
                 </div>
-
                 <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
                     <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center"><i class="fa-solid fa-square-parking"></i></div>
-                    <div class="mt-2">
-                        <h3 class="text-2xl font-bold text-slate-800" data-kpi="libres">0</h3>
-                        <p class="text-xs text-slate-500">Libres</p>
-                    </div>
+                    <div class="mt-2"><h3 class="text-2xl font-bold text-slate-800" data-kpi="libres">0</h3><p class="text-xs text-slate-500">Libres</p></div>
                 </div>
-
                 <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
                     <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center"><i class="fa-solid fa-motorcycle"></i></div>
-                    <div class="mt-2">
-                        <h3 class="text-2xl font-bold text-slate-800" data-kpi="reservados">0</h3>
-                        <p class="text-xs text-slate-500">Reservados</p>
-                    </div>
+                    <div class="mt-2"><h3 class="text-2xl font-bold text-slate-800" data-kpi="reservados">0</h3><p class="text-xs text-slate-500">Reservados</p></div>
                 </div>
-
                 <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
                     <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center"><i class="fa-solid fa-dollar-sign"></i></div>
-                    <div class="mt-2">
-                        <h3 class="text-2xl font-bold text-slate-800" data-kpi="ingresos">$0</h3>
-                        <p class="text-xs text-slate-500">Ingresos Hoy</p>
-                    </div>
+                    <div class="mt-2"><h3 class="text-2xl font-bold text-slate-800" data-kpi="ingresos">$0</h3><p class="text-xs text-slate-500">Ingresos Hoy</p></div>
                 </div>
-
                 <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
                     <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                    <div class="mt-2">
-                        <h3 class="text-2xl font-bold text-slate-800" data-kpi="alertas">0</h3>
-                        <p class="text-xs text-slate-500">Alertas</p>
-                    </div>
+                    <div class="mt-2"><h3 class="text-2xl font-bold text-slate-800" data-kpi="alertas">0</h3><p class="text-xs text-slate-500">Alertas</p></div>
                 </div>
-
                 <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
                     <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center"><i class="fa-solid fa-users"></i></div>
-                    <div class="mt-2">
-                        <h3 class="text-2xl font-bold text-slate-800" data-kpi="clientes">0</h3>
-                        <p class="text-xs text-slate-500">Registrados</p>
-                    </div>
+                    <div class="mt-2"><h3 class="text-2xl font-bold text-slate-800" data-kpi="clientes">0</h3><p class="text-xs text-slate-500">Registrados</p></div>
                 </div>
             </div>
-
-            <!-- ERROR BANNER -->
+            <!-- Error Banner -->
             <div id="error-banner" class="hidden mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md shadow-sm flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <i class="fa-solid fa-circle-exclamation text-red-500"></i>
-                    <div>
-                        <h3 class="text-sm font-bold text-red-800">Error de conexión</h3>
-                        <p class="text-xs text-red-600">No se pudieron cargar los datos.</p>
-                    </div>
-                </div>
+                <div class="flex items-center gap-3"><i class="fa-solid fa-circle-exclamation text-red-500"></i><div><h3 class="text-sm font-bold text-red-800">Error de conexión</h3><p class="text-xs text-red-600">No se pudieron cargar los datos.</p></div></div>
                 <button onclick="window.location.reload()" class="text-xs bg-white border border-red-200 text-red-600 px-3 py-1.5 rounded hover:bg-red-50 font-medium">Reintentar</button>
             </div>
-
-            <!-- CHARTS -->
+            <!-- Charts -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                 <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm lg:col-span-2">
                     <h3 class="text-lg font-bold text-slate-800 mb-6">Flujo Financiero</h3>
-                    <div class="chart-container">
-                        <canvas id="ingresosGastosChart"></canvas>
-                    </div>
+                    <div class="chart-container"><canvas id="ingresosGastosChart"></canvas></div>
                 </div>
                 <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                     <h3 class="text-lg font-bold text-slate-800 mb-6">Ocupación</h3>
                     <div class="chart-container flex items-center justify-center relative">
                         <canvas id="ocupacionChart"></canvas>
-                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <span class="text-3xl font-bold text-slate-800" id="ocupacion-porcentaje">%</span>
-                            <span class="text-xs text-slate-500">Ocupado</span>
-                        </div>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"><span class="text-3xl font-bold text-slate-800" id="ocupacion-porcentaje">%</span><span class="text-xs text-slate-500">Ocupado</span></div>
                     </div>
                 </div>
             </div>
-
-            <!-- MOVIMIENTOS -->
+            <!-- Movimientos -->
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center">
-                    <div>
-                        <h3 class="text-lg font-bold text-slate-800">Movimientos Recientes</h3>
-                        <p class="text-sm text-slate-500">Últimos registros</p>
-                    </div>
-                    <a href="/pages/historial.html" class="text-sm font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1 group">
-                        Ver todo <i class="fa-solid fa-arrow-right text-xs transition-transform group-hover:translate-x-1"></i>
-                    </a>
+                    <div><h3 class="text-lg font-bold text-slate-800">Movimientos Recientes</h3><p class="text-sm text-slate-500">Últimos registros</p></div>
+                    <a href="/pages/historial.html" class="text-sm font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1 group">Ver todo <i class="fa-solid fa-arrow-right text-xs transition-transform group-hover:translate-x-1"></i></a>
                 </div>
-                <div class="p-6 text-center text-slate-400 text-sm">
-                    <i class="fa-solid fa-arrow-left mb-2 block text-slate-300"></i>
-                    Ve al detalle completo en el módulo de Historial.
-                </div>
+                <div class="p-6 text-center text-slate-400 text-sm"><i class="fa-solid fa-arrow-left mb-2 block text-slate-300"></i>Ve al detalle completo en el módulo de Historial.</div>
             </div>
-
         </div>
     </main>
-
-    <!-- SCRIPT DE LÓGICA DEL DASHBOARD -->
     <script src="/js/dashboard.js"></script>
 </body>
 </html>
