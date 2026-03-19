@@ -13,7 +13,6 @@ export default async function handler(req, res) {
       )
       
       // Si no hay filas (primera vez), devolvemos null
-      // El frontend manejará los valores por defecto
       if (result.rows.length === 0) {
         return res.status(200).json(null)
       }
@@ -27,18 +26,17 @@ export default async function handler(req, res) {
     if (req.method === "PUT") {
       const body = req.body
 
-      // Usamos INSERT OR REPLACE para simplificar:
-      // Si ID=1 existe -> Actualiza.
-      // Si ID=1 no existe -> Crea nuevo con ID=1.
+      // Usamos INSERT OR REPLACE para simplificar.
+      // IMPORTANTE: La lista de columnas aquí debe coincidir EXACTAMENTE con tu tabla (22 columnas)
       await db.execute({
         sql: `
           INSERT OR REPLACE INTO configuracion 
-          (id, nombre, nit, direccion, telefono,
+          (id, nombre, nit, direccion,
            tarifa_carro_hora, tarifa_carro_noche, tarifa_carro_semana, tarifa_carro_quincena, tarifa_carro_mes,
            tarifa_moto_hora, tarifa_moto_noche, tarifa_moto_semana, tarifa_moto_quincena, tarifa_moto_mes,
            tarifa_bici_hora, tarifa_bici_noche, tarifa_bici_semana, tarifa_bici_quincena, tarifa_bici_mes,
            admin_nombre, admin_email, admin_notif)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         `,
         args: [
           1, // ID Fijo
@@ -46,7 +44,6 @@ export default async function handler(req, res) {
           body.nombre,
           body.nit,
           body.direccion,
-          body.telefono,
           // Carros
           body.tarifa_carro_hora, 
           body.tarifa_carro_noche, 

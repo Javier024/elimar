@@ -2,6 +2,7 @@ import { db } from "./db.js";
 
 export default async function handler(req, res) {
   try {
+    // --- GET: LEER PUESTOS ---
     if (req.method === "GET") {
       const result = await db.execute(`
         SELECT p.*, 
@@ -12,24 +13,27 @@ export default async function handler(req, res) {
         LEFT JOIN clientes c ON p.cliente_id = c.id
         ORDER BY p.id ASC
       `);
-      const rows = result.rows.map(row => ({
-        ...row,
-        deuda: 0,
-        fecha_registro: row.fecha_registro || null 
-      }));
-      return res.status(200).json(rows);
+      // Ahora 'fecha_registro' sí se devolverá porque existe en la DB
+      return res.status(200).json(result.rows);
     }
 
+    // --- POST: CREAR PUESTO (Aquí va la fecha de registro) ---
     if (req.method === "POST") {
       const { numero } = req.body;
       if (!numero) return res.status(400).json({ error: "Número requerido" });
+      
       const check = await db.execute({ sql: "SELECT id FROM puestos WHERE numero=?", args: [numero] });
       if (check.rows.length > 0) return res.status(400).json({ error: "El número ya existe" });
       
-      await db.execute({ sql: `INSERT INTO puestos (numero, estado) VALUES (?, ?)`, args: [numero, "libre"] });
+      // INSERTAMOS 'fecha_registro' con la fecha actual
+      await db.execute({ 
+        sql: `INSERT INTO puestos (numero, estado, fecha_registro) VALUES (?, ?, ?)`, 
+        args: [numero, "libre", new Date().toISOString()] 
+      });
       return res.status(200).json({ success: true, message: "Puesto creado" });
     }
 
+    // --- PUT: ASIGNAR VEHÍCULO ---
     if (req.method === "PUT") {
       const { id, cliente_id, estado, llave, accion, fecha_regreso, nuevo_numero } = req.body;
       if (!id) return res.status(400).json({ error: "ID requerido" });
@@ -54,10 +58,12 @@ export default async function handler(req, res) {
 
         const infoAusencia = JSON.stringify({ tipo: "ausencia", cliente_id_original: clienteOriginal, fecha_regreso: fecha_regreso, fecha_salida: new Date().toISOString() });
 
-        // Actualizar Puesto
-        await db.execute({ sql: `UPDATE puestos SET estado='libre', cliente_id=NULL, fecha_registro=NULL, llave_caracteristicas=? WHERE id=?`, args: [infoAusencia, id] });
+        // NOTA: NO actualizamos fecha_registro aquí
+        await db.execute({ 
+          sql: `UPDATE puestos SET estado='libre', cliente_id=NULL, hora_inicio=NULL, llave_caracteristicas=? WHERE id=?`, 
+          args: [infoAusencia, id] 
+        });
         
-        // ACTUALIZAR HISTORIAL (Marcar salida temporal)
         await db.execute({ sql: `UPDATE historial SET exit=?, spot='AUSENCIA' WHERE exit IS NULL AND spot=?`, args: [new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'}), numeroPuesto] });
 
         return res.status(200).json({ success: true, message: "Ausencia activada" });
@@ -65,11 +71,9 @@ export default async function handler(req, res) {
 
       // CASO 3: ASIGNAR CLIENTE (INGRESO VEHÍCULO)
       if (cliente_id) {
-        // Buscar datos del cliente para el historial
         const clientData = await db.execute({ sql: "SELECT placa, tipo_vehiculo FROM clientes WHERE id=?", args: [cliente_id] });
         const clientInfo = clientData.rows[0];
         
-        // Datos del puesto
         const spotData = await db.execute({ sql: "SELECT numero FROM puestos WHERE id=?", args: [id] });
         const spotNum = spotData.rows[0].numero;
 
@@ -77,13 +81,12 @@ export default async function handler(req, res) {
         const dateStr = ahora.toISOString().split("T")[0];
         const timeStr = ahora.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
 
-        // Actualizar Puesto
+        // NOTA: NO actualizamos fecha_registro aquí. Solo hora_inicio (entrada del coche)
         await db.execute({
-          sql: `UPDATE puestos SET estado=?, cliente_id=?, fecha_registro=?, hora_inicio=strftime('%s', 'now'), llave_caracteristicas=? WHERE id=?`,
-          args: [estado || 'ocupado', cliente_id, ahora.toISOString(), llave || null, id]
+          sql: `UPDATE puestos SET estado=?, cliente_id=?, hora_inicio=strftime('%s', 'now'), llave_caracteristicas=? WHERE id=?`,
+          args: [estado || 'ocupado', cliente_id, llave || null, id]
         });
 
-        // --- INTEGRACIÓN HISTORIAL: REGISTRAR ENTRADA ---
         if (clientInfo) {
             await db.execute({
                 sql: `INSERT INTO historial (date, entry, exit, plate, type, spot, paid) VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -99,21 +102,20 @@ export default async function handler(req, res) {
       }
     }
 
-    // PATCH: LIBERAR PUESTO (SALIDA DEFINITIVA)
+    // --- PATCH: LIBERAR PUESTO ---
     if (req.method === "PATCH") {
       const { id } = req.query;
       if (!id) return res.status(400).json({ error: "ID requerido" });
 
-      // Obtener info antes de borrar para actualizar historial
       const spotInfo = await db.execute({ sql: "SELECT numero FROM puestos WHERE id=?", args: [id] });
       const spotNum = spotInfo.rows[0]?.numero;
 
+      // NOTA: NO borramos fecha_registro al liberar. El puesto sigue existiendo.
       await db.execute({
-        sql: `UPDATE puestos SET estado='libre', cliente_id=NULL, hora_inicio=NULL, fecha_registro=NULL, llave_caracteristicas=NULL WHERE id=?`,
+        sql: `UPDATE puestos SET estado='libre', cliente_id=NULL, hora_inicio=NULL, llave_caracteristicas=NULL WHERE id=?`,
         args: [id]
       });
 
-      // --- INTEGRACIÓN HISTORIAL: REGISTRAR SALIDA ---
       if(spotNum) {
         const exitTime = new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
         await db.execute({ 

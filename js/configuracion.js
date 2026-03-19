@@ -1,8 +1,7 @@
+// parqueo/js/configuracion.js
 document.addEventListener('DOMContentLoaded', function() {
     
-    // ==========================================
     // 1. CARGAR CONFIGURACIÓN (DESDE DB)
-    // ==========================================
     async function loadConfig() {
         try {
             const res = await fetch("/api/configuracion");
@@ -49,9 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // ==========================================
     // 2. GUARDAR CONFIGURACIÓN (ENVIAR A DB)
-    // ==========================================
     window.guardarTodo = async function() {
         const btn = document.querySelector('button[onclick="guardarTodo()"]');
         
@@ -129,18 +126,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // ==========================================
     // 3. LÓGICA DE PESTAÑAS (TABS)
-    // ==========================================
     window.switchTab = function(tabName) {
-        // Nombres de las pestañas
         const tabs = ['general', 'tarifas', 'perfil'];
 
         tabs.forEach(t => {
             const el = document.getElementById('content-' + t);
             const btn = document.getElementById('tab-' + t);
             
-            // Ocultar contenido y quitar estilo activo
             if (el) { 
                 el.classList.add('hidden-tab'); 
                 el.classList.remove('visible-tab'); 
@@ -148,7 +141,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (btn) btn.classList.remove('active');
         });
 
-        // Mostrar la pestaña seleccionada
         const activeContent = document.getElementById('content-' + tabName);
         const activeBtn = document.getElementById('tab-' + tabName);
 
@@ -159,16 +151,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (activeBtn) activeBtn.classList.add('active');
     };
 
-    // ==========================================
-    // 4. UTILIDADES (TOASTS Y MENU)
-    // ==========================================
-    
-    // Mostrar notificación flotante
+    // 4. UTILIDADES (TOASTS)
     function mostrarToast(mensaje, tipo = 'success') {
         const container = document.getElementById('toastContainer');
+        if(!container) return; // Seguridad extra
         const toast = document.createElement('div');
         
-        // Colores según tipo
         const bgClass = tipo === 'success' ? 'bg-emerald-600' : 'bg-red-600';
         const icon = tipo === 'success' ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-circle-exclamation"></i>';
         
@@ -177,26 +165,28 @@ document.addEventListener('DOMContentLoaded', function() {
         
         container.appendChild(toast);
         
-        // Animación de entrada
         requestAnimationFrame(() => toast.classList.remove('translate-x-10', 'opacity-0'));
         
-        // Desaparecer después de 3 segundos
         setTimeout(() => { 
             toast.classList.add('translate-x-10', 'opacity-0'); 
             setTimeout(() => toast.remove(), 500); 
         }, 3000);
     }
 
-    // Toggle menú móvil
     window.toggleMenu = function() {
-        document.getElementById('mobileMenu').classList.toggle('hidden');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobileMenuOverlay');
+        if(sidebar && overlay) {
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+    }
+    
+    function cerrarSesion() { 
+        if(confirm('Salir?')) window.location.href='../index.html'; 
     }
 
-    // ==========================================
     // 5. INICIALIZACIÓN
-    // ==========================================
-    
-    // Poner fecha actual en el header
     const fechaEl = document.getElementById('fecha-actual');
     if(fechaEl) {
         fechaEl.textContent = new Date().toLocaleDateString('es-ES', { 

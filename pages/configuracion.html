@@ -67,6 +67,12 @@
                         <button onclick="switchTab('tarifas')" id="tab-tarifas" class="nav-tab w-full text-left px-4 py-3 flex items-center gap-3 border-l-4"><i class="fa-solid fa-money-bill-wave w-5"></i> <span>Tarifas</span></button>
                         <button onclick="switchTab('perfil')" id="tab-perfil" class="nav-tab w-full text-left px-4 py-3 flex items-center gap-3 border-l-4"><i class="fa-solid fa-user-shield w-5"></i> <span>Perfil Admin</span></button>
                     </div>
+                    
+                    <div class="bg-indigo-600 rounded-xl p-6 text-white shadow-lg shadow-indigo-500/30 text-center mt-4">
+                        <p class="text-indigo-100 text-xs font-bold uppercase mb-2">Versión</p>
+                        <h3 class="text-3xl font-bold">v2.1</h3>
+                        <p class="text-indigo-100 text-xs mt-2">Configuración en DB</p>
+                    </div>
                 </div>
 
                 <!-- CONTENIDO DE LAS PESTAÑAS -->
@@ -76,10 +82,23 @@
                         <h3 class="text-lg font-bold text-slate-800 mb-6 pb-2 border-b border-slate-100">Información del Negocio</h3>
                         <form class="space-y-6">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre</label><input type="text" value="PARKING SYS" class="custom-input text-sm font-semibold"></div>
-                                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">NIT</label><input type="text" value="900.123.456-7" class="custom-input text-sm font-mono"></div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre</label>
+                                    <input type="text" id="confNombre" class="custom-input text-sm font-semibold" placeholder="Ej. Parking El Dorado">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">NIT</label>
+                                    <input type="text" id="confNit" class="custom-input text-sm font-mono" placeholder="900.123.456">
+                                </div>
                             </div>
-                            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Dirección</label><input type="text" value="Calle 123 #45-67" class="custom-input text-sm"></div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Dirección</label>
+                                <input type="text" id="confDireccion" class="custom-input text-sm" placeholder="Calle 123 # 45-67">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label>
+                                <input type="tel" id="confTelefono" class="custom-input text-sm" placeholder="+57 300 123 4567">
+                            </div>
                         </form>
                     </div>
 
@@ -87,27 +106,52 @@
                     <div id="content-tarifas" class="hidden-tab bg-white rounded-xl shadow-sm border border-slate-200 p-8">
                         <h3 class="text-lg font-bold text-slate-800 mb-6 pb-2 border-b border-slate-100">Tabla de Tarifas</h3>
                         <div class="space-y-6">
+                            
+                            <!-- CARROS -->
                             <div class="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
                                 <div class="flex items-center gap-3 mb-4">
                                     <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center"><i class="fa-solid fa-car-side"></i></div>
                                     <h4 class="font-bold text-slate-700">Automóvil / Camioneta</h4>
                                 </div>
                                 <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hora</label><input type="number" value="5000" class="custom-input text-xs font-mono font-bold"></div>
-                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Noche</label><input type="number" value="12000" class="custom-input text-xs font-mono font-bold"></div>
-                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Semana</label><input type="number" value="40000" class="custom-input text-xs font-mono font-bold"></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hora</label><input type="number" id="tarifaCarroHora" class="custom-input text-xs font-mono font-bold"></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Noche</label><input type="number" id="tarifaCarroNoche" class="custom-input text-xs font-mono font-bold"></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Semana</label><input type="number" id="tarifaCarroSemana" class="custom-input text-xs font-mono font-bold"></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Quincena</label><input type="number" id="tarifaCarroQuincenal" class="custom-input text-xs font-mono font-bold"></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Mes</label><input type="number" id="tarifaCarroMensual" class="custom-input text-xs font-mono font-bold"></div>
                                 </div>
                             </div>
-                             <div class="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
+
+                            <!-- MOTOS -->
+                            <div class="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
                                 <div class="flex items-center gap-3 mb-4">
                                     <div class="w-8 h-8 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center"><i class="fa-solid fa-motorcycle"></i></div>
                                     <h4 class="font-bold text-slate-700">Motocicleta</h4>
                                 </div>
                                 <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hora</label><input type="number" value="2500" class="custom-input text-xs font-mono font-bold"></div>
-                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Noche</label><input type="number" value="6000" class="custom-input text-xs font-mono font-bold"></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hora</label><input type="number" id="tarifaMotoHora" class="custom-input text-xs font-mono font-bold"></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Noche</label><input type="number" id="tarifaMotoNoche" class="custom-input text-xs font-mono font-bold"></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Semana</label><input type="number" id="tarifaMotoSemana" class="custom-input text-xs font-mono font-bold"></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Quincena</label><input type="number" id="tarifaMotoQuincenal" class="custom-input text-xs font-mono font-bold"></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Mes</label><input type="number" id="tarifaMotoMensual" class="custom-input text-xs font-mono font-bold"></div>
                                 </div>
                             </div>
+
+                            <!-- BICICLETAS (AGREGADO PARA COINCIDIR CON API/JS) -->
+                            <div class="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <div class="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center"><i class="fa-solid fa-bicycle"></i></div>
+                                    <h4 class="font-bold text-slate-700">Bicicleta</h4>
+                                </div>
+                                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hora</label><input type="number" id="tarifaBiciHora" class="custom-input text-xs font-mono font-bold"></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Noche</label><input type="number" id="tarifaBiciNoche" class="custom-input text-xs font-mono font-bold"></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Semana</label><input type="number" id="tarifaBiciSemana" class="custom-input text-xs font-mono font-bold"></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Quincena</label><input type="number" id="tarifaBiciQuincenal" class="custom-input text-xs font-mono font-bold"></div>
+                                    <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Mes</label><input type="number" id="tarifaBiciMensual" class="custom-input text-xs font-mono font-bold"></div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
 
@@ -120,8 +164,12 @@
                             </div>
                             <div class="flex-1 w-full space-y-4">
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre</label><input type="text" value="Administrador" class="custom-input text-sm"></div>
-                                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label><input type="email" value="admin@parking.com" class="custom-input text-sm"></div>
+                                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre</label><input type="text" id="perfNombre" class="custom-input text-sm"></div></div>
+                                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label><input type="email" id="perfEmail" class="custom-input text-sm"></div></div>
+                                </div>
+                                <div class="flex items-center gap-2 pt-2">
+                                    <input type="checkbox" id="perfNotif" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+                                    <label for="perfNotif" class="text-sm text-slate-600">Recibir notificaciones</label>
                                 </div>
                             </div>
                         </div>
@@ -131,28 +179,12 @@
         </div>
     </main>
 
-    <script>
-        // Lógica de Pestañas
-        function switchTab(tabName) {
-            // Ocultar todos los contenidos
-            document.querySelectorAll('[id^="content-"]').forEach(el => {
-                el.classList.remove('visible-tab');
-                el.classList.add('hidden-tab');
-            });
-            // Desactivar botones
-            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
-            
-            // Mostrar seleccionado
-            document.getElementById('content-' + tabName).classList.remove('hidden-tab');
-            document.getElementById('content-' + tabName).classList.add('visible-tab');
-            document.getElementById('tab-' + tabName).classList.add('active');
-        }
+    <!-- Contenedor de Toasts (Notificaciones) -->
+    <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-3"></div>
 
-        // Utilidades Generales
-        document.getElementById('fecha-actual').innerText = new Date().toLocaleDateString('es-ES');
-        function toggleMenu() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); document.getElementById('mobileMenuOverlay').classList.toggle('hidden'); }
-        function cerrarSesion() { if(confirm('Salir?')) window.location.href='../index.html'; }
-        function guardarTodo() { alert('Configuración guardada correctamente.'); }
-    </script>
+    <!-- Script JS Principal -->
+    <script src="../js/configuracion.js"></script>
+
+    
 </body>
 </html>
