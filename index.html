@@ -12,31 +12,14 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    },
-                    colors: {
-                        primary: '#3b82f6',
-                        accent: '#f97316',
-                    }
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: { primary: '#3b82f6', accent: '#f97316' }
                 }
             }
         }
     </script>
-
     <style>
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #0f172a; 
-            pointer-events: auto !important;
-        }
-        
-        #loginContainer {
-            position: relative;
-            z-index: 50;
-        }
-
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; }
         .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes shake {
             10%, 90% { transform: translate3d(-1px, 0, 0); }
@@ -47,19 +30,6 @@
     </style>
 </head>
 <body class="text-slate-200 antialiased h-screen w-full flex items-center justify-center p-4">
-
-    <script>
-        (function() {
-            document.body.style.backgroundColor = '#0f172a';
-            const allElements = document.querySelectorAll('*');
-            allElements.forEach(el => {
-                const style = window.getComputedStyle(el);
-                if (style.position === 'fixed' && style.zIndex > 10 && el.id !== 'mobileMenu') {
-                    el.style.display = 'none';
-                }
-            });
-        })();
-    </script>
 
     <div id="loginContainer" class="w-full max-w-md relative z-50">
         <div class="text-center mb-8">
@@ -109,10 +79,7 @@
         </div>
 
         <div class="text-center mt-6">
-            <p class="text-slate-500 text-xs">
-                © 2023 ELIMAR PARKING SYSTEMS. <br>
-                Todos los derechos reservados.
-            </p>
+            <p class="text-slate-500 text-xs">© 2023 ELIMAR PARKING SYSTEMS. <br>Todos los derechos reservados.</p>
         </div>
     </div>
 
@@ -120,6 +87,11 @@
         document.addEventListener('DOMContentLoaded', () => {
             const USER_VALIDO = 'admin';
             const PASS_VALIDO = '1234';
+
+            // Check session immediately
+            if(localStorage.getItem('isLoggedIn') === 'true') {
+                window.location.href = 'dashboard.html';
+            }
 
             window.togglePassword = function() {
                 const passInput = document.getElementById('pass');
@@ -158,15 +130,6 @@
                     }, 2000);
                 }
             };
-
-            function checkSession() {
-                const isLogged = localStorage.getItem('isLoggedIn');
-                const currentPath = window.location.pathname;
-                if (currentPath.includes('index.html') && isLogged) {
-                    window.location.href = 'dashboard.html'; 
-                }
-            }
-            checkSession();
         });
     </script>
 </body>
