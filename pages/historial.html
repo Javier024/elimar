@@ -43,7 +43,7 @@
             <!-- HISTORIAL ACTIVO -->
             <a href="historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100 nav-item"><i class="fa-solid fa-clock-rotate-left w-5"></i> Historial</a>
             
-            <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-gear w-5"></i> Configuración</a>
+            <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-gear w-5 text-center"></i> Configuración</a>
         </nav>
         <div class="p-4 border-t border-slate-100"><button onclick="cerrarSesion()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors"><i class="fa-solid fa-power-off"></i> Cerrar Sesión</button></div>
     </aside>
@@ -53,40 +53,51 @@
         <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20">
             <div class="flex items-center gap-4">
                 <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button>
-                <h2 class="text-lg lg:text-xl font-bold text-slate-800">Historial de Movimientos</h2>
+                <h2 class="text-lg lg:text-xl font-bold text-slate-800">Historial Global</h2>
             </div>
             <span id="fecha-actual" class="text-xs lg:text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200"></span>
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 lg:p-8">
-            <!-- KPIs (IDs agregados para el JS) -->
-            <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            <!-- KPIs -->
+            <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                     <div><span class="text-xs font-bold text-slate-400 uppercase block">Total Registros</span><span class="text-2xl font-bold text-slate-800 block mt-1" id="kpiVisits">0</span></div>
                     <i class="fa-solid fa-list-ol text-slate-200 text-2xl"></i>
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between border-l-4 border-l-emerald-500">
-                    <div><span class="text-xs font-bold text-slate-400 uppercase block">Recaudado</span><span class="text-xl font-bold text-emerald-600 font-mono block mt-1" id="kpiRevenue">$0</span></div>
-                    <i class="fa-solid fa-money-bill-trend-up text-emerald-100 text-2xl"></i>
+                    <div><span class="text-xs font-bold text-slate-400 uppercase block">Balance Neto</span><span class="text-xl font-bold text-emerald-600 font-mono block mt-1" id="kpiRevenue">$0</span></div>
+                    <i class="fa-solid fa-scale-balanced text-emerald-100 text-2xl"></i>
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between border-l-4 border-l-amber-500">
-                    <div><span class="text-xs font-bold text-slate-400 uppercase block">En Parqueo</span><span class="text-2xl font-bold text-amber-600 block mt-1" id="kpiActive">0</span></div>
+                    <div><span class="text-xs font-bold text-slate-400 uppercase block">Vehículos Dentro</span><span class="text-2xl font-bold text-amber-600 block mt-1" id="kpiActive">0</span></div>
                     <i class="fa-solid fa-car text-amber-100 text-2xl"></i>
                 </div>
             </div>
 
-            <!-- FILTROS (IDs agregados) -->
+            <!-- FILTROS Y ACCIONES -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6 flex flex-col xl:flex-row gap-4 items-center justify-between">
                 <div class="flex flex-wrap gap-3 items-center w-full xl:w-auto">
                     <input type="date" id="filterDateStart" onchange="applyFilters()" class="custom-input text-sm w-32 lg:w-auto">
                     <input type="date" id="filterDateEnd" onchange="applyFilters()" class="custom-input text-sm w-32 lg:w-auto">
-                    <div class="relative"><i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i><input type="text" id="filterPlate" onkeyup="applyFilters()" placeholder="Placa..." class="custom-input pl-8 text-sm w-32 xl:w-48"></div>
-                    <select id="filterType" onchange="applyFilters()" class="custom-input text-sm w-32 xl:w-40 cursor-pointer"><option value="all">Todo</option><option>Carro</option><option>Moto</option><option>Camioneta</option></select>
+                    <div class="relative"><i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i><input type="text" id="filterPlate" onkeyup="applyFilters()" placeholder="Buscar..." class="custom-input pl-8 text-sm w-32 xl:w-48"></div>
+                    
+                    <!-- Select actualizado para incluir Gastos/Caja -->
+                    <select id="filterType" onchange="applyFilters()" class="custom-input text-sm w-32 xl:w-40 cursor-pointer">
+                        <option value="all">Todo</option>
+                        <option>Carro</option>
+                        <option>Moto</option>
+                        <option>Camioneta</option>
+                        <option>CAJA</option>
+                        <option>GASTO</option>
+                    </select>
                 </div>
                 <div class="flex items-center gap-2 w-full xl:w-auto">
-                    <button onclick="openModalAddHistory()" class="flex-1 xl:flex-none bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2"><i class="fa-solid fa-plus"></i> Manual</button>
+                    <!-- BOTÓN LIMPIAR HISTORIAL -->
+                    <button onclick="openCleanModal()" class="flex-1 xl:flex-none bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2"><i class="fa-solid fa-trash-can"></i> Limpiar</button>
+                    
                     <div class="relative flex-1 xl:flex-none">
-                        <select id="downloadType" class="custom-input text-sm w-full appearance-none cursor-pointer pr-8"><option value="all">Descargar Todo</option><option value="Carro">Solo Carros</option><option value="Moto">Solo Motos</option><option value="Camioneta">Solo Camionetas</option></select>
+                        <select id="downloadType" class="custom-input text-sm w-full appearance-none cursor-pointer pr-8"><option value="all">Descargar Todo</option><option value="Carro">Solo Carros</option><option value="Moto">Solo Motos</option><option value="CAJA">Solo Caja</option><option value="GASTO">Solo Gastos</option></select>
                         <i class="fa-solid fa-chevron-down absolute right-3 top-2.5 text-slate-400 text-xs pointer-events-none"></i>
                     </div>
                     <button onclick="downloadReport()" class="flex-1 xl:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2"><i class="fa-solid fa-download"></i> CSV</button>
@@ -98,40 +109,30 @@
                 <div class="overflow-x-auto flex-1">
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-slate-50 text-slate-500 text-xs uppercase sticky top-0 hidden lg:table-header-group">
-                            <tr><th class="px-6 py-3 font-semibold">Fecha</th><th class="px-6 py-3 font-semibold">Entrada</th><th class="px-6 py-3 font-semibold">Salida</th><th class="px-6 py-3 font-semibold">Placa</th><th class="px-6 py-3 font-semibold">Tipo</th><th class="px-6 py-3 font-semibold">Duración</th></tr>
+                            <tr><th class="px-6 py-3 font-semibold">Fecha</th><th class="px-6 py-3 font-semibold">Hora/Entrada</th><th class="px-6 py-3 font-semibold">Salida</th><th class="px-6 py-3 font-semibold">Ref/Placa</th><th class="px-6 py-3 font-semibold">Tipo</th><th class="px-6 py-3 font-semibold">Detalle / Valor</th></tr>
                         </thead>
-                        <!-- Body vacío para renderizado JS -->
                         <tbody id="historyTableBody" class="text-sm text-slate-700 divide-y divide-slate-100"></tbody>
                     </table>
                 </div>
                 <!-- Paginación -->
                 <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
                     <span class="text-xs text-slate-500" id="paginationInfo">Mostrando 0 a 0 de 0 registros</span>
-                    <div class="flex items-center gap-2" id="paginationControls">
-                        <!-- Botones generados por JS -->
-                    </div>
+                    <div class="flex items-center gap-2" id="paginationControls"></div>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- MODAL AGREGAR MANUAL (Requerido por JS) -->
+    <!-- MODAL AGREGAR MANUAL -->
     <div id="modalAddHistory" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden items-center justify-center p-4 transition-opacity opacity-0">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0 duration-200">
             <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-2xl">
-                <h3 class="text-lg font-bold text-slate-800">
-                    <i class="fa-solid fa-pen-to-square text-indigo-500 mr-2"></i> Registro Manual
-                </h3>
-                <button onclick="closeModalAddHistory()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
+                <h3 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-pen-to-square text-indigo-500 mr-2"></i> Registro Manual</h3>
+                <button onclick="closeModalAddHistory()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-6 space-y-4">
                 <form id="manualForm">
-                    <div class="relative">
-                        <i class="fa-solid fa-car absolute left-3 top-3 text-slate-400"></i>
-                        <input id="manualPlate" type="text" placeholder="Placa del Vehículo" class="custom-input pl-10 uppercase" required>
-                    </div>
+                    <div class="relative"><i class="fa-solid fa-car absolute left-3 top-3 text-slate-400"></i><input id="manualPlate" type="text" placeholder="Placa del Vehículo" class="custom-input pl-10 uppercase" required></div>
                     <div class="relative">
                         <i class="fa-solid fa-list absolute left-3 top-3 text-slate-400"></i>
                         <select id="manualType" class="custom-input pl-10 appearance-none cursor-pointer">
@@ -141,10 +142,7 @@
                         </select>
                         <i class="fa-solid fa-chevron-down absolute right-4 top-3.5 text-xs text-slate-400 pointer-events-none"></i>
                     </div>
-                    <div class="relative">
-                        <i class="fa-solid fa-map-pin absolute left-3 top-3 text-slate-400"></i>
-                        <input id="manualSpot" type="text" placeholder="Puesto (Opcional)" class="custom-input pl-10">
-                    </div>
+                    <div class="relative"><i class="fa-solid fa-map-pin absolute left-3 top-3 text-slate-400"></i><input id="manualSpot" type="text" placeholder="Puesto (Opcional)" class="custom-input pl-10"></div>
                 </form>
             </div>
             <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-3">
@@ -154,23 +152,45 @@
         </div>
     </div>
 
+    <!-- MODAL LIMPIAR HISTORIAL (NUEVO) -->
+    <div id="modalCleanHistory" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 transition-opacity opacity-0">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl transform transition-all scale-95 opacity-0 duration-200">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-red-50/50 rounded-t-2xl">
+                <h3 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-eraser text-red-500 mr-2"></i> Limpiar Historial</h3>
+                <button onclick="closeCleanModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-slate-600">Seleccione el rango de fechas para eliminar permanentemente los registros. Esta acción no se puede deshacer.</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Desde</label>
+                        <input type="date" id="cleanDateFrom" class="custom-input">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Hasta</label>
+                        <input type="date" id="cleanDateTo" class="custom-input">
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-3">
+                <button onclick="closeCleanModal()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200 transition-colors">Cancelar</button>
+                <button onclick="cleanHistoryRange()" class="px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 shadow-md transition-colors">Borrar Registros</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // UI Helpers
         document.getElementById('fecha-actual').innerText = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        
         function toggleMenu() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('mobileMenuOverlay');
             sidebar.classList.toggle('-translate-x-full');
             overlay.classList.toggle('hidden');
         }
-        
-        function cerrarSesion() { 
-            if(confirm('Salir?')) window.location.href='../index.html'; 
-        }
+        function cerrarSesion() { if(confirm('Salir?')) window.location.href='../index.html'; }
     </script>
 
-    <!-- Conexión JS -->
     <script src="../js/historial.js"></script>
 </body>
 </html>
