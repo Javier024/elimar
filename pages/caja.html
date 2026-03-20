@@ -7,6 +7,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Librería para generar PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
     .custom-input { width: 100%; padding: 10px 12px 10px 40px; border-radius: 8px; border: 1px solid #cbd5e1; background-color: #f8fafc; font-size: 14px; transition: all 0.2s ease; }
@@ -17,14 +19,20 @@
 </head>
 <body class="flex h-screen overflow-hidden text-slate-700">
   
+  <!-- OVERLAY MÓVIL -->
   <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 z-30 hidden lg:hidden backdrop-blur-sm"></div>
+
+  <!-- SIDEBAR -->
   <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform -translate-x-full lg:translate-x-0 lg:static lg:inset-auto transition-transform duration-300">
     <div class="h-16 flex items-center px-6 border-b border-slate-100"><div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200"><i class="fa-solid fa-square-parking text-white text-sm"></i></div><h1 class="text-lg font-bold text-slate-800">Parking<span class="text-indigo-600">Sys</span></h1></div>
     <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
       <a href="../dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-chart-pie w-5"></i> Dashboard</a>
       <a href="clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-users w-5"></i> Clientes</a>
       <a href="puestos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-layer-group w-5"></i> Puestos</a>
+      
+      <!-- ACTIVO -->
       <a href="caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100 nav-item"><i class="fa-solid fa-cash-register w-5"></i> Caja</a>
+      
       <a href="gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-receipt w-5"></i> Gastos</a>
       <a href="historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Historial</a>
       <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-gear w-5 text-center"></i> Configuración</a>
@@ -34,11 +42,19 @@
 
   <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
     <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20">
-      <div class="flex items-center gap-4"><button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button><div><h2 class="text-lg lg:text-xl font-bold text-slate-800">Caja Diaria</h2><span class="hidden sm:inline text-xs text-slate-500">Registro de ingresos y egresos</span></div></div><div class="flex items-center gap-2"><i class="fa-regular fa-calendar text-slate-400"></i><span id="fecha-actual" class="text-sm font-medium text-slate-600"></span></div>
+      <div class="flex items-center gap-4">
+        <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button>
+        <div>
+          <h2 class="text-lg lg:text-xl font-bold text-slate-800">Caja Diaria</h2>
+          <span class="hidden sm:inline text-xs text-slate-500">Registro de ingresos y facturación</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2"><i class="fa-regular fa-calendar text-slate-400"></i><span id="fecha-actual" class="text-sm font-medium text-slate-600"></span></div>
     </header>
+    
     <div class="flex-1 overflow-y-auto p-4 lg:p-8">
       <div class="max-w-6xl mx-auto space-y-6">
-        <!-- KPIs (IDs agregados para el JS) -->
+        <!-- KPIs -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm"><p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Total Ingresos</p><p id="kpiTotal" class="text-xl lg:text-2xl font-bold text-slate-800 font-mono">$0</p></div>
           <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm"><p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Efectivo</p><p id="kpiCash" class="text-xl lg:text-2xl font-bold text-emerald-600 font-mono">$0</p></div>
@@ -51,19 +67,26 @@
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sticky top-4">
               <div class="flex items-center gap-2 mb-6"><div class="p-2 bg-indigo-50 rounded-lg text-indigo-600"><i class="fa-solid fa-money-bill-wave"></i></div><h3 class="font-bold text-slate-800">Registrar Cobro</h3></div>
               
-              <!-- Formulario corregido con IDs y OnSubmit -->
               <form id="formCaja" onsubmit="registrarCobro(event)" class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Cliente</label>
                     <div class="relative">
                         <i class="fa-solid fa-user input-icon"></i>
-                        <input id="cajaCliente" placeholder="Nombre o buscar..." required class="custom-input">
+                        <!-- Input de autocompletado -->
+                        <input id="cajaCliente" autocomplete="off" placeholder="Buscar cliente..." required class="custom-input">
+                        <!-- Lista desplegable se inyecta aquí vía JS -->
                     </div>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="relative"><i class="fa-solid fa-car input-icon"></i><input id="cajaPlaca" placeholder="Placa" class="custom-input uppercase"></div>
-                    <div class="relative"><i class="fa-solid fa-map-pin input-icon"></i><input id="cajaPuesto" placeholder="Puesto" class="custom-input"></div>
+                    <div class="relative">
+                        <i class="fa-solid fa-car input-icon"></i>
+                        <input id="cajaPlaca" placeholder="Placa" readonly class="custom-input uppercase bg-slate-50 text-slate-600">
+                    </div>
+                    <div class="relative">
+                        <i class="fa-solid fa-map-pin input-icon"></i>
+                        <input id="cajaPuesto" placeholder="Puesto" readonly class="custom-input uppercase bg-slate-50 text-slate-600">
+                    </div>
                 </div>
                 
                 <div class="relative">
@@ -89,7 +112,7 @@
                 </div>
                 
                 <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
-                    <span class="text-sm font-medium text-slate-600">Enviar WhatsApp</span>
+                    <span class="text-sm font-medium text-slate-600">Enviar WhatsApp (Texto)</span>
                     <input type="checkbox" id="cajaSendWhatsapp" class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 border-gray-300 cursor-pointer">
                 </div>
                 
@@ -100,8 +123,13 @@
           
           <div class="xl:col-span-2">
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
-                <div class="p-4 border-b border-slate-100 bg-white">
+                <div class="p-4 border-b border-slate-100 bg-white flex flex-col sm:flex-row justify-between items-center gap-4">
                     <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wide">Historial de Transacciones</h3>
+                    <!-- BUSCADOR DE FILTRO -->
+                    <div class="relative w-full sm:w-auto">
+                        <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                        <input type="text" id="searchInput" oninput="filtrarTabla()" placeholder="Buscar cliente o placa..." class="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 w-full bg-white">
+                    </div>
                 </div>
                 
                 <div class="overflow-x-auto custom-scroll flex-1">
@@ -113,15 +141,13 @@
                           <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Vehículo</th>
                           <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Método</th>
                           <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-right">Valor</th>
-                          <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-right">Acción</th>
+                          <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-center">Acción</th>
                         </tr>
                       </thead>
-                      <!-- Cuerpo de tabla para el JS -->
                       <tbody id="listaCajaBody" class="divide-y divide-slate-100 text-sm"></tbody>
                     </table>
                 </div>
                 
-                <!-- Controles de Paginación -->
                 <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
                     <button id="btnPrev" onclick="changePage('prev')" class="px-3 py-1.5 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><i class="fa-solid fa-chevron-left mr-1"></i> Anterior</button>
                     <span id="pageInfo" class="text-sm font-medium text-slate-500">Página 1 de 1</span>
@@ -134,7 +160,24 @@
     </div>
   </main>
 
-  <!-- Script de Conexión -->
+  <script>
+      // Función de navegación del menú (igual que puestos)
+      function toggleMenu() {
+          const sidebar = document.getElementById('sidebar');
+          const overlay = document.getElementById('mobileMenuOverlay');
+          sidebar.classList.toggle('-translate-x-full');
+          if (sidebar.classList.contains('-translate-x-full')) {
+              overlay.classList.add('hidden'); overlay.classList.remove('flex');
+          } else {
+              overlay.classList.remove('hidden'); overlay.classList.add('flex');
+          }
+      }
+      function cerrarSesion() { if(confirm("¿Cerrar sesión?")) window.location.href = "../index.html"; }
+      
+      // Fecha
+      const fechaElement = document.getElementById("fecha-actual");
+      if (fechaElement) fechaElement.textContent = new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  </script>
   <script src="../js/caja.js"></script>
 </body>
 </html>
