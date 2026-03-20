@@ -10,33 +10,37 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1. Vehículos Dentro (Historial sin salida)
+    // 1. Vehículos Dentro
     const resultDentro = await db.execute("SELECT COUNT(*) as count FROM historial WHERE exit IS NULL OR exit = ''");
     
-    // 2. Puestos Totales y Libres
+    // 2. Puestos Totales
     const resultTotalPuestos = await db.execute("SELECT COUNT(*) as count FROM puestos");
     const totalPuestos = resultTotalPuestos.rows[0].count;
 
+    // 3. Puestos Libres
     const resultLibres = await db.execute("SELECT COUNT(*) as count FROM puestos WHERE estado = 'libre'");
     
-    // 3. Clientes Registrados
+    // 4. Puestos Reservados
+    const resultReservados = await db.execute("SELECT COUNT(*) as count FROM puestos WHERE estado = 'reservado'");
+    
+    // 5. Clientes Registrados
     const resultClientes = await db.execute("SELECT COUNT(*) as count FROM clientes");
 
-    // 4. Ingresos de Hoy (Conexión con Caja)
+    // 6. Ingresos de Hoy (Caja)
     const resultIngresosHoy = await db.execute(`
       SELECT COALESCE(SUM(amount), 0) as total 
       FROM caja 
-      WHERE date = DATE('now')
+      WHERE date = DATE('now', 'localtime')
     `);
 
-    // 5. Gastos de Hoy (Conexión con Gastos)
+    // 7. Gastos de Hoy (Gastos)
     const resultGastosHoy = await db.execute(`
       SELECT COALESCE(SUM(amount), 0) as total 
       FROM gastos 
-      WHERE date = DATE('now')
+      WHERE date = DATE('now', 'localtime')
     `);
 
-    // 6. Alertas (Vehículos > 24h)
+    // 8. Alertas (Vehículos > 24h)
     const resultAlertas = await db.execute(`
       SELECT COUNT(*) as count 
       FROM historial 
@@ -44,29 +48,50 @@ export default async function handler(req, res) {
       AND datetime(entry) < datetime('now', '-24 hours')
     `);
 
-    // 7. Gráfico Financiero (Últimos 7 días)
+    // 9. Gráfico Financiero (Últimos 7 días)
     const resultFinanzas = await db.execute(`
-        SELECT date, SUM(amount) as amount, 'ingreso' as type FROM caja WHERE date >= DATE('now', '-7 days') GROUP BY date
+        SELECT date, SUM(amount) as amount, 'ingreso' as type FROM caja WHERE date >= DATE('now', '-6 days', 'localtime') GROUP BY date
         UNION ALL
-        SELECT date, SUM(amount) as amount, 'gasto' as type FROM gastos WHERE date >= DATE('now', '-7 days') GROUP BY date
+        SELECT date, SUM(amount) as amount, 'gasto' as type FROM gastos WHERE date >= DATE('now', '-6 days', 'localtime') GROUP BY date
         ORDER BY date ASC
     `);
 
+    // 10. Movimientos Recientes
+    const resultMovimientos = await db.execute(`
+        SELECT * FROM historial 
+        ORDER BY id DESC 
+        LIMIT 5
+    `);
+
+    // 11. NUEVO: DEUDORES DEL MES (Integración con Caja)
+    const currentMonthPrefix = new Date().toISOString().slice(0, 7);
+    const resultDeudores = await db.execute(`
+      SELECT COUNT(*) as total 
+      FROM clientes 
+      WHERE placa NOT IN (
+        SELECT plate FROM caja 
+        WHERE date LIKE ? AND plate != '---'
+      )
+    `, [`${currentMonthPrefix}%`]);
+
     const vehiculosDentro = resultDentro.rows[0].count;
     const libres = resultLibres.rows[0].count;
+    const reservados = resultReservados.rows[0].count;
 
     const data = {
       kpi: {
         vehiculos: vehiculosDentro,
         libres: libres,
-        reservados: 0, // Se calcula en lógica de frontend si es necesario, o query extra
+        reservados: reservados,
         ingresos: resultIngresosHoy.rows[0].total,
         gastos: resultGastosHoy.rows[0].total,
         alertas: resultAlertas.rows[0].count,
         clientes: resultClientes.rows[0].count,
+        deudores: resultDeudores.rows[0].total, // Nuevo KPI
         ocupacionPorcentaje: totalPuestos > 0 ? Math.round(((totalPuestos - libres) / totalPuestos) * 100) : 0
       },
-      chartFinanzas: resultFinanzas.rows
+      chartFinanzas: resultFinanzas.rows,
+      movimientosRecientes: resultMovimientos.rows
     };
 
     return res.status(200).json(data);
