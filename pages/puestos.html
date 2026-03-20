@@ -24,33 +24,36 @@
 <body class="text-slate-700 antialiased flex h-screen overflow-hidden">
 
                 
-
-
-      <!-- SIDEBAR -->
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform -translate-x-full lg:translate-x-0 lg:static lg:inset-auto transition-transform duration-300">
-        <div class="h-16 flex items-center px-6 border-b border-slate-100">
-            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200"><i class="fa-solid fa-square-parking text-white text-sm"></i></div>
-            <h1 class="text-lg font-bold text-slate-800">Parking<span class="text-indigo-600">Sys</span></h1>
-        </div>
-        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-            <a href="../dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-chart-pie w-5"></i> Dashboard</a>
-            <a href="clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-users w-5"></i> Clientes</a>
-            <a href="puestos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100 nav-item"><i class="fa-solid fa-layer-group w-5 text-center"></i> Puestos</a>
-            <a href="caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-cash-register w-5"></i> Caja</a>
-            <a href="gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-receipt w-5"></i> Gastos</a>
-            
-           <a href="historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Historial</a>
-            <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-gear w-5"></i> Configuración</a>
-        </nav>
-        <div class="p-4 border-t border-slate-100"><button onclick="cerrarSesion()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors"><i class="fa-solid fa-power-off"></i> Cerrar Sesión</button></div>
-    </aside>
+<!-- SIDEBAR -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform -translate-x-full lg:translate-x-0 lg:static lg:inset-auto transition-transform duration-300 ease-in-out">
+    <div class="h-16 flex items-center px-6 border-b border-slate-100">
+      <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200"><i class="fa-solid fa-square-parking text-white text-sm"></i></div>
+      <h1 class="text-lg font-bold text-slate-800">Parking<span class="text-indigo-600">Sys</span></h1>
+    </div>
+    <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+      <a href="../dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard</a>
+      <a href="clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-users w-5"></i> Clientes</a>
+      <a href="puestos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100 nav-item"><i class="fa-solid fa-layer-group w-5 text-center"></i> Puestos</a>
+      <a href="caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-cash-register w-5 text-center"></i> Caja</a>
+      <a href="gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-receipt w-5 text-center"></i> Gastos</a>
+      <a href="historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Historial</a>
+      <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-gear w-5 text-center"></i> Configuración</a>
+    </nav>
+    <div class="p-4 border-t border-slate-100">
+      <div class="flex items-center gap-3 px-2 py-2">
+        <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">A</div>
+        <div class="flex-1 min-w-0"><p class="text-sm font-medium text-slate-900 truncate">Admin User</p><p class="text-xs text-slate-500 truncate">admin@parking.com</p></div>
+      </div>
+      <button onclick="cerrarSesion()" class="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors"><i class="fa-solid fa-power-off"></i> Salir</button>
+    </div>
+  </aside>
 
     <!-- MAIN WRAPPER -->
     <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
         <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20">
             <div class="flex items-center gap-4">
                 <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button>
-                <div class="flex flex-col"><h2 class="text-xl font-bold text-slate-800">Mapa de Puestos</h2><span class="text-xs text-slate-500 font-medium">Gestión visual del parqueadero</span></div>
+                <div class="flex flex-col"><h2 class="text-xl font-bold text-slate-800">Gestión Puestos</h2><span class="text-xs text-slate-500 font-medium">Gestión visual del parqueadero</span></div>
             </div>
             <div class="flex items-center gap-3">
                 <!-- Buscador Global (Opcional) -->
