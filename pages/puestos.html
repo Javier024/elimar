@@ -14,7 +14,7 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
         
-        /* ESTILOS NECESARIOS PARA QUE TU JS RENDERICE BIEN */
+        /* ESTILOS BASE DE LAS TARJETAS */
         .parking-card { 
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
             cursor: pointer; 
@@ -22,24 +22,32 @@
             display: flex; 
             flex-direction: column; 
             overflow: hidden;
+            position: relative;
         }
         .parking-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
         
-        /* Clases de estado que inyecta tu JS */
+        /* ESTADOS VISUALES BASE (El JS sobrescribe estos colores si es necesario) */
         .parking-card.libre { border: 1px solid #e2e8f0; background: #fff; }
+        .parking-card.libre:hover { border-color: #22c55e; }
+
         .parking-card.ocupado { border: 1px solid #c7d2fe; background: linear-gradient(to bottom right, #eef2ff, #ffffff); }
+        .parking-card.ocupado:hover { border-color: #6366f1; }
+
         .parking-card.reservado { border: 1px solid #e9d5ff; background: linear-gradient(to bottom right, #faf5ff, #ffffff); }
+        .parking-card.reservado:hover { border-color: #a855f7; }
 
         /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 20px; }
+        ::-webkit-scrollbar { width: 6px; } 
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 20px; }
+        ::-webkit-scrollbar-track { background: transparent; }
     </style>
 </head>
 <body class="text-slate-700 antialiased flex h-screen overflow-hidden">
 
-    <!-- OVERLAY PARA MÓVIL (Solución al problema de navegación) -->
+    <!-- 1. OVERLAY MÓVIL -->
     <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 z-30 hidden lg:hidden backdrop-blur-sm transition-opacity"></div>
 
-    <!-- SIDEBAR -->
+    <!-- 2. SIDEBAR -->
     <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform -translate-x-full lg:translate-x-0 lg:static lg:inset-auto transition-transform duration-300 ease-in-out shadow-xl lg:shadow-none">
         <div class="h-16 flex items-center px-6 border-b border-slate-100">
             <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200"><i class="fa-solid fa-square-parking text-white text-sm"></i></div>
@@ -49,8 +57,10 @@
         <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
             <a href="../dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard</a>
             <a href="clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-users w-5"></i> Clientes</a>
-            <!-- Página actual activa -->
+            
+            <!-- PÁGINA ACTIVA -->
             <a href="puestos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100 nav-item"><i class="fa-solid fa-layer-group w-5 text-center"></i> Puestos</a>
+            
             <a href="caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-cash-register w-5 text-center"></i> Caja</a>
             <a href="gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-receipt w-5 text-center"></i> Gastos</a>
             <a href="historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Historial</a>
@@ -71,67 +81,72 @@
         <!-- HEADER -->
         <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20">
             <div class="flex items-center gap-4">
-                <!-- Botón toggle menú -->
                 <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button>
                 <div class="flex flex-col">
                     <h2 class="text-xl font-bold text-slate-800">Gestión Puestos</h2>
-                    <span class="text-xs text-slate-500 font-medium">Gestión visual del parqueadero</span>
+                    <span class="text-xs text-slate-500 font-medium">Ingresos, Reservas y Modo Nocturno</span>
                 </div>
             </div>
             <div class="flex items-center gap-3">
-                <!-- Search Input (Usado por tu JS) -->
+                <!-- Buscador -->
                 <div class="relative hidden sm:block">
                     <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
-                    <input type="text" id="searchInput" placeholder="Buscar Puesto o Placa..." class="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 w-64 bg-white">
+                    <input type="text" id="searchInput" placeholder="Buscar Puesto o Placa..." class="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 w-64 bg-white transition-shadow focus:ring-2 focus:ring-indigo-100">
                 </div>
+                <!-- Fecha -->
                 <span id="fecha-actual" class="text-xs lg:text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200"></span>
             </div>
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 lg:p-8">
             <div class="max-w-7xl mx-auto space-y-6">
-                <!-- Toolbar & KPIS -->
+                <!-- TOOLBAR -->
                 <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div class="flex items-center gap-4">
-                        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-map-location-dot text-indigo-500"></i> Mapa</h3>
+                    
+                    <!-- Título y KPIs -->
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-map-location-dot text-indigo-500"></i> Mapa de Puestos</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Vista en tiempo real</p>
+                        </div>
                         
-                        <!-- KPIs (Tu JS actualiza estos IDs) -->
-                        <div class="hidden sm:flex gap-2">
+                        <div class="flex gap-2">
                             <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold">
-                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span id="kpi-libres">0</span> Libres
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> <span id="kpi-libres">0</span> Libres
                             </div>
                             <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold">
                                 <span class="w-2 h-2 rounded-full bg-indigo-500"></span> <span id="kpi-ocupados">0</span> Ocupados
                             </div>
                         </div>
-                        <span class="text-xs font-medium bg-slate-100 text-slate-600 px-3 py-2 rounded-lg border border-slate-200 whitespace-nowrap">Total: <span id="totalCount">0</span></span>
                     </div>
                     
+                    <!-- Botonera -->
                     <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                        <!-- Botones Filtro (Data-filter usado por tu JS) -->
                         <button onclick="filtrarMapa('todos')" data-filter="todos" class="filter-btn px-4 py-2 rounded-lg text-sm font-semibold bg-slate-800 text-white shadow-sm transition-colors hover:bg-slate-700">Todos</button>
                         <button onclick="filtrarMapa('libre')" data-filter="libre" class="filter-btn px-4 py-2 rounded-lg text-sm font-semibold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors">Libres</button>
                         <button onclick="filtrarMapa('ocupado')" data-filter="ocupado" class="filter-btn px-4 py-2 rounded-lg text-sm font-semibold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors">Ocupados</button>
                         
                         <div class="h-6 w-px bg-slate-300 mx-2 hidden md:block"></div>
                         
-                        <button onclick="crearPuestoRapido()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition-all flex items-center justify-center gap-2 whitespace-nowrap"><i class="fa-solid fa-plus"></i> Crear Puesto</button>
+                        <button onclick="crearPuestoRapido()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition-all flex items-center justify-center gap-2 whitespace-nowrap hover:shadow-md"><i class="fa-solid fa-plus"></i> Crear Puesto</button>
                     </div>
                 </div>
 
-                <!-- Map Grid (Contenedor principal) -->
+                <!-- GRID DE PUESTOS -->
                 <div class="bg-slate-50 rounded-xl border border-slate-200 shadow-sm p-6 min-h-[500px]">
+                    <!-- Aquí el JS inyecta las tarjetas (Libres, Ocupados, Nocturnos, Reservas) -->
                     <div id="map-container" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                        <!-- Aquí tu JS inyectará las tarjetas -->
+                        <!-- Renderizado dinámico -->
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- MODAL ASIGNAR (IDs obligatorios para tu JS) -->
+    <!-- MODAL DE ASIGNACIÓN / RESERVA -->
     <div id="modalAsignar" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 transition-opacity">
         <div id="modalContent" class="bg-white w-full max-w-md rounded-2xl shadow-2xl transform transition-all scale-95 opacity-0 duration-200">
+            <!-- Encabezado -->
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl">
                 <h3 class="text-lg font-bold text-slate-800" id="modalSpotNumber">Asignar Vehículo</h3>
                 <button onclick="cerrarModalAsignar()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors">
@@ -139,19 +154,27 @@
                 </button>
             </div>
             
+            <!-- Cuerpo -->
             <div class="p-6 space-y-4">
+                <!-- Checkbox Reserva -->
+                <div class="flex items-center gap-3 p-3 bg-purple-50 rounded-lg border border-purple-100">
+                    <input type="checkbox" id="checkReserva" class="w-5 h-5 text-purple-600 rounded border-gray-300 focus:ring-purple-500 cursor-pointer">
+                    <label for="checkReserva" class="text-sm font-bold text-purple-800 cursor-pointer select-none">Marcar como Reserva</label>
+                </div>
+
+                <!-- Buscador Cliente -->
                 <div class="space-y-1">
                     <label class="text-xs font-bold text-slate-500 uppercase">Cliente / Propietario</label>
                     <div class="relative">
                         <i class="fa-solid fa-user absolute left-3 top-3 text-slate-400"></i>
-                        <!-- oninput usado por tu JS -->
-                        <input type="text" id="modalNombre" oninput="buscarClienteModal()" placeholder="Escriba nombre o placa..." class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                        <input type="text" id="modalNombre" oninput="buscarClienteModal()" placeholder="Escriba nombre o placa..." class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
                         <!-- Lista desplegable -->
                         <div id="listaResultadosClientes" class="hidden absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl mt-1 max-h-40 overflow-y-auto z-20"></div>
                     </div>
                     <p class="text-[10px] text-slate-400">Si el cliente no existe, se creará automáticamente.</p>
                 </div>
 
+                <!-- Datos Lectura -->
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="text-xs font-bold text-slate-500 uppercase">Placa</label>
@@ -164,24 +187,20 @@
                 </div>
             </div>
 
+            <!-- Pie -->
             <div class="p-6 pt-0 flex gap-3">
-                <button onclick="confirmarAsignar()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-95">Confirmar Ingreso</button>
+                <button onclick="confirmarAsignar()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-95">Confirmar</button>
                 <button onclick="cerrarModalAsignar()" class="px-4 py-3 text-slate-500 hover:bg-slate-100 rounded-xl font-bold transition-all">Cancelar</button>
             </div>
         </div>
     </div>
 
-    <!-- LOGICA DE NAVEGACIÓN (Menú Lateral) -->
+    <!-- SCRIPTS DE INTERFAZ -->
     <script>
-        // Esta función corrige el problema de navegación que tenías
         function toggleMenu() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('mobileMenuOverlay');
-            
-            // Toggle del sidebar
             sidebar.classList.toggle('-translate-x-full');
-            
-            // Toggle del overlay
             if (sidebar.classList.contains('-translate-x-full')) {
                 overlay.classList.add('hidden');
                 overlay.classList.remove('flex');
@@ -191,15 +210,16 @@
             }
         }
 
-        // Mostrar fecha actual (Pequeño detalle visual)
         const fechaSpan = document.getElementById('fecha-actual');
         if(fechaSpan) {
-            const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-            fechaSpan.innerText = new Date().toLocaleDateString('es-ES', options);
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            let fechaStr = new Date().toLocaleDateString('es-ES', options);
+            fechaStr = fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1);
+            fechaSpan.innerText = fechaStr;
         }
     </script>
 
-    <!-- CONEXIÓN CON TU LÓGICA PRINCIPAL -->
+    <!-- CONEXIÓN CON LÓGICA (Modo Nocturno, Reservas, Edición, Eliminación) -->
     <script src="../js/puestos.js"></script>
 </body>
 </html>

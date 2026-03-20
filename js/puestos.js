@@ -1,6 +1,7 @@
+// parqueo/js/puestos.js
 let allSpots = [];
 let clientesCache = [];
-let currentFilterStatus = 'todos'; // Estado inicial: ver todo
+let currentFilterStatus = 'todos';
 let puestoSeleccionado = null;
 
 // --- UTILIDADES ---
@@ -18,42 +19,31 @@ function mostrarToast(mensaje, tipo = 'success') {
   setTimeout(() => { toast.classList.add('translate-x-full', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
 }
 
-// --- INICIO ---
 document.addEventListener("DOMContentLoaded", () => {
   cargarPuestos();
   cargarClientesCache();
-  
   const searchInput = document.getElementById("searchInput");
-  if(searchInput) {
-    searchInput.addEventListener("input", (e) => renderMapa(e.target.value.toLowerCase()));
-  }
+  if(searchInput) searchInput.addEventListener("input", (e) => renderMapa(e.target.value.toLowerCase()));
 });
 
 async function cargarClientesCache() {
   try {
     const res = await fetch("/api/clientes");
-    if(res.ok) {
-      clientesCache = await res.json();
-    }
+    if(res.ok) clientesCache = await res.json();
   } catch (e) { console.error("Error cargando clientes", e); }
 }
 
-// --- LÓGICA DE FILTROS (NUEVO) ---
 window.filtrarMapa = function(filtro) {
-  currentFilterStatus = filtro; // 1. Actualizar estado global
-  
-  // 2. Actualizar estilos de los botones
+  currentFilterStatus = filtro;
   document.querySelectorAll('.filter-btn').forEach(btn => {
     if(btn.dataset.filter === filtro) {
-      btn.classList.add('bg-slate-800', 'text-white'); // Activo (Oscuro)
+      btn.classList.add('bg-slate-800', 'text-white');
       btn.classList.remove('bg-white', 'text-slate-600', 'border');
     } else {
-      btn.classList.remove('bg-slate-800', 'text-white'); // Inactivo (Claro)
+      btn.classList.remove('bg-slate-800', 'text-white');
       btn.classList.add('bg-white', 'text-slate-600', 'border');
     }
   });
-  
-  // 3. Redibujar mapa con el nuevo filtro
   renderMapa(document.getElementById("searchInput").value.toLowerCase());
 }
 
@@ -62,7 +52,6 @@ async function cargarPuestos() {
     const res = await fetch("/api/puestos");
     if (!res.ok) throw new Error("Error API");
     allSpots = await res.json();
-    
     allSpots.sort((a, b) => {
       const numA = parseInt(a.numero.replace(/\D/g, '')) || 0;
       const numB = parseInt(b.numero.replace(/\D/g, '')) || 0;
@@ -72,35 +61,25 @@ async function cargarPuestos() {
     const kpi = {
       libres: allSpots.filter(s => s.estado === 'libre').length,
       ocupados: allSpots.filter(s => s.estado === 'ocupado').length,
+      reservados: allSpots.filter(s => s.estado === 'reservado').length,
       total: allSpots.length
     };
     
     if(document.getElementById('kpi-libres')) document.getElementById('kpi-libres').innerText = kpi.libres;
     if(document.getElementById('kpi-ocupados')) document.getElementById('kpi-ocupados').innerText = kpi.ocupados;
     if(document.getElementById('totalCount')) document.getElementById('totalCount').innerText = kpi.total;
-
     renderMapa();
-  } catch (error) { 
-    console.error(error); 
-    mostrarToast("Error cargando mapa", "error"); 
-  }
+  } catch (error) { console.error(error); mostrarToast("Error cargando mapa", "error"); }
 }
 
-// --- RENDERIZADO CON FILTROS ---
+// --- RENDERIZADO ---
 function renderMapa(busquedaTerm = "") {
   const container = document.getElementById("map-container");
   if(!container) return;
   container.innerHTML = "";
 
-  // 1. Empezamos con todos los puestos
   let datosFiltrados = allSpots;
-
-  // 2. Aplicar filtro de ESTADO (Botones)
-  if (currentFilterStatus !== 'todos') {
-    datosFiltrados = allSpots.filter(s => s.estado === currentFilterStatus);
-  }
-
-  // 3. Aplicar filtro de BÚSQUEDA (Input de texto)
+  if (currentFilterStatus !== 'todos') datosFiltrados = allSpots.filter(s => s.estado === currentFilterStatus);
   if (busquedaTerm) {
     datosFiltrados = datosFiltrados.filter(s => 
       s.numero.toLowerCase().includes(busquedaTerm) || 
@@ -114,56 +93,256 @@ function renderMapa(busquedaTerm = "") {
   }
 
   datosFiltrados.forEach(spot => {
-    // Determinar estilo según estado
     let colorClass = "parking-card libre"; 
     let infoCliente = '<span class="text-slate-400 text-xs font-medium">Disponible</span>';
-    let accionHTML = '';
+    let accionesHTML = '';
+    let badgeExtra = '';
     
+    // --- METADATOS ---
+    let meta = {};
+    try { meta = JSON.parse(spot.llave_caracteristicas || '{}'); } catch(e){}
+    const esNocturno = meta.tipo === 'nocturno';
+    let duenoOriginalNombre = '';
+
+    if (esNocturno && meta.owner_id) {
+        const dueno = clientesCache.find(c => c.id === meta.owner_id);
+        duenoOriginalNombre = dueno ? dueno.nombre : 'Desconocido';
+        badgeExtra = `<span class="absolute top-2 right-2 bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-indigo-200 z-10"><i class="fa-solid fa-moon"></i> NOCTURNO</span>`;
+    }
+
+    // --- ESTADO OCUPADO ---
     if (spot.estado === 'ocupado') {
-      colorClass = "parking-card ocupado";
-      infoCliente = `
-        <div class="font-bold text-slate-700 text-sm truncate">${spot.cliente_nombre}</div>
-        <div class="text-[10px] font-mono text-slate-500 uppercase bg-indigo-50 px-1.5 py-0.5 rounded inline-block border border-indigo-100 text-indigo-700">${spot.cliente_placa || '---'}</div>
-      `;
-      accionHTML = `<button onclick="liberarPuesto(${spot.id})" class="w-full py-2 bg-white/20 hover:bg-white/30 text-white rounded font-bold text-xs backdrop-blur-sm border border-white/30">Liberar / Salir</button>`;
-    } else if (spot.estado === 'reservado') {
+      colorClass = esNocturno ? "parking-card ocupado border-amber-300" : "parking-card ocupado";
+      
+      let subInfo = `<div class="text-[10px] font-mono text-slate-500 uppercase bg-indigo-50 px-1.5 py-0.5 rounded inline-block border border-indigo-100 text-indigo-700">${spot.cliente_placa || '---'}</div>`;
+      
+      if (esNocturno) {
+          infoCliente = `
+            <div class="text-amber-600 text-[10px] font-bold mb-0.5"><i class="fa-solid fa-user-clock"></i> USUARIO TEMPORAL</div>
+            <div class="font-bold text-slate-700 text-sm truncate">${spot.cliente_nombre}</div>
+            ${subInfo}
+            <div class="mt-1 text-[9px] text-slate-400 italic">Dueño real: ${duenoOriginalNombre}</div>
+          `;
+          accionesHTML = `
+            <div class="flex gap-2 mt-2">
+                <button onclick="liberarPuesto(${spot.id})" class="flex-1 py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded font-bold text-xs border border-amber-200">Salir Temp.</button>
+                <button onclick="restaurarNocturno(${spot.id})" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-xs shadow-sm">Restaurar</button>
+            </div>
+          `;
+      } else {
+          infoCliente = `<div class="font-bold text-slate-700 text-sm truncate">${spot.cliente_nombre}</div>${subInfo}`;
+          accionesHTML = `
+            <div class="flex gap-2 mt-2">
+                <button onclick="liberarPuesto(${spot.id})" class="flex-1 py-2 bg-white/80 hover:bg-white text-indigo-700 rounded font-bold text-xs border border-indigo-100 shadow-sm">Liberar</button>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mt-2">
+                 <button onclick="activarNocturno(${spot.id})" class="py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded text-[10px] font-semibold"><i class="fa-solid fa-moon"></i> Nocturno</button>
+                 <button onclick="editarNumeroPuesto(${spot.id}, '${spot.numero}')" class="py-1.5 text-slate-400 hover:text-indigo-600 text-[10px]"><i class="fa-solid fa-pen"></i> Editar</button>
+            </div>
+          `;
+      }
+    } 
+    // --- ESTADO RESERVADO ---
+    else if (spot.estado === 'reservado') {
       colorClass = "parking-card reservado";
-      infoCliente = `<div class="font-bold text-slate-700 text-sm truncate">Reservado</div>`;
-      accionHTML = `<button class="w-full py-2 bg-purple-100 text-purple-700 rounded font-bold text-xs">Ocupar Reserva</button>`;
-    } else {
-      accionHTML = `<button onclick="abrirModalAsignar(${spot.id}, '${spot.numero}')" class="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded font-bold text-xs shadow-sm">Asignar Vehículo</button>`;
+      infoCliente = `<div class="font-bold text-slate-700 text-sm truncate">Reservado</div><div class="text-[10px] text-purple-600">${spot.cliente_nombre || '---'}</div>`;
+      accionesHTML = `
+        <div class="flex gap-2 mt-2">
+            <button onclick="abrirModalAsignar(${spot.id}, '${spot.numero}', '${spot.cliente_placa}')" class="flex-1 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded font-bold text-xs">Ocupar</button>
+        </div>
+        <div class="mt-2 pt-2 border-t border-slate-100 flex justify-between items-center">
+             <button onclick="editarNumeroPuesto(${spot.id}, '${spot.numero}')" class="text-slate-400 hover:text-indigo-600 text-xs"><i class="fa-solid fa-pen"></i> Editar</button>
+             <button onclick="liberarPuesto(${spot.id})" class="text-slate-400 hover:text-red-500 text-xs"><i class="fa-solid fa-ban"></i> Cancelar</button>
+        </div>
+      `;
+    } 
+    // --- ESTADO LIBRE ---
+    else {
+        if (esNocturno) {
+            colorClass = "parking-card libre border-amber-200 bg-amber-50/30";
+            infoCliente = `
+                <div class="font-bold text-amber-800 text-sm truncate"><i class="fa-solid fa-moon"></i> Libre (Nocturno)</div>
+                <div class="text-[10px] text-amber-600">Reservado para: ${duenoOriginalNombre}</div>
+            `;
+            accionesHTML = `
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <button onclick="abrirModalAsignar(${spot.id}, '${spot.numero}')" class="py-2 bg-amber-500 hover:bg-amber-600 text-white rounded font-bold text-xs shadow-sm">Asignar Temp.</button>
+                    <button onclick="restaurarNocturno(${spot.id})" class="py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-xs shadow-sm">Restaurar</button>
+                </div>
+                <div class="mt-2 pt-2 border-t border-slate-100 flex justify-between items-center">
+                     <button onclick="editarNumeroPuesto(${spot.id}, '${spot.numero}')" class="text-slate-400 hover:text-indigo-600 text-xs"><i class="fa-solid fa-pen"></i> Editar</button>
+                     <button onclick="eliminarPuesto(${spot.id})" class="text-slate-400 hover:text-red-500 text-xs"><i class="fa-solid fa-trash"></i> Eliminar</button>
+                </div>
+            `;
+        } else {
+            accionesHTML = `
+            <div class="grid grid-cols-2 gap-2 mt-2">
+                <button onclick="abrirModalAsignar(${spot.id}, '${spot.numero}')" class="py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded font-bold text-xs shadow-sm">Ingreso</button>
+                <button onclick="abrirModalAsignar(${spot.id}, '${spot.numero}')" class="py-2 bg-purple-500 hover:bg-purple-600 text-white rounded font-bold text-xs shadow-sm">Reservar</button>
+            </div>
+            <div class="mt-2 pt-2 border-t border-slate-100 flex justify-between items-center">
+                 <button onclick="editarNumeroPuesto(${spot.id}, '${spot.numero}')" class="text-slate-400 hover:text-indigo-600 text-xs"><i class="fa-solid fa-pen"></i> Editar</button>
+                 <button onclick="eliminarPuesto(${spot.id})" class="text-slate-400 hover:text-red-500 text-xs"><i class="fa-solid fa-trash"></i> Eliminar</button>
+            </div>
+          `;
+        }
     }
 
     const card = document.createElement("div");
     card.className = `bg-white rounded-xl shadow-sm p-0 flex flex-col h-full ${colorClass}`;
     card.innerHTML = `
       <div class="relative flex-1 flex flex-col justify-between p-4">
+        ${badgeExtra}
         <div class="flex justify-between items-start">
           <div>
             <span class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Puesto</span>
             <h3 class="text-2xl font-bold text-slate-700">${spot.numero}</h3>
           </div>
           <div class="text-2xl opacity-20">
-             ${spot.estado === 'ocupado' ? '<i class="fa-solid fa-car-side text-indigo-500"></i>' : (spot.estado === 'reservado' ? '<i class="fa-solid fa-lock text-purple-500"></i>' : '<i class="fa-solid fa-check text-emerald-500"></i>')}
+             ${spot.estado === 'ocupado' ? '<i class="fa-solid fa-car-side text-indigo-500"></i>' : (spot.estado === 'reservado' ? '<i class="fa-solid fa-clock text-purple-500"></i>' : '<i class="fa-solid fa-check text-emerald-500"></i>')}
           </div>
         </div>
         <div class="mt-2 pt-2 border-t border-slate-100/50">${infoCliente}</div>
       </div>
-      <div class="p-2 pt-0 mt-auto">${accionHTML}</div>
+      <div class="p-3 pt-0 mt-auto bg-white/50 rounded-b-xl">${accionesHTML}</div>
     `;
-    
     container.appendChild(card);
   });
 }
 
-// --- MODAL ---
-window.abrirModalAsignar = function(id, numero) {
+// --- FUNCIONES ---
+
+window.activarNocturno = async function(id) {
+    if(!confirm("¿Activar modo Nocturno? El dueño actual se guardará y el puesto quedará libre.")) return;
+    try {
+        const res = await fetch("/api/puestos", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, accion: "activar_nocturno" })
+        });
+        const data = await res.json();
+        if(data.success) {
+            mostrarToast("Modo Nocturno activado");
+            cargarPuestos();
+        } else {
+            mostrarToast(data.error || "Error", "error");
+        }
+    } catch(e) { mostrarToast("Error de conexión", "error"); }
+}
+
+window.restaurarNocturno = async function(id) {
+    if(!confirm("¿Restaurar al dueño original?")) return;
+    try {
+        const res = await fetch("/api/puestos", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, accion: "restaurar_nocturno" })
+        });
+        const data = await res.json();
+        if(data.success) {
+            mostrarToast("Puesto restaurado");
+            cargarPuestos();
+        } else {
+            mostrarToast(data.error || "Error", "error");
+        }
+    } catch(e) { mostrarToast("Error de conexión", "error"); }
+}
+
+window.eliminarPuesto = async function(id) {
+    if(!confirm("¿Eliminar puesto permanentemente?")) return;
+    try {
+        const res = await fetch("/api/puestos", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: id })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            mostrarToast("Puesto eliminado");
+            cargarPuestos();
+        } else {
+            mostrarToast(data.error || "Error al eliminar", "error");
+        }
+    } catch (e) { console.error(e); mostrarToast("Error de conexión", "error"); }
+}
+
+window.editarNumeroPuesto = async function(id, numeroActual) {
+    const nuevoNumero = prompt("Nuevo número:", numeroActual);
+    if (!nuevoNumero || nuevoNumero === numeroActual) return;
+    try {
+        const res = await fetch("/api/puestos", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, accion: "editar_numero", nuevo_numero: nuevoNumero })
+        });
+        const data = await res.json();
+        if(data.success) {
+            mostrarToast("Número actualizado");
+            cargarPuestos();
+        } else {
+            mostrarToast(data.error || "Error al editar", "error");
+        }
+    } catch (e) { mostrarToast("Error de conexión", "error"); }
+}
+
+window.liberarPuesto = async function(id) {
+  if (!confirm("¿Liberar puesto?")) return;
+  try {
+    const res = await fetch("/api/puestos?id=" + id, { method: "PATCH" });
+    if (res.ok) {
+      mostrarToast("Puesto liberado");
+      cargarPuestos();
+    } else {
+        const err = await res.json();
+        mostrarToast(err.error || "Error al liberar", "error");
+    }
+  } catch (e) { mostrarToast("Error al liberar", "error"); }
+}
+
+window.crearPuestoRapido = async function() {
+  const numero = prompt("Número del nuevo puesto:");
+  if (!numero) return; 
+  try {
+    const res = await fetch("/api/puestos", { 
+      method: "POST", 
+      headers: { "Content-Type": "application/json" }, 
+      body: JSON.stringify({ numero }) 
+    });
+    const data = await res.json();
+    if (data.success) {
+      mostrarToast("Puesto creado");
+      cargarPuestos();
+    } else {
+      mostrarToast("Error: " + (data.error || "Desconocido"), "error");
+    }
+  } catch (e) { mostrarToast("Error", "error"); }
+}
+
+window.abrirModalAsignar = function(id, numero, placaReserva = null) {
+  const isReserveMode = event && event.target && event.target.innerText.includes('Reservar');
+  
+  // Buscar el puesto y asignarlo a la variable global
   puestoSeleccionado = allSpots.find(s => s.id === id);
+
+  // Si no se encuentra el puesto, abortar para evitar el error 400
+  if (!puestoSeleccionado) {
+      mostrarToast("Error: No se pudo identificar el puesto", "error");
+      return;
+  }
+
   document.getElementById("modalNombre").value = '';
   document.getElementById("modalPlaca").value = '';
   document.getElementById("modalTipo").value = '';
   document.getElementById("listaResultadosClientes").classList.add('hidden');
-  document.getElementById("modalSpotNumber").innerText = "Asignar a Puesto #" + numero;
+  document.getElementById("modalSpotNumber").innerText = isReserveMode ? "Reservar Puesto #" + numero : "Asignar a Puesto #" + numero;
+  
+  const checkReserva = document.getElementById("checkReserva");
+  if(checkReserva) checkReserva.checked = isReserveMode || (placaReserva !== null);
+
+  if(placaReserva && puestoSeleccionado.cliente_nombre) {
+      document.getElementById("modalNombre").value = puestoSeleccionado.cliente_nombre;
+      document.getElementById("modalPlaca").value = placaReserva;
+  }
 
   const modal = document.getElementById("modalAsignar");
   const content = document.getElementById("modalContent");
@@ -180,7 +359,6 @@ window.buscarClienteModal = function() {
   const query = document.getElementById("modalNombre").value.toLowerCase();
   const lista = document.getElementById("listaResultadosClientes");
   lista.innerHTML = '';
-  
   if (query.length < 2) { lista.classList.add('hidden'); return; }
 
   const filtrados = clientesCache.filter(c => 
@@ -221,9 +399,29 @@ window.cerrarModalAsignar = function() {
 window.confirmarAsignar = async function() {
   const nombreInput = document.getElementById("modalNombre").value.trim();
   const placa = document.getElementById("modalPlaca").value;
+  const esReserva = document.getElementById("checkReserva").checked;
   
+  // SEGURIDAD CRÍTICA: Verificar que tenemos un puesto válido seleccionado
+  if (!puestoSeleccionado || !puestoSeleccionado.id) {
+      mostrarToast("Error: Información del puesto perdida. Por favor intente de nuevo.", "error");
+      cerrarModalAsignar();
+      return;
+  }
+
   if (!nombreInput || !placa) {
     mostrarToast("Debe seleccionar o ingresar un cliente", "error");
+    return;
+  }
+
+  // Validar placa en uso localmente (rápido)
+  const placaEnUso = allSpots.find(s => 
+    s.cliente_placa === placa && 
+    s.estado !== 'libre' && 
+    s.id !== puestoSeleccionado.id
+  );
+
+  if (placaEnUso) {
+    mostrarToast(`Error: La placa ${placa} ya está en el puesto ${placaEnUso.numero}`, "error");
     return;
   }
 
@@ -233,6 +431,7 @@ window.confirmarAsignar = async function() {
     if (puestoSeleccionado.clienteData) {
       clienteId = puestoSeleccionado.clienteData.id;
     } else {
+      // Crear cliente nuevo
       const resCliente = await fetch("/api/clientes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -247,6 +446,7 @@ window.confirmarAsignar = async function() {
       if (dataCliente.success && dataCliente.id) {
         clienteId = dataCliente.id;
       } else {
+        // Intento fallback por si se creó pero no devolvió ID
         const todosClientes = await fetch("/api/clientes").then(r => r.json());
         const nuevo = todosClientes.find(c => c.placa === placa);
         if(nuevo) clienteId = nuevo.id;
@@ -258,56 +458,31 @@ window.confirmarAsignar = async function() {
       return;
     }
 
+    // ENVÍO AL SERVIDOR
     const resPuesto = await fetch("/api/puestos", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
         id: puestoSeleccionado.id, 
         cliente_id: clienteId, 
-        estado: 'ocupado'
+        estado: esReserva ? 'reservado' : 'ocupado',
+        es_reserva: esReserva 
       })
     });
 
+    const dataPuesto = await resPuesto.json();
+    
     if (resPuesto.ok) {
-      mostrarToast("Vehículo asignado correctamente");
+      mostrarToast(esReserva ? "Reserva creada correctamente" : "Vehículo asignado correctamente");
       cerrarModalAsignar();
       cargarPuestos();
     } else {
-      mostrarToast("Error asignando puesto", "error");
+      // Mostrar error específico del servidor
+      console.error("Error API:", dataPuesto);
+      mostrarToast(dataPuesto.error || "Error asignando puesto", "error");
     }
   } catch (e) {
-    console.error(e);
+    console.error("Error Frontend:", e);
     mostrarToast("Error de conexión", "error");
   }
-}
-
-window.liberarPuesto = async function(id) {
-  if (!confirm("¿Confirmar salida y liberar puesto?")) return;
-  try {
-    const res = await fetch("/api/puestos?id=" + id, { method: "PATCH" });
-    if (res.ok) {
-      mostrarToast("Puesto liberado");
-      cargarPuestos();
-    }
-  } catch (e) { mostrarToast("Error al liberar", "error"); }
-}
-
-window.crearPuestoRapido = async function() {
-  const numero = prompt("Número del nuevo puesto:");
-  if (!numero) return; 
-  
-  try {
-    const res = await fetch("/api/puestos", { 
-      method: "POST", 
-      headers: { "Content-Type": "application/json" }, 
-      body: JSON.stringify({ numero }) 
-    });
-    const data = await res.json();
-    if (data.success) {
-      mostrarToast("Puesto creado");
-      cargarPuestos();
-    } else {
-      mostrarToast("Error: " + (data.error || "Desconocido"), "error");
-    }
-  } catch (e) { mostrarToast("Error", "error"); }
 }
