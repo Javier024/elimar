@@ -1,9 +1,11 @@
 document.addEventListener("DOMContentLoaded", function () {
   let allTransactions = [];
   let filteredTransactions = [];
+  let deudoresList = [];
   let clientesCache = [];
   let puestosCache = [];
   let currentPage = 1;
+  let deudoresPage = 1; // Nueva paginación para deudores
   const itemsPerPage = 5;
 
   const PARKING = {
@@ -45,6 +47,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const resPuestos = await fetch("/api/puestos");
       puestosCache = await resPuestos.json();
 
+      await loadDeudores(1); // Cargar primera página de deudores
+
       currentPage = 1;
       renderTable();
       initAutocomplete();
@@ -52,6 +56,81 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error("Error cargando datos", error);
       mostrarToast("Error al cargar datos", "error");
     }
+  }
+
+  // --- LÓGICA DE DEUDORES CON PAGINACIÓN ---
+  async function loadDeudores(page) {
+      try {
+          const res = await fetch(`/api/caja?deudores=true&page=${page}`);
+          const data = await res.json();
+          
+          deudoresList = data.rows;
+          renderDeudores(data.total, data.totalPages, data.page);
+      } catch(e) { console.error(e); }
+  }
+
+  function renderDeudores(total, totalPages, currentPage) {
+      const container = document.getElementById("deudoresList");
+      const paginationContainer = document.getElementById("deudoresPagination");
+      if(!container || !paginationContainer) return;
+      
+      container.innerHTML = "";
+      
+      if (deudoresList.length === 0) {
+          container.innerHTML = `<div class="text-center text-sm text-green-600 py-4 font-medium"><i class="fa-solid fa-check-circle"></i> ¡Al día! No hay deudores este mes.</div>`;
+          paginationContainer.innerHTML = "";
+          return;
+      }
+
+      deudoresList.forEach(cliente => {
+          const div = document.createElement("div");
+          div.className = "flex items-center justify-between p-3 mb-2 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-colors";
+          div.innerHTML = `
+              <div class="flex flex-col">
+                  <span class="font-bold text-slate-800 text-sm">${cliente.nombre}</span>
+                  <span class="text-xs text-red-600 font-mono">${cliente.placa}</span>
+              </div>
+              ${cliente.telefono ? `
+                <button onclick="enviarRecordatorio('${cliente.nombre}', '${cliente.telefono}')" class="bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-1 transition-colors">
+                    <i class="fa-brands fa-whatsapp"></i> Recordar
+                </button>
+              ` : '<span class="text-xs text-slate-400">Sin celular</span>'}
+          `;
+          container.appendChild(div);
+      });
+
+      // Renderizar paginación de deudores
+      paginationContainer.innerHTML = `
+        <div class="flex justify-between items-center mt-2 text-xs text-slate-500">
+            <span>Total: ${total} Deudores</span>
+            <div class="flex gap-2">
+                <button onclick="changeDeudoresPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} class="px-2 py-1 border rounded hover:bg-slate-100 disabled:opacity-50"><i class="fa-solid fa-chevron-left"></i></button>
+                <span>Pág ${currentPage} de ${totalPages || 1}</span>
+                <button onclick="changeDeudoresPage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''} class="px-2 py-1 border rounded hover:bg-slate-100 disabled:opacity-50"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+        </div>
+      `;
+  }
+
+  window.changeDeudoresPage = function(page) {
+      if(page < 1) return;
+      deudoresPage = page;
+      loadDeudores(page);
+  }
+
+  function getSaludo() {
+      const hora = new Date().getHours();
+      if (hora >= 5 && hora < 12) return "Buenos días";
+      if (hora >= 12 && hora < 18) return "Buenas tardes";
+      return "Buenas noches";
+  }
+
+  window.enviarRecordatorio = function(nombre, telefono) {
+      const saludo = getSaludo();
+      const mensaje = `${saludo} ${nombre}, de parte de *${PARKING.nombre}*. \n\nLe recordamos amablemente que hasta el momento no tenemos registrado el pago de la mensualidad de este mes. \n\nQuedamos atentos a su amable colaboración. Muchas gracias.`;
+      
+      const url = `https://wa.me/57${telefono}?text=${encodeURIComponent(mensaje)}`;
+      window.open(url, "_blank");
   }
 
   // --- AUTOCOMPLETADO ---
@@ -104,85 +183,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // --- GENERACIÓN DE PDF BLOB ---
-  function crearPdfBlob(data) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    doc.setFontSize(18);
-    doc.text(PARKING.nombre, 105, 20, { align: "center" });
-    doc.setFontSize(10);
-    doc.text(`NIT: ${PARKING.nit} | Dir: ${PARKING.direccion}`, 105, 28, { align: "center" });
-    doc.setLineWidth(0.5);
-    doc.line(20, 32, 190, 32);
-
-    doc.setFontSize(12);
-    doc.text("RECIBO DE PAGO", 20, 45);
-    
-    doc.setFontSize(10);
-    doc.text(`Fecha: ${data.date}`, 20, 55);
-    doc.text(`Hora:  ${data.time}`, 20, 62);
-    doc.text(`Cliente: ${data.client}`, 20, 69);
-    doc.text(`Placa:  ${data.plate}`, 20, 76);
-    doc.text(`Puesto: ${data.spot}`, 20, 83);
-
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text(`TOTAL: ${formatMoney(data.amount)}`, 190, 100, { align: "right" });
-    doc.setFont("helvetica", "normal");
-    doc.text(`Método: ${data.method}`, 20, 100);
-
-    doc.setFontSize(8);
-    doc.setTextColor(100);
-    doc.text("Gracias por su visita.", 105, 130, { align: "center" });
-
-    return doc.output('blob');
-  }
-
-  // --- ENVIAR PDF WHATSAPP (RECIBE BLOB OPCIONAL) ---
-  async function enviarPdfWhatsApp(data, pdfBlob = null) {
-    try {
-      // Si no nos pasan el blob, lo generamos (para compatibilidad con descargas históricas)
-      const blob = pdfBlob || crearPdfBlob(data);
-      
-      const file = new File([blob], `Factura_${data.plate}_${data.date}.pdf`, { type: "application/pdf" });
-
-      // Verificar soporte nativo (Móvil)
-      if (navigator.share && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: `Recibo ${PARKING.nombre}`,
-          text: `Hola ${data.client}, adjunto tu recibo de pago del parqueadero.`
-        });
-        mostrarToast("PDF enviado correctamente");
-        return true; // Éxito
-      } else {
-        // FALLBACK PC (Descargar + Link)
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Factura_${data.plate}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        
-        const mensaje = `🅿️ *${PARKING.nombre}*\n\nHola ${data.client}, su recibo de pago por ${formatMoney(data.amount)} ha sido generado. \n\n📄 *Por favor revise el archivo PDF descargado en su dispositivo/PC.*`;
-        const waUrl = `https://wa.me/57${data.phone}?text=${encodeURIComponent(mensaje)}`;
-        window.open(waUrl, "_blank");
-        
-        mostrarToast("PDF descargado. Abriendo WhatsApp...");
-        return true;
-      }
-    } catch (error) {
-      console.error("Error al compartir:", error);
-      // Si el usuario canceló el cuadro de diálogo nativo, no es un error crítico
-      if (error.name !== 'AbortError') {
-          mostrarToast("Error al enviar PDF", "error");
-      }
-      return false; // Falló o canceló
-    }
-  }
-
   // --- FILTRADO ---
   window.filtrarTabla = function() {
     const term = document.getElementById("searchInput").value.toLowerCase();
@@ -198,7 +198,7 @@ document.addEventListener("DOMContentLoaded", function () {
     renderTable();
   };
 
-  // --- RENDERIZADO ---
+  // --- RENDERIZADO TABLA ---
   function renderTable() {
     const tbody = document.getElementById("listaCajaBody");
     if (!tbody) return;
@@ -226,6 +226,15 @@ document.addEventListener("DOMContentLoaded", function () {
       tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400">No se encontraron registros.</td></tr>`;
     } else {
       pageData.forEach(tx => {
+        // Formatear fecha de registro YYYY-MM-DD a DD/MM/YYYY
+        const fechaDisplay = new Date(tx.date + 'T00:00:00').toLocaleDateString('es-CO');
+        // Texto del periodo
+        let periodoTexto = "1 Noche";
+        if(tx.period_type === 'Mes') periodoTexto = "1 Mes";
+        else if(tx.period_type === 'Semana') periodoTexto = "1 Semana";
+        else if(tx.period_type === 'Dias') periodoTexto = `${tx.period_quantity || 1} Días`;
+        else if(tx.period_type === 'Noche') periodoTexto = `${tx.period_quantity || 1} Noche(s)`;
+
         let methodBadge = "";
         if (tx.method === "Efectivo") methodBadge = `<span class="px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">EFECTIVO</span>`;
         else if (tx.method === "Tarjeta") methodBadge = `<span class="px-2 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">TARJETA</span>`;
@@ -234,28 +243,19 @@ document.addEventListener("DOMContentLoaded", function () {
         const tr = document.createElement("tr");
         tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0 group";
         
-        const downloadPdfBtn = `
-            <button onclick="descargarPdfDeHistorial(${tx.id})" class="text-indigo-500 hover:bg-indigo-50 p-2 rounded-lg transition-all text-xs" title="Descargar PDF">
-                <i class="fa-solid fa-file-pdf"></i>
-            </button>
-        `;
-
         tr.innerHTML = `
-          <td class="px-6 py-4 text-xs text-slate-500 font-mono" data-label="Hora">${tx.time}</td>
+          <td class="px-6 py-4 text-xs text-slate-500 font-mono" data-label="Fecha">${fechaDisplay}</td>
           <td class="px-6 py-4 font-medium text-slate-700" data-label="Cliente">${tx.client}</td>
           <td class="px-6 py-4 text-sm text-slate-600" data-label="Vehículo">
             <div class="flex flex-col">
               <span class="font-mono font-bold">${tx.plate}</span>
-              <span class="text-xs text-slate-400">Puesto: ${tx.spot}</span>
+              <span class="text-xs text-slate-400">Puesto: ${tx.spot} | ${periodoTexto}</span>
             </div>
           </td>
           <td class="px-6 py-4" data-label="Método">${methodBadge}</td>
           <td class="px-6 py-4 text-right font-bold text-slate-800" data-label="Valor">${formatMoney(tx.amount)}</td>
           <td class="px-6 py-4 text-center" data-label="Acciones">
-            <div class="flex items-center justify-center gap-2">
-                ${downloadPdfBtn}
-                <button onclick="deleteTransaction(${tx.id})" class="text-rose-500 hover:bg-rose-50 p-2 rounded-lg transition-all text-xs" title="Anular"><i class="fa-solid fa-trash"></i></button>
-            </div>
+             <button onclick="deleteTransaction(${tx.id})" class="text-rose-500 hover:bg-rose-50 p-2 rounded-lg transition-all text-xs" title="Anular"><i class="fa-solid fa-trash"></i></button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -287,7 +287,7 @@ document.addEventListener("DOMContentLoaded", function () {
     renderTable();
   }
 
-  // --- REGISTRAR COBRO (CORREGIDO: SHARE PRIMERO) ---
+  // --- REGISTRAR COBRO (CON PERIODO) ---
   window.registrarCobro = async function(e) {
     if (e) e.preventDefault();
     const client = document.getElementById("cajaCliente").value;
@@ -296,34 +296,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const amount = document.getElementById("cajaMonto").value;
     const method = document.getElementById("cajaMetodo").value;
     const celular = document.getElementById("cajaCelular").value;
-    const sendWhatsapp = document.getElementById("cajaSendWhatsapp").checked;
+    const periodType = document.getElementById("cajaPeriodType").value;
+    const periodQty = document.getElementById("cajaPeriodQty").value;
 
     if (!amount || amount <= 0) { mostrarToast("Ingrese un monto válido", "error"); return; }
-    if (sendWhatsapp && !celular) { mostrarToast("Ingrese el celular para enviar", "error"); return; }
 
     try {
-      const now = new Date();
-      const time = now.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
-      const date = now.toLocaleDateString("es-CO");
-      
-      const payload = { client, plate, spot, method, amount, time, date, phone: celular };
-
-      // 1. GENERAR PDF INMEDIATAMENTE (Para tener el archivo listo)
-      const pdfBlob = crearPdfBlob(payload);
-
-      // 2. EJECUTAR COMPARTIR/DESCARGAR INMEDIATAMENTE (Gesto de usuario activo)
-      if (sendWhatsapp) {
-          await enviarPdfWhatsApp(payload, pdfBlob);
-      } else {
-          // Descarga directa
-          const url = URL.createObjectURL(pdfBlob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `Factura_${plate}.pdf`;
-          a.click();
-      }
-
-      // 3. GUARDAR EN BASE DE DATOS (En segundo plano, después de la interacción del usuario)
       const res = await fetch("/api/caja", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -333,7 +311,9 @@ document.addEventListener("DOMContentLoaded", function () {
           spot: spot || "---",
           phone: celular || "",
           amount,
-          method
+          method,
+          period_type: periodType,
+          period_quantity: periodQty
         })
       });
 
@@ -341,38 +321,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
       if (data.success) {
         document.getElementById("formCaja").reset();
+        // Resetear valores por defecto
+        document.getElementById("cajaPeriodQty").value = 1;
+        
         currentPage = 1;
         loadData(); 
         mostrarToast("Cobro registrado correctamente");
       } else {
-        // Nota: El usuario ya tiene el PDF, pero falló el guardado en BD.
-        mostrarToast("Cobro registrado localmente, pero error en servidor", "error");
+        mostrarToast("Error al registrar", "error");
       }
-
     } catch (error) {
       console.error(error);
       mostrarToast("Error de conexión", "error");
     }
-  }
-
-  window.descargarPdfDeHistorial = function(id) {
-      const tx = allTransactions.find(t => t.id === id);
-      if(tx) {
-          const blob = crearPdfBlob({
-              client: tx.client,
-              plate: tx.plate,
-              spot: tx.spot,
-              method: tx.method,
-              amount: tx.amount,
-              time: tx.time,
-              date: tx.date
-          });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `Factura_${tx.plate}.pdf`;
-          a.click();
-      }
   }
 
   window.deleteTransaction = async function(id) {
