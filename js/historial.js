@@ -1,9 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
   let allHistory = [], filteredHistory = [], currentPage = 1, itemsPerPage = 10
   
-  // ==========================================
   // 1. CARGAR DATOS
-  // ==========================================
   async function loadHistory() {
     try {
       const res = await fetch("/api/historial");
@@ -19,9 +17,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // ==========================================
   // 2. FILTROS
-  // ==========================================
   window.applyFilters = function() {
     if (!allHistory) return; 
     const startStr = document.getElementById("filterDateStart").value, 
@@ -33,8 +29,12 @@ document.addEventListener("DOMContentLoaded", function () {
       let matchDate = true, matchPlate = true, matchType = true
       if (startStr && item.date < startStr) matchDate = false
       if (endStr && item.date > endStr) matchDate = false
+      
+      // CORRECCIÓN: Buscamos también en la columna 'spot' (Puesto)
       const searchableText = (item.plate || "") + " " + (item.spot || "");
       if (plateStr && !searchableText.toLowerCase().includes(plateStr)) matchPlate = false
+      
+      // CORRECCIÓN: Filtro estricto por categoría
       if (typeVal !== "all" && item.type !== typeVal) matchType = false
       return matchDate && matchPlate && matchType
     })
@@ -42,9 +42,7 @@ document.addEventListener("DOMContentLoaded", function () {
     renderTable()
   }
 
-  // ==========================================
   // 3. MODALES Y LIMPIEZA
-  // ==========================================
   window.openCleanModal = function() {
       const modal = document.getElementById("modalCleanHistory");
       modal.classList.remove('hidden');
@@ -70,14 +68,16 @@ document.addEventListener("DOMContentLoaded", function () {
       const to = document.getElementById("cleanDateTo").value;
       const type = document.getElementById("cleanType").value;
 
-      if ((!from || !to) && type === 'all') {
-          mostrarToast("Seleccione fechas O una categoría", "error");
+      // CORRECCIÓN: Permitir borrar todo si se selecciona "Todo"
+      if (!from && !to && type !== 'all') {
+          mostrarToast("Seleccione fechas O la opción 'Todas las Categorías'", "error");
           return;
       }
       
       let confirmMsg = "¿Estás seguro de BORRAR registros?";
       if (type !== 'all') confirmMsg += ` de la categoría: ${type.toUpperCase()}`;
       if (from && to) confirmMsg += ` entre ${from} y ${to}`;
+      if (!from && !to) confirmMsg += " de TODA LA BASE DE DATOS.";
       confirmMsg += "? Esta acción no se puede deshacer.";
 
       if (!confirm(confirmMsg)) return;
@@ -86,7 +86,7 @@ document.addEventListener("DOMContentLoaded", function () {
           const params = new URLSearchParams();
           if (from) params.append("fromDate", from);
           if (to) params.append("toDate", to);
-          if (type !== 'all') params.append("type", type);
+          if (type && type !== 'all') params.append("type", type);
 
           const res = await fetch(`/api/historial?${params.toString()}`, { method: "DELETE" });
           const data = await res.json();
@@ -99,13 +99,12 @@ document.addEventListener("DOMContentLoaded", function () {
               mostrarToast(data.error || "Error al limpiar", "error");
           }
       } catch(e) {
+          console.error(e);
           mostrarToast("Error de conexión", "error");
       }
   }
 
-  // ==========================================
   // 4. DESCARGA CSV
-  // ==========================================
   window.downloadReport = function() {
     if (!allHistory || allHistory.length === 0) { mostrarToast("No hay datos", "error"); return; }
     
@@ -141,10 +140,8 @@ document.addEventListener("DOMContentLoaded", function () {
     mostrarToast("Reporte CSV generado y descargado");
   }
 
-  // ==========================================
   // 5. UTILIDADES
-  // ==========================================
-  function mostrarToast(mensaje, tipo = 'success') {
+  function mostrarToast(menido, tipo = 'success') {
     const toast = document.createElement('div')
     toast.className = `fixed top-5 right-5 z-50 px-4 py-3 rounded shadow-lg text-sm font-bold transition-all transform translate-x-full ${tipo === 'error' ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'}`
     toast.innerText = mensaje; 
@@ -153,9 +150,7 @@ document.addEventListener("DOMContentLoaded", function () {
     setTimeout(() => { toast.classList.add('translate-x-full'); setTimeout(() => toast.remove(), 300); }, 3000)
   }
 
-  // ==========================================
-  // 6. RENDERIZADO INTELIGENTE (ACTUALIZADO)
-  // ==========================================
+  // 6. RENDERIZADO (ACTUALIZADO)
   function renderTable() {
     const tbody = document.getElementById("historyTableBody"); 
     if(!tbody) return; 
@@ -177,6 +172,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const val = parseFloat(h.paid || 0);
         if(h.type === 'GASTO') totalRevenue -= val; 
         else totalRevenue += val; 
+        // Incluimos los nuevos tipos de vehículos en la cuenta de activos
         if (!h.exit && ['Carro Particular', 'Motocicleta', 'Camioneta/SUV'].includes(h.type)) activeCount++; 
     });
     updateKPIs(totalVisits, totalRevenue, activeCount);
@@ -195,22 +191,25 @@ document.addEventListener("DOMContentLoaded", function () {
         let displayType = item.type; 
         let displayDetail = item.paid ? "$" + item.paid : "-"; 
 
-        // --- LÓGICA VISUAL SEGÚN TIPO ---
-
+        // --- LÓGICA VISUAL ---
+        
         // 1. VEHÍCULOS (ACTUALIZADO)
-        if (['Carro Particular', 'Motocicleta', 'Camioneta/SUV'].includes(item.type)) {
+        if (['Carro Particular', 'Motocicleta', 'Colaborador', 'Camioneta/SUV', 'Carro', 'Moto', 'Camioneta'].includes(item.type)) {
             const duration = calculateDuration(item.entry, item.exit);
             displayExit = item.exit || `<span class="text-amber-600 font-bold">En curso</span>`;
             displayDetail = duration;
             if (item.paid > 0) displayDetail += `<br><span class="text-emerald-600 font-bold text-xs">Pagado: $${item.paid}</span>`;
             
-            // Colores específicas para distinguir
-            let badgeColor = "bg-slate-100 text-slate-600"; // Default
-            if(item.type === 'Carro Particular') badgeColor = "bg-blue-100 text-blue-700";
-            if(item.type === 'Motocicleta') badgeColor = "bg-orange-100 text-orange-700";
-            if(item.type === 'Camioneta/SUV') badgeColor = "bg-purple-100 text-purple-700";
+            // Colores y Badge para los tipos específicos
+            let badgeColor = "bg-slate-100 text-slate-600";
+            let badgeText = item.type.toUpperCase();
             
-            displayType = `<span class="${badgeColor} px-2 py-0.5 rounded text-[10px] font-bold uppercase border border-opacity-20 border-current">${item.type}</span>`;
+            if(item.type === 'Carro Particular') { badgeColor = "bg-blue-100 text-blue-700"; }
+            else if(item.type === 'Motocicleta') { badgeColor = "bg-orange-100 text-orange-700"; badgeText = "MOTOCICLETA"; }
+            else if (item.type === 'Camioneta/SUV') { badgeColor = "bg-purple-100 text-purple-700"; badgeText = "CAMIONETA/SUV"; }
+            else if (item.type === 'Colaborador') { badgeColor = "bg-teal-100 text-teal-700"; }
+            
+            displayType = `<span class="${badgeColor} px-2 py-0.5 rounded text-[10px] font-bold uppercase border border-opacity-20 border-current">${badgeText}</span>`;
         } 
         // 2. GASTOS
         else if (item.type === 'GASTO') {
@@ -221,8 +220,9 @@ document.addEventListener("DOMContentLoaded", function () {
         // 3. CAJA (Cobros)
         else if (item.type === 'CAJA') {
             displayType = `<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Cobro</span>`;
-            displayDetail = `<span class="text-emerald-600 font-bold">+$${item.paid}</span><br><span class="text-xs text-slate-500 truncate max-w-[150px]">${item.spot}</span>`;
+            // CORRECCIÓN: Si es CAJA, placa es "---", y el detalle va en la columna Descripción.
             displayPlate = "---";
+            displayDetail = `<span class="text-emerald-600 font-bold">+$${item.paid}</span><br><span class="text-xs text-slate-500 truncate max-w-[150px]">${item.spot}</span>`;
         }
         // 4. CLIENTE (Creación/Edición)
         else if (item.type === 'CLIENTE') {

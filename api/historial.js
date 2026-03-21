@@ -10,7 +10,6 @@ export default async function handler(req, res) {
     if (req.method === "POST") {
       const { plate, type, spot, entry, exit, paid, date, action_type, description, amount, ref_date } = req.body;
       
-      // Si es un log del sistema (Caja, Gastos, etc.)
       if (action_type) {
           const logDate = ref_date || new Date().toISOString().split("T")[0];
           const logTime = new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
@@ -22,7 +21,6 @@ export default async function handler(req, res) {
           return res.status(200).json({ success: true, message: "Log registrado" });
       }
 
-      // Registro normal de vehículo
       const now = new Date()
       const d = date || now.toISOString().split("T")[0]
       const t = entry || now.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })
@@ -38,12 +36,13 @@ export default async function handler(req, res) {
       const { id, paid } = req.body
       const now = new Date()
       const exit = now.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })
+      
       await db.execute({ sql: `UPDATE historial SET exit=?, paid=? WHERE id=?`, args: [exit, paid, id] })
       return res.status(200).json({ success: true })
     }
     
     if (req.method === "DELETE") {
-      // Seguridad extra: req.query podría ser undefined en algunos entornos
+      // Seguridad extra por si req.query es undefined
       const query = req.query || {};
       const { id, fromDate, toDate, type } = query;
 
@@ -53,20 +52,23 @@ export default async function handler(req, res) {
           return res.status(200).json({ success: true });
       }
 
-      // CASO 2: LIMPIEZA MASIVA
-      if (!fromDate && !toDate && !type) {
-          return res.status(400).json({ error: "Se requiere fecha o categoría para limpiar" });
+      // CASO 2: LIMPIEZA MASIVA (Con opción de BORRAR TODO)
+      // Si el tipo es 'all' y no hay fechas, borramos todo.
+      const isDeleteAll = (type === 'all' && !fromDate && !toDate);
+
+      if (!isDeleteAll && !fromDate && !toDate) {
+          return res.status(400).json({ error: "Seleccione fechas O una categoría" });
       }
 
       let sql = "DELETE FROM historial WHERE 1=1";
       let params = [];
 
-      if (fromDate && toDate) {
+      if (!isDeleteAll && fromDate && toDate) {
           sql += " AND date >= ? AND date <= ?";
           params.push(fromDate, toDate);
       }
 
-      if (type && type !== 'all') {
+      if (!isDeleteAll && type && type !== 'all') {
           sql += " AND type = ?";
           params.push(type);
       }
@@ -82,7 +84,7 @@ export default async function handler(req, res) {
   }
 }
 
-// --- FUNCIÓN PARA REGISTRAR EVENTOS DESDE OTRAS PÁGINAS ---
+// --- FUNCIÓN PARA LOGS ---
 export async function logToHistory(action_type, description, amount = 0, plate = "---", ref_date = null) {
   try {
     const logDate = ref_date || new Date().toISOString().split("T")[0];
