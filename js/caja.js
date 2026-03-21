@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let clientesCache = [];
   let puestosCache = [];
   let currentPage = 1;
-  let deudoresPage = 1; // Nueva paginación para deudores
+  let deudoresPage = 1;
   const itemsPerPage = 5;
 
   const PARKING = {
@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const resPuestos = await fetch("/api/puestos");
       puestosCache = await resPuestos.json();
 
-      await loadDeudores(1); // Cargar primera página de deudores
+      await loadDeudores(1);
 
       currentPage = 1;
       renderTable();
@@ -99,7 +99,6 @@ document.addEventListener("DOMContentLoaded", function () {
           container.appendChild(div);
       });
 
-      // Renderizar paginación de deudores
       paginationContainer.innerHTML = `
         <div class="flex justify-between items-center mt-2 text-xs text-slate-500">
             <span>Total: ${total} Deudores</span>
@@ -127,7 +126,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
   window.enviarRecordatorio = function(nombre, telefono) {
       const saludo = getSaludo();
-      const mensaje = `${saludo} ${nombre}, de parte de *${PARKING.nombre}*. \n\nLe recordamos amablemente que hasta el momento no tenemos registrado el pago de la mensualidad de este mes. \n\nQuedamos atentos a su amable colaboración. Muchas gracias.`;
+      // Mensaje actualizado: Más cordial y con emojis
+      const mensaje = `¡${saludo}! 👋 ${nombre}.\n\n` +
+                      `Esperamos que estés teniendo un excelente día. 🌟\n\n` +
+                      `Te saluda el equipo de *${PARKING.nombre}* 🚗. Queremos recordarte amablemente que, hasta el momento, no tenemos registrado el pago de la mensualidad de este mes. 📅\n\n` +
+                      `Quedamos atentos a tu amable colaboración para mantener tu servicio al día. ¡Muchas gracias! 💰✨`;
       
       const url = `https://wa.me/57${telefono}?text=${encodeURIComponent(mensaje)}`;
       window.open(url, "_blank");
@@ -136,6 +139,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // --- AUTOCOMPLETADO ---
   function initAutocomplete() {
     const inputCliente = document.getElementById("cajaCliente");
+    if (!inputCliente) return; 
     const listaSugerencias = document.createElement("div");
     listaSugerencias.className = "absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl mt-1 max-h-40 overflow-y-auto z-20 hidden custom-scroll";
     inputCliente.parentNode.style.position = "relative";
@@ -149,7 +153,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const filtered = clientesCache.filter(c => c.nombre.toLowerCase().includes(val));
+      const filtered = clientesCache.filter(c => c.nombre && c.nombre.toLowerCase().includes(val));
       if (filtered.length > 0) {
         filtered.forEach(c => {
           const div = document.createElement("div");
@@ -190,8 +194,8 @@ document.addEventListener("DOMContentLoaded", function () {
       filteredTransactions = [...allTransactions];
     } else {
       filteredTransactions = allTransactions.filter(t => 
-        t.client.toLowerCase().includes(term) || 
-        t.plate.toLowerCase().includes(term)
+        t.client && t.client.toLowerCase().includes(term) || 
+        t.plate && t.plate.toLowerCase().includes(term)
       );
     }
     currentPage = 1;
@@ -211,9 +215,11 @@ document.addEventListener("DOMContentLoaded", function () {
     let totalIncome = 0, cashIncome = 0, cardIncome = 0;
     allTransactions.forEach(tx => {
       const amount = parseFloat(tx.amount);
-      totalIncome += amount;
-      if (tx.method === "Efectivo") cashIncome += amount;
-      else cardIncome += amount;
+      if(!isNaN(amount)) {
+        totalIncome += amount;
+        if (tx.method === "Efectivo") cashIncome += amount;
+        else cardIncome += amount;
+      }
     });
 
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val };
@@ -226,9 +232,11 @@ document.addEventListener("DOMContentLoaded", function () {
       tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400">No se encontraron registros.</td></tr>`;
     } else {
       pageData.forEach(tx => {
-        // Formatear fecha de registro YYYY-MM-DD a DD/MM/YYYY
-        const fechaDisplay = new Date(tx.date + 'T00:00:00').toLocaleDateString('es-CO');
-        // Texto del periodo
+        let fechaDisplay = "N/A";
+        try {
+            fechaDisplay = new Date(tx.date + 'T00:00:00').toLocaleDateString('es-CO');
+        } catch(e) { console.warn(e); }
+        
         let periodoTexto = "1 Noche";
         if(tx.period_type === 'Mes') periodoTexto = "1 Mes";
         else if(tx.period_type === 'Semana') periodoTexto = "1 Semana";
@@ -321,7 +329,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
       if (data.success) {
         document.getElementById("formCaja").reset();
-        // Resetear valores por defecto
         document.getElementById("cajaPeriodQty").value = 1;
         
         currentPage = 1;
