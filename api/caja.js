@@ -1,16 +1,16 @@
 import { db } from "./db.js"
+import { logToHistory } from "./historial.js" // Importamos el logger
 
 export default async function handler(req, res) {
   try {
-    // --- GET: LISTA DE DEUDORES (PAGINADA) ---
+    // --- GET: LISTA DE DEUDORES ---
     if (req.method === "GET" && req.query.deudores === "true") {
       const page = parseInt(req.query.page) || 1;
-      const limit = 5; // 5 deudores por página
+      const limit = 5;
       const offset = (page - 1) * limit;
       
       const currentMonthPrefix = new Date().toISOString().slice(0, 7);
       
-      // Consulta para obtener los deudores de la página actual
       const result = await db.execute(`
         SELECT nombre, placa, telefono 
         FROM clientes 
@@ -21,7 +21,6 @@ export default async function handler(req, res) {
         LIMIT ? OFFSET ?
       `, [`${currentMonthPrefix}%`, limit, offset]);
 
-      // Consulta para contar el total de deudores (para calcular páginas)
       const countResult = await db.execute(`
         SELECT COUNT(*) as total 
         FROM clientes 
@@ -47,7 +46,7 @@ export default async function handler(req, res) {
       return res.status(200).json(result.rows);
     }
 
-    // --- POST: REGISTRAR COBRO (CON PERIODO) ---
+    // --- POST: REGISTRAR COBRO ---
     if (req.method === "POST") {
       const { client, plate, spot, phone, amount, method, client_id, period_type, period_quantity } = req.body;
 
@@ -55,9 +54,9 @@ export default async function handler(req, res) {
 
       const now = new Date();
       const time = now.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
-      const date = now.toISOString().split("T")[0]; // YYYY-MM-DD
+      const date = now.toISOString().split("T")[0];
 
-      // Insertar en Caja con los nuevos campos
+      // Insertar en Caja
       await db.execute({
         sql: `INSERT INTO caja (client, plate, spot, phone, amount, method, time, date, period_type, period_quantity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
@@ -69,18 +68,28 @@ export default async function handler(req, res) {
           method || "Efectivo", 
           time, 
           date,
-          period_type || "Noche", // Por defecto Noche si no envían nada
+          period_type || "Noche",
           period_quantity || 1
         ]
       });
 
-      // --- INTEGRACIÓN CON HISTORIAL ---
+      // --- INTEGRACIÓN CON HISTORIAL (Pendientes) ---
+      // Esto actualiza registros viejos si el cliente debía dinero
       if (plate && plate !== "---") {
           await db.execute({
               sql: `UPDATE historial SET paid=? WHERE plate=? AND exit IS NOT NULL AND paid = 0`,
               args: [amount, plate]
           });
       }
+
+      // --- NUEVO: REGISTRAR EN HISTORIAL GLOBAL ---
+      // Registramos que se hizo un cobro nuevo
+      await logToHistory(
+          'CAJA', 
+          `Cobro: ${client} (${plate})`, 
+          amount, 
+          plate
+      );
 
       return res.status(200).json({ success: true, message: "Cobro registrado" });
     }

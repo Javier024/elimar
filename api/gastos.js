@@ -1,4 +1,5 @@
 import { db } from "./db.js"
+import { logToHistory } from "./historial.js" // Importamos el logger
 
 export default async function handler(req, res){
   try{
@@ -9,10 +10,21 @@ export default async function handler(req, res){
     if(req.method === "POST"){
       const { concept, category, amount, date } = req.body
       if(!concept || !amount){ return res.status(400).json({ error:"Concepto y monto son obligatorios" }) }
+      
+      // Insertar en Gastos
       await db.execute({
         sql:`INSERT INTO gastos (concept, category, amount, date) VALUES (?,?,?,?)`,
         args:[concept, category || "General", amount, date || new Date().toISOString().split("T")[0]]
       })
+
+      // --- NUEVO: REGISTRAR EN HISTORIAL GLOBAL ---
+      await logToHistory(
+          'GASTO', 
+          concept, 
+          amount, 
+          "---"
+      );
+
       return res.status(200).json({ success:true })
     }
     if(req.method === "PUT"){

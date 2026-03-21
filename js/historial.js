@@ -9,12 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const res = await fetch("/api/historial");
       if (!res.ok) throw new Error("Error en API");
       const data = await res.json();
-      
-      if (!Array.isArray(data)) {
-          allHistory = [];
-      } else {
-          allHistory = data; 
-      }
+      allHistory = Array.isArray(data) ? data : [];
       applyFilters(); 
     } catch (error) {
       console.error("Error:", error);
@@ -29,7 +24,6 @@ document.addEventListener("DOMContentLoaded", function () {
   // ==========================================
   window.applyFilters = function() {
     if (!allHistory) return; 
-
     const startStr = document.getElementById("filterDateStart").value, 
           endStr = document.getElementById("filterDateEnd").value, 
           plateStr = document.getElementById("filterPlate").value.toLowerCase(), 
@@ -39,10 +33,8 @@ document.addEventListener("DOMContentLoaded", function () {
       let matchDate = true, matchPlate = true, matchType = true
       if (startStr && item.date < startStr) matchDate = false
       if (endStr && item.date > endStr) matchDate = false
-      // Filtrar por placa O por descripción (spot) para que busque gastos también
       const searchableText = (item.plate || "") + " " + (item.spot || "");
       if (plateStr && !searchableText.toLowerCase().includes(plateStr)) matchPlate = false
-      
       if (typeVal !== "all" && item.type !== typeVal) matchType = false
       return matchDate && matchPlate && matchType
     })
@@ -51,34 +43,54 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // ==========================================
-  // 3. LIMPIEZA DE HISTORIAL
+  // 3. MODALES Y LIMPIEZA
   // ==========================================
   window.openCleanModal = function() {
       const modal = document.getElementById("modalCleanHistory");
-      modal.classList.remove("hidden");
-      setTimeout(() => modal.classList.remove("opacity-0"), 10);
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => {
+          modal.classList.remove('opacity-0', 'scale-95');
+          modal.classList.add('opacity-100', 'scale-100');
+      }, 10);
   }
 
   window.closeCleanModal = function() {
       const modal = document.getElementById("modalCleanHistory");
-      modal.classList.add("opacity-0");
-      setTimeout(() => modal.classList.add("hidden"), 200);
+      modal.classList.remove('opacity-100', 'scale-100');
+      modal.classList.add('opacity-0', 'scale-95');
+      setTimeout(() => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+      }, 200);
   }
 
   window.cleanHistoryRange = async function() {
       const from = document.getElementById("cleanDateFrom").value;
       const to = document.getElementById("cleanDateTo").value;
+      const type = document.getElementById("cleanType").value;
 
-      if (!from || !to) {
-          mostrarToast("Seleccione ambas fechas", "error");
+      if ((!from || !to) && type === 'all') {
+          mostrarToast("Seleccione fechas O una categoría", "error");
           return;
       }
       
-      if (!confirm(`¿Estás seguro de BORRAR todo el historial entre ${from} y ${to}? Esta acción no se puede deshacer.`)) return;
+      let confirmMsg = "¿Estás seguro de BORRAR registros?";
+      if (type !== 'all') confirmMsg += ` de la categoría: ${type.toUpperCase()}`;
+      if (from && to) confirmMsg += ` entre ${from} y ${to}`;
+      confirmMsg += "? Esta acción no se puede deshacer.";
+
+      if (!confirm(confirmMsg)) return;
 
       try {
-          const res = await fetch(`/api/historial?fromDate=${from}&toDate=${to}`, { method: "DELETE" });
+          const params = new URLSearchParams();
+          if (from) params.append("fromDate", from);
+          if (to) params.append("toDate", to);
+          if (type !== 'all') params.append("type", type);
+
+          const res = await fetch(`/api/historial?${params.toString()}`, { method: "DELETE" });
           const data = await res.json();
+          
           if (data.success) {
               mostrarToast("Historial limpiado correctamente");
               closeCleanModal();
@@ -96,32 +108,37 @@ document.addEventListener("DOMContentLoaded", function () {
   // ==========================================
   window.downloadReport = function() {
     if (!allHistory || allHistory.length === 0) { mostrarToast("No hay datos", "error"); return; }
+    
     const downloadType = document.getElementById("downloadType").value
     let dataToDownload = allHistory
     if (downloadType !== "all") dataToDownload = allHistory.filter(item => item.type === downloadType)
 
-    let csvContent = "data:text/csv;charset=utf-8,"; 
-    csvContent += "ID,Fecha,Hora,Salida,Placa/Ref,Tipo,Descripcion/Spot,Valor\n" // Cabecera ajustada
+    let csvContent = "ID,Fecha,Hora,Salida,Placa/Referencia,Tipo,Descripcion,Valor\r\n"; 
     
     dataToDownload.forEach(row => { 
+      const escapeCsv = (val) => {
+          if (!val) return "";
+          return '"' + String(val).replace(/"/g, '""') + '"';
+      };
+
       const rowStr = [
-        row.id, 
-        row.date, 
-        row.entry, 
-        row.exit || "", 
-        row.plate, 
-        row.type, 
-        (row.spot || "").replace(/,/g, " "), // Limpiar comas
-        row.paid || 0
-      ].join(","); 
-      csvContent += rowStr + "\n" 
+        row.id, row.date, row.entry, row.exit || "", row.plate, row.type, row.spot || "", row.paid || 0
+      ].map(escapeCsv).join(","); 
+      
+      csvContent += rowStr + "\r\n"; 
     })
 
-    const encodedUri = encodeURI(csvContent), link = document.createElement("a")
-    link.setAttribute("href", encodedUri)
-    link.setAttribute("download", `historial_completo_${new Date().toISOString().split('T')[0]}.csv`)
-    document.body.appendChild(link); link.click(); document.body.removeChild(link); 
-    mostrarToast("Reporte descargado")
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `reporte_${downloadType}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    mostrarToast("Reporte CSV generado y descargado");
   }
 
   // ==========================================
@@ -137,7 +154,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // ==========================================
-  // 6. RENDERIZADO INTELIGENTE
+  // 6. RENDERIZADO INTELIGENTE (ACTUALIZADO)
   // ==========================================
   function renderTable() {
     const tbody = document.getElementById("historyTableBody"); 
@@ -157,12 +174,10 @@ document.addEventListener("DOMContentLoaded", function () {
     let totalVisits = 0, totalRevenue = 0, activeCount = 0;
     filteredHistory.forEach(h => { 
         totalVisits++;
-        // Si es GASTO, restamos; si es CAJA, sumamos; si es AUTO, sumamos pagado
         const val = parseFloat(h.paid || 0);
-        if(h.type === 'GASTO') totalRevenue -= val; // Gasto = Salida de dinero
-        else totalRevenue += val; // Caja/Pagado = Entrada
-
-        if (!h.exit && (h.type === 'Carro' || h.type === 'Moto' || h.type === 'Camioneta')) activeCount++; 
+        if(h.type === 'GASTO') totalRevenue -= val; 
+        else totalRevenue += val; 
+        if (!h.exit && ['Carro Particular', 'Motocicleta', 'Camioneta/SUV'].includes(h.type)) activeCount++; 
     });
     updateKPIs(totalVisits, totalRevenue, activeCount);
 
@@ -173,58 +188,68 @@ document.addEventListener("DOMContentLoaded", function () {
         const tr = document.createElement("tr"); 
         tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0";
         
-        // Lógica de visualización según el tipo
-        let col1 = item.date;
-        let col2 = item.entry; // Hora acción
-        let col3 = "-"; // Salida
-        let col4 = item.plate; // Placa
-        let col5 = item.type; // Tipo
-        let col6 = item.paid ? "$" + item.paid : "-"; // Valor
+        let displayDate = item.date;
+        let displayEntry = item.entry; 
+        let displayExit = "-"; 
+        let displayPlate = item.plate; 
+        let displayType = item.type; 
+        let displayDetail = item.paid ? "$" + item.paid : "-"; 
 
-        // Si es VEHÍCULO
-        if (['Carro', 'Moto', 'Camioneta'].includes(item.type)) {
+        // --- LÓGICA VISUAL SEGÚN TIPO ---
+
+        // 1. VEHÍCULOS (ACTUALIZADO)
+        if (['Carro Particular', 'Motocicleta', 'Camioneta/SUV'].includes(item.type)) {
             const duration = calculateDuration(item.entry, item.exit);
-            col3 = item.exit || `<span class="text-amber-600 font-bold">En curso</span>`;
-            col6 = duration;
-            if (item.paid > 0) {
-                col6 += `<br><span class="text-emerald-600 font-bold text-xs">Pagado: $${item.paid}</span>`;
-            }
+            displayExit = item.exit || `<span class="text-amber-600 font-bold">En curso</span>`;
+            displayDetail = duration;
+            if (item.paid > 0) displayDetail += `<br><span class="text-emerald-600 font-bold text-xs">Pagado: $${item.paid}</span>`;
+            
+            // Colores específicas para distinguir
+            let badgeColor = "bg-slate-100 text-slate-600"; // Default
+            if(item.type === 'Carro Particular') badgeColor = "bg-blue-100 text-blue-700";
+            if(item.type === 'Motocicleta') badgeColor = "bg-orange-100 text-orange-700";
+            if(item.type === 'Camioneta/SUV') badgeColor = "bg-purple-100 text-purple-700";
+            
+            displayType = `<span class="${badgeColor} px-2 py-0.5 rounded text-[10px] font-bold uppercase border border-opacity-20 border-current">${item.type}</span>`;
         } 
-        // Si es GASTO
+        // 2. GASTOS
         else if (item.type === 'GASTO') {
-            col1 = item.date; // Fecha
-            col2 = `<span class="text-red-600 font-bold">-</span>`; // Sin hora entrada
-            col3 = `<span class="text-red-600 font-bold">-</span>`; // Sin salida
-            col4 = "N/A"; // Sin placa
-            col5 = `<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-bold">GASTO</span>`;
-            col6 = `<span class="text-red-600 font-bold">-$${item.paid}</span><br><span class="text-xs text-slate-500">${item.spot}</span>`;
+            displayType = `<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Gasto</span>`;
+            displayDetail = `<span class="text-red-600 font-bold">-$${item.paid}</span><br><span class="text-xs text-slate-500 truncate max-w-[150px]" title="${item.spot}">${item.spot}</span>`;
+            displayPlate = "N/A";
         }
-        // Si es CAJA
+        // 3. CAJA (Cobros)
         else if (item.type === 'CAJA') {
-            col1 = item.date;
-            col2 = item.entry;
-            col3 = "-";
-            col4 = "---";
-            col5 = `<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-xs font-bold">COBRO</span>`;
-            col6 = `<span class="text-emerald-600 font-bold">+$${item.paid}</span><br><span class="text-xs text-slate-500">${item.spot}</span>`;
+            displayType = `<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Cobro</span>`;
+            displayDetail = `<span class="text-emerald-600 font-bold">+$${item.paid}</span><br><span class="text-xs text-slate-500 truncate max-w-[150px]">${item.spot}</span>`;
+            displayPlate = "---";
         }
-        // Si es CLIENTE
+        // 4. CLIENTE (Creación/Edición)
         else if (item.type === 'CLIENTE') {
-            col1 = item.date;
-            col2 = item.entry;
-            col3 = "-";
-            col4 = "N/A";
-            col5 = `<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">CLIENTE</span>`;
-            col6 = `<span class="text-slate-600">Registro</span><br><span class="text-xs text-slate-500">${item.spot}</span>`;
+            displayType = `<span class="bg-cyan-100 text-cyan-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Cliente</span>`;
+            displayDetail = `<span class="text-slate-600 text-xs">Registro</span><br><span class="text-xs text-slate-500 truncate max-w-[150px]">${item.spot}</span>`;
+            displayPlate = "N/A";
+        }
+        // 5. PUESTO (Administrativo)
+        else if (item.type === 'PUESTO') {
+            displayType = `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Puesto</span>`;
+            displayDetail = `<span class="text-slate-600 text-xs">Acción Admin</span><br><span class="text-xs text-slate-500 truncate max-w-[150px]">${item.spot}</span>`;
+            displayPlate = "---";
+        }
+        // 6. OTROS
+        else {
+             displayType = `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold uppercase">${item.type}</span>`;
+             displayDetail = item.spot || "-";
+             displayPlate = item.plate || "---";
         }
 
         tr.innerHTML = `
-          <td class="px-6 py-4 text-sm text-slate-500 font-medium">${col1}</td>
-          <td class="px-6 py-4 text-sm font-mono text-slate-600">${col2}</td>
-          <td class="px-6 py-4 text-sm font-mono">${col3}</td>
-          <td class="px-6 py-4 text-sm font-bold text-slate-800 font-mono tracking-wider">${col4}</td>
-          <td class="px-6 py-4 text-sm text-slate-600">${col5}</td>
-          <td class="px-6 py-4 text-sm text-slate-600 text-right">${col6}</td>
+          <td class="px-4 py-3 text-sm text-slate-500 font-medium whitespace-nowrap">${displayDate}</td>
+          <td class="px-4 py-3 text-sm font-mono text-slate-600">${displayEntry}</td>
+          <td class="px-4 py-3 text-sm font-mono">${displayExit}</td>
+          <td class="px-4 py-3 text-sm font-bold text-slate-800 font-mono tracking-wider">${displayPlate}</td>
+          <td class="px-4 py-3 text-sm text-slate-600">${displayType}</td>
+          <td class="px-4 py-3 text-sm text-slate-600 text-right">${displayDetail}</td>
         `;
         tbody.appendChild(tr)
       })

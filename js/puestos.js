@@ -1,4 +1,3 @@
-// parqueo/js/puestos.js
 let allSpots = [];
 let clientesCache = [];
 let currentFilterStatus = 'todos';
@@ -101,13 +100,20 @@ function renderMapa(busquedaTerm = "") {
     // --- METADATOS ---
     let meta = {};
     try { meta = JSON.parse(spot.llave_caracteristicas || '{}'); } catch(e){}
+    
     const esNocturno = meta.tipo === 'nocturno';
+    const tieneLlave = meta.llave && meta.llave.tiene === true;
+    
     let duenoOriginalNombre = '';
-
     if (esNocturno && meta.owner_id) {
         const dueno = clientesCache.find(c => c.id === meta.owner_id);
         duenoOriginalNombre = dueno ? dueno.nombre : 'Desconocido';
         badgeExtra = `<span class="absolute top-2 right-2 bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-indigo-200 z-10"><i class="fa-solid fa-moon"></i> NOCTURNO</span>`;
+    }
+
+    // Badge de Llave (Sin fecha)
+    if (tieneLlave) {
+        badgeExtra += `<span class="absolute top-2 right-2 bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-200 z-10 flex items-center gap-1 shadow-sm"><i class="fa-solid fa-key"></i> LLAVE</span>`;
     }
 
     // --- ESTADO OCUPADO ---
@@ -116,11 +122,27 @@ function renderMapa(busquedaTerm = "") {
       
       let subInfo = `<div class="text-[10px] font-mono text-slate-500 uppercase bg-indigo-50 px-1.5 py-0.5 rounded inline-block border border-indigo-100 text-indigo-700">${spot.cliente_placa || '---'}</div>`;
       
+      // 1. FECHA DE REGISTRO (Siempre muestra si hay cliente)
+      let fechaRegistroHTML = '';
+      if (spot.hora_inicio && !isNaN(spot.hora_inicio)) {
+          const fechaObj = new Date(Number(spot.hora_inicio) * 1000);
+          const fechaFormateada = fechaObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+          fechaRegistroHTML = `<div class="text-[10px] text-slate-400 mt-1 flex items-center gap-1"><i class="fa-regular fa-calendar"></i> ${fechaFormateada}</div>`;
+      }
+
+      // 2. INFO LLAVE (Solo descripción, sin fecha)
+      let llaveInfoHTML = '';
+      if (tieneLlave) {
+          llaveInfoHTML = `<div class="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded mt-1 border border-amber-100 flex items-center gap-1"><i class="fa-solid fa-key"></i> ${meta.llave.desc || 'Sin descripción'}</div>`;
+      }
+
       if (esNocturno) {
           infoCliente = `
             <div class="text-amber-600 text-[10px] font-bold mb-0.5"><i class="fa-solid fa-user-clock"></i> USUARIO TEMPORAL</div>
             <div class="font-bold text-slate-700 text-sm truncate">${spot.cliente_nombre}</div>
             ${subInfo}
+            ${fechaRegistroHTML}
+            ${llaveInfoHTML}
             <div class="mt-1 text-[9px] text-slate-400 italic">Dueño real: ${duenoOriginalNombre}</div>
           `;
           accionesHTML = `
@@ -130,13 +152,14 @@ function renderMapa(busquedaTerm = "") {
             </div>
           `;
       } else {
-          infoCliente = `<div class="font-bold text-slate-700 text-sm truncate">${spot.cliente_nombre}</div>${subInfo}`;
+          infoCliente = `<div class="font-bold text-slate-700 text-sm truncate">${spot.cliente_nombre}</div>${subInfo}${fechaRegistroHTML}${llaveInfoHTML}`;
           accionesHTML = `
             <div class="flex gap-2 mt-2">
                 <button onclick="liberarPuesto(${spot.id})" class="flex-1 py-2 bg-white/80 hover:bg-white text-indigo-700 rounded font-bold text-xs border border-indigo-100 shadow-sm">Liberar</button>
             </div>
             <div class="grid grid-cols-2 gap-2 mt-2">
                  <button onclick="activarNocturno(${spot.id})" class="py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded text-[10px] font-semibold"><i class="fa-solid fa-moon"></i> Nocturno</button>
+                 <button onclick="gestionarLlave(${spot.id}, ${tieneLlave}, '${(meta.llave ? meta.llave.desc : '').replace(/'/g, "\\'")}')" class="py-1.5 ${tieneLlave ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'} hover:opacity-80 rounded text-[10px] font-semibold border border-transparent"><i class="fa-solid fa-key"></i> Llave</button>
                  <button onclick="editarNumeroPuesto(${spot.id}, '${spot.numero}')" class="py-1.5 text-slate-400 hover:text-indigo-600 text-[10px]"><i class="fa-solid fa-pen"></i> Editar</button>
             </div>
           `;
@@ -145,7 +168,16 @@ function renderMapa(busquedaTerm = "") {
     // --- ESTADO RESERVADO ---
     else if (spot.estado === 'reservado') {
       colorClass = "parking-card reservado";
-      infoCliente = `<div class="font-bold text-slate-700 text-sm truncate">Reservado</div><div class="text-[10px] text-purple-600">${spot.cliente_nombre || '---'}</div>`;
+      
+      // Fecha también para reservas
+      let fechaRegistroHTML = '';
+      if (spot.hora_inicio && !isNaN(spot.hora_inicio)) {
+          const fechaObj = new Date(Number(spot.hora_inicio) * 1000);
+          const fechaFormateada = fechaObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+          fechaRegistroHTML = `<div class="text-[10px] text-slate-400 mt-1 flex items-center gap-1"><i class="fa-regular fa-calendar"></i> ${fechaFormateada}</div>`;
+      }
+
+      infoCliente = `<div class="font-bold text-slate-700 text-sm truncate">Reservado</div><div class="text-[10px] text-purple-600">${spot.cliente_nombre || '---'}</div>${fechaRegistroHTML}`;
       accionesHTML = `
         <div class="flex gap-2 mt-2">
             <button onclick="abrirModalAsignar(${spot.id}, '${spot.numero}', '${spot.cliente_placa}')" class="flex-1 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded font-bold text-xs">Ocupar</button>
@@ -210,7 +242,51 @@ function renderMapa(busquedaTerm = "") {
   });
 }
 
-// --- FUNCIONES ---
+// --- GESTIÓN LLAVES ---
+window.gestionarLlave = function(id, tieneActual, descActual) {
+    const accion = tieneActual 
+        ? confirm("Actualmente hay una llave guardada.\n¿Desea RECUPERAR la llave (Borrar registro)?") 
+        : confirm("¿El cliente DEJA la llave en el puesto?");
+    
+    if (!accion) return; 
+
+    let nuevaInfoLlave = null;
+
+    if (!tieneActual) {
+        const desc = prompt("Características de la llave (Color, tipo, marca):", "");
+        if (desc === null) return; 
+        
+        nuevaInfoLlave = {
+            tiene: true,
+            desc: desc.trim() || "Sin descripción"
+        };
+    }
+
+    actualizarInfoLlaveAPI(id, nuevaInfoLlave);
+}
+
+async function actualizarInfoLlaveAPI(id, llaveInfo) {
+    try {
+        const res = await fetch("/api/puestos", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                id, 
+                accion: "actualizar_llave", 
+                llave_info: llaveInfo 
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            mostrarToast("Información de llave actualizada");
+            cargarPuestos();
+        } else {
+            mostrarToast(data.error || "Error", "error");
+        }
+    } catch(e) { mostrarToast("Error de conexión", "error"); }
+}
+
+// --- FUNCIONES EXISTENTES ---
 
 window.activarNocturno = async function(id) {
     if(!confirm("¿Activar modo Nocturno? El dueño actual se guardará y el puesto quedará libre.")) return;
@@ -321,10 +397,8 @@ window.crearPuestoRapido = async function() {
 window.abrirModalAsignar = function(id, numero, placaReserva = null) {
   const isReserveMode = event && event.target && event.target.innerText.includes('Reservar');
   
-  // Buscar el puesto y asignarlo a la variable global
   puestoSeleccionado = allSpots.find(s => s.id === id);
 
-  // Si no se encuentra el puesto, abortar para evitar el error 400
   if (!puestoSeleccionado) {
       mostrarToast("Error: No se pudo identificar el puesto", "error");
       return;
@@ -335,6 +409,10 @@ window.abrirModalAsignar = function(id, numero, placaReserva = null) {
   document.getElementById("modalTipo").value = '';
   document.getElementById("listaResultadosClientes").classList.add('hidden');
   document.getElementById("modalSpotNumber").innerText = isReserveMode ? "Reservar Puesto #" + numero : "Asignar a Puesto #" + numero;
+  
+  document.getElementById('checkKey').checked = false;
+  document.getElementById('modalKeyDesc').value = '';
+  document.getElementById('keyDetailsDiv').classList.add('hidden');
   
   const checkReserva = document.getElementById("checkReserva");
   if(checkReserva) checkReserva.checked = isReserveMode || (placaReserva !== null);
@@ -401,7 +479,15 @@ window.confirmarAsignar = async function() {
   const placa = document.getElementById("modalPlaca").value;
   const esReserva = document.getElementById("checkReserva").checked;
   
-  // SEGURIDAD CRÍTICA: Verificar que tenemos un puesto válido seleccionado
+  const checkKey = document.getElementById('checkKey').checked;
+  let llaveInfo = null;
+  if (checkKey) {
+      llaveInfo = {
+          tiene: true,
+          desc: document.getElementById('modalKeyDesc').value.trim()
+      };
+  }
+  
   if (!puestoSeleccionado || !puestoSeleccionado.id) {
       mostrarToast("Error: Información del puesto perdida. Por favor intente de nuevo.", "error");
       cerrarModalAsignar();
@@ -413,7 +499,6 @@ window.confirmarAsignar = async function() {
     return;
   }
 
-  // Validar placa en uso localmente (rápido)
   const placaEnUso = allSpots.find(s => 
     s.cliente_placa === placa && 
     s.estado !== 'libre' && 
@@ -431,7 +516,6 @@ window.confirmarAsignar = async function() {
     if (puestoSeleccionado.clienteData) {
       clienteId = puestoSeleccionado.clienteData.id;
     } else {
-      // Crear cliente nuevo
       const resCliente = await fetch("/api/clientes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -446,7 +530,6 @@ window.confirmarAsignar = async function() {
       if (dataCliente.success && dataCliente.id) {
         clienteId = dataCliente.id;
       } else {
-        // Intento fallback por si se creó pero no devolvió ID
         const todosClientes = await fetch("/api/clientes").then(r => r.json());
         const nuevo = todosClientes.find(c => c.placa === placa);
         if(nuevo) clienteId = nuevo.id;
@@ -458,7 +541,6 @@ window.confirmarAsignar = async function() {
       return;
     }
 
-    // ENVÍO AL SERVIDOR
     const resPuesto = await fetch("/api/puestos", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -466,7 +548,8 @@ window.confirmarAsignar = async function() {
         id: puestoSeleccionado.id, 
         cliente_id: clienteId, 
         estado: esReserva ? 'reservado' : 'ocupado',
-        es_reserva: esReserva 
+        es_reserva: esReserva,
+        llave_info: llaveInfo 
       })
     });
 
@@ -477,7 +560,6 @@ window.confirmarAsignar = async function() {
       cerrarModalAsignar();
       cargarPuestos();
     } else {
-      // Mostrar error específico del servidor
       console.error("Error API:", dataPuesto);
       mostrarToast(dataPuesto.error || "Error asignando puesto", "error");
     }
