@@ -1,6 +1,6 @@
 // parqueo/api/clientes.js
 import { db } from "./db.js";
-import { logToHistory } from "./historial.js" // Importamos el logger
+import { logToHistory } from "./historial.js"; 
 
 export default async function handler(req, res) {
   try {
@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
     // --- POST: Crear nuevo cliente ---
     if (req.method === "POST") {
-      const { nombre, telefono, placa, tipo } = req.body;
+      const { nombre, telefono, placa, tipo, fecha_registro, medio_pago, medio_detalle } = req.body;
 
       if (!nombre || !placa) {
         return res.status(400).json({ error: "Nombre y Placa son obligatorios" });
@@ -27,17 +27,24 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Esta placa ya está registrada en el sistema." });
       }
 
-      const fechaHoy = new Date().toISOString().split("T")[0];
+      // Lógica para determinar el pago final (si es 'Otro', usa el detalle)
+      const pagoFinal = (medio_pago === 'Otro') ? medio_detalle : medio_pago;
+      
+      // Si no envían fecha, usamos la de hoy por defecto
+      const fechaAUsar = fecha_registro || new Date().toISOString().split("T")[0];
+      
+      // Nota: 'creado_en' es numeric en tu DB, guardamos timestamp
+      const timestampAhora = Date.now(); 
       
       await db.execute({
-        sql: `INSERT INTO clientes (nombre, telefono, placa, tipo_vehiculo, creado_en) VALUES (?, ?, ?, ?, ?)`,
-        args: [nombre, telefono, placa, tipo, fechaHoy] 
+        // Aseguramos que el orden de las columnas coincida con las de tu tabla
+        sql: `INSERT INTO clientes (nombre, telefono, placa, tipo_vehiculo, creado_en, created_at, fecha_registro, medio_pago) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [nombre, telefono, placa, tipo, timestampAhora, new Date().toISOString(), fechaAUsar, pagoFinal] 
       });
 
-      // --- NUEVO: REGISTRAR EN HISTORIAL GLOBAL ---
       await logToHistory(
           'CLIENTE', 
-          `Nuevo Cliente: ${nombre}`, 
+          `Nuevo Cliente: ${nombre} (${pagoFinal})`, 
           0, 
           placa
       );
@@ -47,13 +54,16 @@ export default async function handler(req, res) {
 
     // --- PUT: Actualizar cliente ---
     if (req.method === "PUT") {
-      const { id, nombre, telefono, placa, tipo } = req.body;
+      const { id, nombre, telefono, placa, tipo, fecha_registro, medio_pago, medio_detalle } = req.body;
       
       if (!id) return res.status(400).json({ error: "ID es requerido para actualizar" });
 
+      const pagoFinal = (medio_pago === 'Otro') ? medio_detalle : medio_pago;
+
       await db.execute({
-        sql: `UPDATE clientes SET nombre = ?, telefono = ?, placa = ?, tipo_vehiculo = ? WHERE id = ?`,
-        args: [nombre, telefono, placa, tipo, id]
+        // Incluimos las nuevas columnas en el UPDATE
+        sql: `UPDATE clientes SET nombre = ?, telefono = ?, placa = ?, tipo_vehiculo = ?, fecha_registro = ?, medio_pago = ? WHERE id = ?`,
+        args: [nombre, telefono, placa, tipo, fecha_registro, pagoFinal, id]
       });
       
       return res.status(200).json({ success: true, message: "Cliente actualizado correctamente" });

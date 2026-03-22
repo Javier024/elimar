@@ -4,58 +4,67 @@ let allClients = [];
 let currentPage = 1;
 const itemsPerPage = 5;
 
-// Se ejecuta cuando la página carga
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Sistema Clientes Iniciado...");
     loadClients();
 
-    // Listener para el formulario de CREAR
     const form = document.getElementById('formCliente');
-    if(form) {
-        form.addEventListener('submit', handleCreateClient);
-    }
+    if(form) form.addEventListener('submit', handleCreateClient);
 
-    // Listener para la BÚSQUEDA
     const searchInput = document.getElementById('searchInput');
     if(searchInput) {
         searchInput.addEventListener('input', (e) => {
-            currentPage = 1; // Volver a la página 1 al buscar
+            currentPage = 1;
             renderTable(e.target.value);
         });
     }
-});
 
-// --- FUNCIONES DE CARGA DE DATOS ---
+    // Lógica campo "Otro" en Crear
+    const medioPagoSelect = document.getElementById('medioPago');
+    const otroContainer = document.getElementById('otroPagoContainer');
+    if(medioPagoSelect && otroContainer) {
+        medioPagoSelect.addEventListener('change', (e) => {
+            otroContainer.classList.toggle('hidden', e.target.value !== 'Otro');
+        });
+    }
+    
+    // Lógica campo "Otro" en Editar
+    const editMedioPagoSelect = document.getElementById('editMedioPago');
+    const editOtroContainer = document.getElementById('editOtroPagoContainer');
+    if(editMedioPagoSelect && editOtroContainer) {
+        editMedioPagoSelect.addEventListener('change', (e) => {
+            editOtroContainer.classList.toggle('hidden', e.target.value !== 'Otro');
+        });
+    }
+});
 
 async function loadClients() {
     try {
         const res = await fetch('/api/clientes');
         if (!res.ok) throw new Error('Error al cargar clientes');
         const data = await res.json();
-        allClients = data; // Guardar en memoria global
+        allClients = data;
         renderTable();
     } catch (error) {
         console.error(error);
-        // Mostrar error visualmente en la tabla
         const tbody = document.getElementById('listaClientesBody');
-        if(tbody) tbody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500 py-4">Error cargando datos: ${error.message}</td></tr>`;
+        if(tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-center text-red-500 py-4">Error cargando datos: ${error.message}</td></tr>`;
     }
 }
-
-// --- FUNCIÓN PARA CREAR CLIENTE ---
 
 async function handleCreateClient(e) {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
     const originalText = btn.innerHTML;
     
-    // Obtener valores
     const nombre = document.getElementById('nombre').value;
     const telefono = document.getElementById('telefono').value;
     const placa = document.getElementById('placa').value.toUpperCase();
     const tipo = document.getElementById('vehiculo').value;
+    const fecha_registro = document.getElementById('fechaRegistro').value;
+    const medio_pago = document.getElementById('medioPago').value;
+    const medio_detalle = document.getElementById('otroPagoInput').value;
 
-    // Estado de carga en el botón
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
 
@@ -63,18 +72,16 @@ async function handleCreateClient(e) {
         const res = await fetch('/api/clientes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nombre, telefono, placa, tipo })
+            body: JSON.stringify({ nombre, telefono, placa, tipo, fecha_registro, medio_pago, medio_detalle })
         });
 
         const data = await res.json();
-
-        if (!res.ok) {
-            throw new Error(data.error || 'Error desconocido');
-        }
+        if (!res.ok) throw new Error(data.error || 'Error desconocido');
 
         alert(data.message);
-        e.target.reset(); // Limpiar formulario
-        loadClients(); // Recargar tabla
+        e.target.reset();
+        document.getElementById('otroPagoContainer').classList.add('hidden');
+        loadClients();
 
     } catch (error) {
         alert("Error: " + error.message);
@@ -84,38 +91,30 @@ async function handleCreateClient(e) {
     }
 }
 
-// --- RENDERIZADO DE TABLA Y PAGINACIÓN ---
-
 function renderTable(filterText = '') {
     const tbody = document.getElementById('listaClientesBody');
     if(!tbody) return;
     tbody.innerHTML = '';
 
-    // 1. Filtrar datos
     const filtered = allClients.filter(c => 
         c.nombre.toLowerCase().includes(filterText.toLowerCase()) || 
         c.placa.toLowerCase().includes(filterText.toLowerCase())
     );
 
     document.getElementById('totalCount').innerText = filtered.length;
-
-    // 2. Calcular paginación
     const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
     if (currentPage > totalPages) currentPage = totalPages;
-    
     const start = (currentPage - 1) * itemsPerPage;
     const end = start + itemsPerPage;
     const pageData = filtered.slice(start, end);
 
-    // 3. Actualizar controles de paginación
     document.getElementById('currentPage').innerText = currentPage;
     document.getElementById('totalPages').innerText = totalPages;
     document.getElementById('btnPrev').disabled = currentPage === 1;
     document.getElementById('btnNext').disabled = currentPage === totalPages;
 
-    // 4. Dibujar filas HTML
     if (pageData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-400">No se encontraron clientes</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-slate-400">No se encontraron clientes</td></tr>';
         return;
     }
 
@@ -123,7 +122,15 @@ function renderTable(filterText = '') {
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 border-b border-slate-50 transition-colors group";
         
-        // AGREGADO: Botón de Eliminar en la tabla
+        const fechaDisplay = client.fecha_registro ? client.fecha_registro : '<span class="text-slate-300 text-xs">Sin fecha</span>';
+        let badgeMedio = '';
+        if(client.medio_pago) {
+            let colorClass = 'bg-slate-100 text-slate-600 border-slate-200';
+            if(['Mensual', 'Quincenal'].includes(client.medio_pago)) colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-100';
+            if(['Diario', 'Semanal'].includes(client.medio_pago)) colorClass = 'bg-amber-50 text-amber-700 border-amber-100';
+            badgeMedio = `<div class="mt-1"><span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${colorClass}">${client.medio_pago}</span></div>`;
+        }
+        
         tr.innerHTML = `
             <td class="px-6 py-4">
                 <div class="font-medium text-slate-800">${client.nombre}</div>
@@ -133,19 +140,15 @@ function renderTable(filterText = '') {
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
                     <i class="fa-solid ${getIconForType(client.tipo_vehiculo)}"></i> ${client.tipo_vehiculo || 'N/A'}
                 </span>
+                ${badgeMedio}
             </td>
             <td class="px-6 py-4 font-mono text-slate-600 font-medium">${client.placa}</td>
             <td class="px-6 py-4 text-slate-500">${client.telefono || '-'}</td>
+            <td class="px-6 py-4 text-slate-500 text-xs">${fechaDisplay}</td>
             <td class="px-6 py-4 text-right">
                 <div class="flex items-center justify-end gap-2">
-                    <!-- Botón Editar -->
-                    <button onclick="openEditModal(${client.id})" class="text-slate-400 hover:text-indigo-600 transition-colors p-1" title="Editar">
-                        <i class="fa-solid fa-pen-to-square"></i>
-                    </button>
-                    <!-- Botón Eliminar (NUEVO) -->
-                    <button onclick="deleteClient(${client.id})" class="text-slate-400 hover:text-red-600 transition-colors p-1" title="Eliminar">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
+                    <button onclick="openEditModal(${client.id})" class="text-slate-400 hover:text-indigo-600 transition-colors p-1" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button onclick="deleteClient(${client.id})" class="text-slate-400 hover:text-red-600 transition-colors p-1" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
                 </div>
             </td>
         `;
@@ -159,67 +162,59 @@ function changePage(direction) {
     renderTable(searchInput ? searchInput.value : '');
 }
 
-// --- LÓGICA DE ELIMINACIÓN (DESDE LA TABLA) ---
-
 async function deleteClient(id) {
-    // 1. Confirmación nativa del navegador
-    if(!confirm("¿Estás seguro de que deseas eliminar este cliente? Esta acción no se puede deshacer.")) {
-        return;
-    }
-
+    if(!confirm("¿Estás seguro de que deseas eliminar este cliente?")) return;
     try {
-        const res = await fetch('/api/clientes', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id })
-        });
-        
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-
-        alert("Cliente eliminado correctamente");
-        loadClients(); // Recargar la tabla para quitar la fila
+        const res = await fetch('/api/clientes', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+        if (!res.ok) throw new Error((await res.json()).error);
+        alert("Cliente eliminado");
+        loadClients();
     } catch (error) {
-        alert("Error al eliminar: " + error.message);
+        alert("Error: " + error.message);
     }
 }
-
-// --- LÓGICA DEL MODAL (EDICIÓN) ---
 
 function openEditModal(id) {
     const client = allClients.find(c => c.id === id);
     if (!client) return;
 
-    // Llenar campos del modal
     document.getElementById('editId').value = client.id;
     document.getElementById('editNombre').value = client.nombre;
     document.getElementById('editTelefono').value = client.telefono || '';
     document.getElementById('editPlaca').value = client.placa;
     document.getElementById('editVehiculo').value = client.tipo_vehiculo || 'Carro';
+    document.getElementById('editFechaRegistro').value = client.fecha_registro || '';
+    
+    const medio = client.medio_pago || 'Diario';
+    const options = document.getElementById('editMedioPago').options;
+    let found = false;
+    for (let i = 0; i < options.length; i++) {
+        if (options[i].value === medio) {
+            document.getElementById('editMedioPago').value = medio;
+            document.getElementById('editOtroPagoContainer').classList.add('hidden');
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        document.getElementById('editMedioPago').value = 'Otro';
+        document.getElementById('editOtroPagoInput').value = medio;
+        document.getElementById('editOtroPagoContainer').classList.remove('hidden');
+    }
 
-    // Mostrar modal con animación
     const modal = document.getElementById('modalEdit');
     const content = document.getElementById('modalContent');
-    
     modal.classList.remove('hidden');
-    setTimeout(() => {
-        modal.classList.remove('opacity-0');
-        content.classList.remove('opacity-0', 'scale-95');
-        content.classList.add('scale-100');
-    }, 10);
+    setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('opacity-0', 'scale-95'); content.classList.add('scale-100'); }, 10);
 }
 
 function closeModal() {
     const modal = document.getElementById('modalEdit');
     const content = document.getElementById('modalContent');
-    
     modal.classList.add('opacity-0');
     content.classList.remove('scale-100');
     content.classList.add('opacity-0', 'scale-95');
-    
-    setTimeout(() => {
-        modal.classList.add('hidden');
-    }, 200);
+    setTimeout(() => { modal.classList.add('hidden'); }, 200);
 }
 
 async function updateClient() {
@@ -228,54 +223,36 @@ async function updateClient() {
     const telefono = document.getElementById('editTelefono').value;
     const placa = document.getElementById('editPlaca').value.toUpperCase();
     const tipo = document.getElementById('editVehiculo').value;
+    const fecha_registro = document.getElementById('editFechaRegistro').value;
+    const medio_pago = document.getElementById('editMedioPago').value;
+    const medio_detalle = document.getElementById('editOtroPagoInput').value;
 
-    if (!nombre || !placa) {
-        alert("Nombre y placa son obligatorios");
-        return;
-    }
+    if (!nombre || !placa) { alert("Nombre y placa son obligatorios"); return; }
 
     try {
         const res = await fetch('/api/clientes', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, nombre, telefono, placa, tipo })
+            body: JSON.stringify({ id, nombre, telefono, placa, tipo, fecha_registro, medio_pago, medio_detalle })
         });
-        
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-
-        alert("Cliente actualizado correctamente");
+        if (!res.ok) throw new Error((await res.json()).error);
+        alert("Actualizado");
         closeModal();
         loadClients();
-    } catch (error) {
-        alert("Error al actualizar: " + error.message);
-    }
+    } catch (error) { alert("Error: " + error.message); }
 }
 
-// Esta función se mantiene por si usas el botón eliminar DENTRO del modal
 async function deleteClientFromModal() {
     const id = document.getElementById('editId').value;
-    if(!confirm("¿Eliminar este cliente desde el editor?")) return;
-
+    if(!confirm("¿Eliminar este cliente?")) return;
     try {
-        const res = await fetch('/api/clientes', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id })
-        });
-        
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-
-        alert("Cliente eliminado");
+        const res = await fetch('/api/clientes', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+        if (!res.ok) throw new Error((await res.json()).error);
+        alert("Eliminado");
         closeModal();
         loadClients();
-    } catch (error) {
-        alert("Error al eliminar: " + error.message);
-    }
+    } catch (error) { alert("Error: " + error.message); }
 }
-
-// --- UTILIDADES ---
 
 function getIconForType(tipo) {
     if (!tipo) return 'fa-car';
@@ -285,17 +262,12 @@ function getIconForType(tipo) {
     return 'fa-car';
 }
 
-// Función para el menú móvil
 window.toggleMenu = function() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('mobileMenuOverlay');
-    const isClosed = sidebar.classList.contains('-translate-x-full');
-    
-    if (isClosed) {
-        sidebar.classList.remove('-translate-x-full');
-        overlay.classList.remove('hidden');
+    if (sidebar.classList.contains('-translate-x-full')) {
+        sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden');
     } else {
-        sidebar.classList.add('-translate-x-full');
-        overlay.classList.add('hidden');
+        sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden');
     }
 };

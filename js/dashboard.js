@@ -1,5 +1,20 @@
 // parqueo/js/dashboard.js
 
+// --- 1. GUARDIÁN DE SEGURIDAD ---
+// Se ejecuta inmediatamente al cargar el archivo, ANTES de mostrar nada.
+(function checkAuth() {
+    const user = sessionStorage.getItem('parkingUser');
+    
+    // Si NO hay usuario guardado en esta sesión:
+    if (!user) {
+        // Redirigir al login y REEMPLAZAR el historial.
+        // Esto hace que el botón "Atrás" ya no vuelva al dashboard.
+        window.location.replace('index.html');
+    }
+})();
+// ---------------------------------
+
+
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("Dashboard: Iniciando...");
     mostrarFecha();
@@ -36,10 +51,8 @@ function mostrarFecha() {
 function toggleMenu() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('mobileMenuOverlay');
-    
     if (sidebar && overlay) {
         sidebar.classList.toggle('-translate-x-full');
-        
         if (sidebar.classList.contains('-translate-x-full')) {
             overlay.classList.add('hidden');
             overlay.classList.remove('flex');
@@ -50,11 +63,21 @@ function toggleMenu() {
     }
 }
 
+// --- 2. FUNCIÓN CERRAR SESIÓN (Bloqueo Total) ---
 function cerrarSesion() {
     if(confirm('¿Estás seguro de que deseas cerrar sesión?')) {
-        window.location.href = '/index.html';
+        // 1. Borrar la marca de sesión
+        sessionStorage.removeItem('parkingUser');
+        
+        // 2. Redirigir al Login
+        // IMPORTANTE: Usamos window.location.replace() en lugar de href
+        // Esto reemplaza el dashboard en el historial por el login.
+        // Resultado: El botón "Atrás" del navegador ya no funcionará para volver.
+        window.location.replace('index.html');
     }
 }
+// ------------------------------------------------
+
 
 async function cargarDatosDashboard() {
     mostrarLoaders(true);
@@ -77,8 +100,6 @@ async function cargarDatosDashboard() {
             actualizarKPI('gastos', formatearMoneda(datos.kpi.gastos));
             actualizarKPI('alertas', datos.kpi.alertas || 0);
             actualizarKPI('clientes', datos.kpi.clientes || 0);
-            
-            // ACTUALIZACIÓN NUEVA: DEUDORES
             actualizarKPI('deudores', datos.kpi.deudores || 0);
             
             const porcentajeElem = document.getElementById('ocupacion-porcentaje');
@@ -112,13 +133,7 @@ async function cargarDatosDashboard() {
 function actualizarKPI(key, valor) {
     const elemento = document.querySelector(`[data-kpi="${key}"]`);
     if (elemento) {
-        // Si hay un badge numérico dentro, actualizamos ese en lugar de todo el texto
-        const badge = elemento.querySelector('.kpi-badge-number');
-        if(badge) {
-            badge.textContent = valor;
-        } else {
-            elemento.textContent = valor;
-        }
+        elemento.textContent = valor;
     }
 }
 
@@ -169,11 +184,37 @@ function renderizarGraficoFinanzas(data) {
         data: {
             labels: fechas,
             datasets: [
-                { label: 'Ingresos', data: datosIngresos, borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', tension: 0.4, fill: true },
-                { label: 'Gastos', data: datosGastos, borderColor: '#f43f5e', backgroundColor: 'rgba(244, 63, 94, 0.05)', borderDash: [5, 5], tension: 0.4 }
+                { 
+                    label: 'Ingresos', 
+                    data: datosIngresos, 
+                    borderColor: '#4f46e5', 
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)', 
+                    tension: 0.4, 
+                    fill: true,
+                    pointRadius: 3
+                },
+                { 
+                    label: 'Gastos', 
+                    data: datosGastos, 
+                    borderColor: '#f43f5e', 
+                    backgroundColor: 'rgba(244, 63, 94, 0.05)', 
+                    borderDash: [5, 5], 
+                    tension: 0.4,
+                    pointRadius: 3
+                }
             ]
         },
-        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { borderDash: [2, 2] } }, x: { grid: { display: false } } } }
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            plugins: { 
+                legend: { position: 'top', labels: { boxWidth: 10, usePointStyle: true } } 
+            }, 
+            scales: { 
+                y: { beginAtZero: true, grid: { borderDash: [2, 2] } }, 
+                x: { grid: { display: false } } 
+            } 
+        }
     });
 }
 
@@ -188,9 +229,19 @@ function renderizarGraficoOcupacion(porcentaje) {
         type: 'doughnut',
         data: {
             labels: ['Ocupado', 'Disponible'],
-            datasets: [{ data: [porcentaje, 100 - porcentaje], backgroundColor: ['#4f46e5', '#f1f5f9'], borderWidth: 0 }]
+            datasets: [{ 
+                data: [porcentaje, 100 - porcentaje], 
+                backgroundColor: ['#4f46e5', '#f1f5f9'], 
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
         },
-        options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false } } }
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            cutout: '75%', 
+            plugins: { legend: { display: false } } 
+        }
     });
 }
 
@@ -207,37 +258,30 @@ function renderizarMovimientosRecientes(movimientos) {
     movimientos.forEach(mov => {
         let icon = 'fa-car';
         let color = 'text-blue-600';
-        let detalle = mov.spot || mov.plate || "Detalle";
+        let detalle = mov.spot || "---";
         
-        if (mov.type === 'GASTO') {
-            icon = 'fa-receipt';
-            color = 'text-rose-600';
-            detalle = `Gasto: ${mov.spot}`;
-        } else if (mov.type === 'CAJA') {
-            icon = 'fa-cash-register';
-            color = 'text-emerald-600';
-            detalle = `Cobro: ${mov.spot}`;
-        } else if (mov.type === 'CLIENTE') {
-            icon = 'fa-user-plus';
-            color = 'text-indigo-600';
-            detalle = `Cliente: ${mov.spot}`;
-        } else {
-            if (mov.exit) color = 'text-slate-600';
-            else color = 'text-amber-600';
+        const tipo = (mov.type || "").toLowerCase();
+        if (tipo.includes('gasto')) { icon = 'fa-receipt'; color = 'text-rose-600'; }
+        else if (tipo.includes('caja')) { icon = 'fa-cash-register'; color = 'text-emerald-600'; }
+        else if (tipo.includes('moto')) { icon = 'fa-motorcycle'; }
+        
+        let estadoBadge = '';
+        if (!mov.exit) {
+            estadoBadge = `<span class="ml-2 inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>`;
         }
 
         html += `
-            <div class="flex items-center justify-between p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors cursor-pointer" onclick="location.href='pages/historial.html'">
+            <div class="flex items-center justify-between p-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors cursor-pointer" onclick="location.href='pages/historial.html'">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center ${color}">
                         <i class="fa-solid ${icon} text-xs"></i>
                     </div>
                     <div>
-                        <p class="text-sm font-medium text-slate-800">${mov.type}</p>
-                        <p class="text-xs text-slate-500">${detalle} <span class="mx-1">•</span> ${mov.date}</p>
+                        <p class="text-sm font-medium text-slate-800">${mov.type} ${estadoBadge}</p>
+                        <p class="text-xs text-slate-500">${mov.plate || '---'} <span class="mx-1">•</span> ${mov.date}</p>
                     </div>
                 </div>
-                <div class="text-xs text-slate-400">${mov.entry}</div>
+                <div class="text-xs text-slate-400 font-mono">${mov.entry}</div>
             </div>
         `;
     });

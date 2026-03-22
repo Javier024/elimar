@@ -1,94 +1,83 @@
-import { db } from "./db.js"
+import { db } from "./db.js";
 
 export default async function handler(req, res) {
   try {
     if (req.method === "GET") {
-      const result = await db.execute(`SELECT * FROM historial ORDER BY date DESC, entry DESC`)
-      return res.status(200).json(result.rows)
+      const result = await db.execute(`
+        SELECT * FROM historial 
+        ORDER BY date DESC, entry DESC
+      `);
+      return res.status(200).json(result.rows);
     }
     
     if (req.method === "POST") {
       const { plate, type, spot, entry, exit, paid, date, action_type, description, amount, ref_date } = req.body;
       
-      if (action_type) {
-          const logDate = ref_date || new Date().toISOString().split("T")[0];
-          const logTime = new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
-
-          await db.execute({
-              sql: `INSERT INTO historial (date, entry, exit, plate, type, spot, paid) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-              args: [logDate, logTime, null, "---", action_type, description || "", amount || 0]
-          });
-          return res.status(200).json({ success: true, message: "Log registrado" });
-      }
-
-      const now = new Date()
-      const d = date || now.toISOString().split("T")[0]
-      const t = entry || now.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })
+      const logDate = ref_date || date || new Date().toISOString().split("T")[0];
       
-      await db.execute({ 
-          sql: `INSERT INTO historial (date, entry, exit, plate, type, spot, paid) VALUES (?,?,?,?,?,?,?)`, 
-          args: [d, t, exit, plate, type, spot, paid || 0] 
-      })
-      return res.status(200).json({ success: true, message: "Registro agregado" })
+      // CORRECCIÓN HORA: Usamos toLocaleTimeString con 'en-GB' para forzar formato 24h (HH:mm)
+      // 'en-GB' usa 24 horas por defecto. También eliminamos segundos para limpiar la vista.
+      const logTime = entry || new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+      const finalType = action_type || type || "SISTEMA";
+      const finalSpot = description || spot || "";
+      const finalAmount = amount !== undefined ? amount : (paid || 0);
+      const finalPlate = plate || "---";
+
+      await db.execute({
+          sql: `INSERT INTO historial (date, entry, exit, plate, type, spot, paid) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          args: [logDate, logTime, exit, finalPlate, finalType, finalSpot, finalAmount]
+      });
+      return res.status(200).json({ success: true });
     }
     
     if (req.method === "PUT") {
-      const { id, paid } = req.body
-      const now = new Date()
-      const exit = now.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })
+      const { id, paid, exit } = req.body;
+      let updates = [];
+      let args = [];
       
-      await db.execute({ sql: `UPDATE historial SET exit=?, paid=? WHERE id=?`, args: [exit, paid, id] })
-      return res.status(200).json({ success: true })
+      if (paid !== undefined) { updates.push("paid=?"); args.push(paid); }
+      
+      // CORRECCIÓN HORA: Si actualizamos la salida, también usamos formato 24h
+      if (exit) { 
+          updates.push("exit=?"); 
+          // Si 'exit' viene del frontend como string, lo usamos. Si no, generamos la hora actual aquí.
+          const exitTime = (typeof exit === 'string' && exit.includes(':')) 
+              ? exit 
+              : new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+          args.push(exitTime); 
+      }
+      
+      if (updates.length === 0) return res.status(400).json({ error: "Nada que actualizar" });
+      
+      args.push(id);
+      await db.execute({ 
+          sql: `UPDATE historial SET ${updates.join(", ")} WHERE id=?`, 
+          args: args 
+      });
+      return res.status(200).json({ success: true });
     }
     
     if (req.method === "DELETE") {
-      // Seguridad extra por si req.query es undefined
-      const query = req.query || {};
-      const { id, fromDate, toDate, type } = query;
-
-      // CASO 1: BORRAR INDIVIDUAL
-      if (id) {
-          await db.execute({ sql: `DELETE FROM historial WHERE id=?`, args: [id] });
-          return res.status(200).json({ success: true });
-      }
-
-      // CASO 2: LIMPIEZA MASIVA (Con opción de BORRAR TODO)
-      // Si el tipo es 'all' y no hay fechas, borramos todo.
-      const isDeleteAll = (type === 'all' && !fromDate && !toDate);
-
-      if (!isDeleteAll && !fromDate && !toDate) {
-          return res.status(400).json({ error: "Seleccione fechas O una categoría" });
-      }
-
-      let sql = "DELETE FROM historial WHERE 1=1";
-      let params = [];
-
-      if (!isDeleteAll && fromDate && toDate) {
-          sql += " AND date >= ? AND date <= ?";
-          params.push(fromDate, toDate);
-      }
-
-      if (!isDeleteAll && type && type !== 'all') {
-          sql += " AND type = ?";
-          params.push(type);
-      }
-
-      await db.execute({ sql, args: params });
-      return res.status(200).json({ success: true, message: "Historial limpiado correctamente" });
+      const { id } = req.query;
+      if (!id) return res.status(400).json({ error: "ID requerido" });
+      await db.execute({ sql: `DELETE FROM historial WHERE id=?`, args: [id] });
+      return res.status(200).json({ success: true });
     }
     
-    return res.status(405).json({ error: "Método no permitido" })
+    return res.status(405).json({ error: "Método no permitido" });
   } catch (error) {
-    console.error("ERROR API HISTORIAL:", error)
-    return res.status(500).json({ error: "Error interno del servidor", detalle: error.message })
+    console.error("ERROR API HISTORIAL:", error);
+    return res.status(500).json({ error: "Error interno", detalle: error.message });
   }
 }
 
-// --- FUNCIÓN PARA LOGS ---
+// Función Helper Global
 export async function logToHistory(action_type, description, amount = 0, plate = "---", ref_date = null) {
   try {
     const logDate = ref_date || new Date().toISOString().split("T")[0];
-    const logTime = new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
+    // CORRECCIÓN HORA: Formato 24h estandarizado
+    const logTime = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
 
     await db.execute({
       sql: `INSERT INTO historial (date, entry, exit, plate, type, spot, paid) VALUES (?, ?, ?, ?, ?, ?, ?)`,

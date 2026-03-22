@@ -1,202 +1,116 @@
 // parqueo/js/configuracion.js
-document.addEventListener('DOMContentLoaded', function() {
-    
-    // 1. CARGAR CONFIGURACIÓN (DESDE DB)
-    async function loadConfig() {
-        try {
-            const res = await fetch("/api/configuracion");
-            const data = await res.json();
 
-            // Si la API devuelve datos (no es null), llenamos los campos
-            if (data) {
-                
-                // --- SECCIÓN GENERAL ---
-                document.getElementById('confNombre').value = data.nombre || '';
-                document.getElementById('confNit').value = data.nit || '';
-                document.getElementById('confDireccion').value = data.direccion || '';
-                document.getElementById('confTelefono').value = data.telefono || '';
-
-                // --- SECCIÓN TARIFAS CARROS ---
-                document.getElementById('tarifaCarroHora').value = data.tarifa_carro_hora || 5000;
-                document.getElementById('tarifaCarroNoche').value = data.tarifa_carro_noche || 12000;
-                document.getElementById('tarifaCarroSemana').value = data.tarifa_carro_semana || 40000;
-                document.getElementById('tarifaCarroQuincenal').value = data.tarifa_carro_quincena || 75000;
-                document.getElementById('tarifaCarroMensual').value = data.tarifa_carro_mes || 140000;
-
-                // --- SECCIÓN TARIFAS MOTOS ---
-                document.getElementById('tarifaMotoHora').value = data.tarifa_moto_hora || 2500;
-                document.getElementById('tarifaMotoNoche').value = data.tarifa_moto_noche || 6000;
-                document.getElementById('tarifaMotoSemana').value = data.tarifa_moto_semana || 20000;
-                document.getElementById('tarifaMotoQuincenal').value = data.tarifa_moto_quincena || 35000;
-                document.getElementById('tarifaMotoMensual').value = data.tarifa_moto_mes || 65000;
-
-                // --- SECCIÓN TARIFAS BICIS ---
-                document.getElementById('tarifaBiciHora').value = data.tarifa_bici_hora || 1000;
-                document.getElementById('tarifaBiciNoche').value = data.tarifa_bici_noche || 2000;
-                document.getElementById('tarifaBiciSemana').value = data.tarifa_bici_semana || 8000;
-                document.getElementById('tarifaBiciQuincenal').value = data.tarifa_bici_quincena || 15000;
-                document.getElementById('tarifaBiciMensual').value = data.tarifa_bici_mes || 25000;
-
-                // --- SECCIÓN PERFIL ADMIN ---
-                document.getElementById('perfNombre').value = data.admin_nombre || 'Admin';
-                document.getElementById('perfEmail').value = data.admin_email || '';
-                document.getElementById('perfNotif').checked = (data.admin_notif === 1);
-            }
-        } catch (error) {
-            console.error("Error cargando configuración", error);
-            mostrarToast("Error al cargar configuración", "error");
-        }
-    }
-
-    // 2. GUARDAR CONFIGURACIÓN (ENVIAR A DB)
-    window.guardarTodo = async function() {
-        const btn = document.querySelector('button[onclick="guardarTodo()"]');
-        
-        // Efecto visual de "Cargando"
-        const originalHTML = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Guardando...`;
-
-        try {
-            // Recopilamos TODOS los datos de los inputs en un solo objeto
-            const configData = {
-                // General
-                nombre: document.getElementById('confNombre').value,
-                nit: document.getElementById('confNit').value,
-                direccion: document.getElementById('confDireccion').value,
-                telefono: document.getElementById('confTelefono').value,
-                
-                // Carros
-                tarifa_carro_hora: document.getElementById('tarifaCarroHora').value,
-                tarifa_carro_noche: document.getElementById('tarifaCarroNoche').value,
-                tarifa_carro_semana: document.getElementById('tarifaCarroSemana').value,
-                tarifa_carro_quincena: document.getElementById('tarifaCarroQuincenal').value,
-                tarifa_carro_mes: document.getElementById('tarifaCarroMensual').value,
-                
-                // Motos
-                tarifa_moto_hora: document.getElementById('tarifaMotoHora').value,
-                tarifa_moto_noche: document.getElementById('tarifaMotoNoche').value,
-                tarifa_moto_semana: document.getElementById('tarifaMotoSemana').value,
-                tarifa_moto_quincena: document.getElementById('tarifaMotoQuincenal').value,
-                tarifa_moto_mes: document.getElementById('tarifaMotoMensual').value,
-                
-                // Bicis
-                tarifa_bici_hora: document.getElementById('tarifaBiciHora').value,
-                tarifa_bici_noche: document.getElementById('tarifaBiciNoche').value,
-                tarifa_bici_semana: document.getElementById('tarifaBiciSemana').value,
-                tarifa_bici_quincena: document.getElementById('tarifaBiciQuincenal').value,
-                tarifa_bici_mes: document.getElementById('tarifaBiciMensual').value,
-                
-                // Admin
-                admin_nombre: document.getElementById('perfNombre').value,
-                admin_email: document.getElementById('perfEmail').value,
-                admin_notif: document.getElementById('perfNotif').checked
-            };
-
-            // Enviamos al API
-            const res = await fetch("/api/configuracion", {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(configData)
-            });
-
-            const result = await res.json();
-
-            if (result.success) {
-                mostrarToast("Configuración guardada en el sistema", "success");
-                
-                // Feedback visual de éxito en el botón
-                btn.innerHTML = `<i class="fa-solid fa-check"></i> Guardado`;
-                btn.classList.replace('bg-indigo-600', 'bg-emerald-600');
-            } else {
-                throw new Error("Error en respuesta");
-            }
-
-        } catch (error) {
-            console.error(error);
-            mostrarToast("Error al guardar cambios", "error");
-            btn.innerHTML = originalHTML; // Restaurar texto si falla
-        } finally {
-            // Restaurar botón después de 2 segundos
-            setTimeout(() => {
-                btn.disabled = false;
-                btn.innerHTML = originalHTML;
-                btn.classList.replace('bg-emerald-600', 'bg-indigo-600');
-            }, 2000);
-        }
-    };
-
-    // 3. LÓGICA DE PESTAÑAS (TABS)
-    window.switchTab = function(tabName) {
-        const tabs = ['general', 'tarifas', 'perfil'];
-
-        tabs.forEach(t => {
-            const el = document.getElementById('content-' + t);
-            const btn = document.getElementById('tab-' + t);
-            
-            if (el) { 
-                el.classList.add('hidden-tab'); 
-                el.classList.remove('visible-tab'); 
-            }
-            if (btn) btn.classList.remove('active');
-        });
-
-        const activeContent = document.getElementById('content-' + tabName);
-        const activeBtn = document.getElementById('tab-' + tabName);
-
-        if (activeContent) {
-            activeContent.classList.remove('hidden-tab');
-            activeContent.classList.add('visible-tab');
-        }
-        if (activeBtn) activeBtn.classList.add('active');
-    };
-
-    // 4. UTILIDADES (TOASTS)
-    function mostrarToast(mensaje, tipo = 'success') {
-        const container = document.getElementById('toastContainer');
-        if(!container) return; // Seguridad extra
-        const toast = document.createElement('div');
-        
-        const bgClass = tipo === 'success' ? 'bg-emerald-600' : 'bg-red-600';
-        const icon = tipo === 'success' ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-circle-exclamation"></i>';
-        
-        toast.className = `${bgClass} text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 transform transition-all duration-500 translate-x-10 opacity-0`;
-        toast.innerHTML = `${icon} <span class="font-medium text-sm tracking-wide">${mensaje}</span>`;
-        
-        container.appendChild(toast);
-        
-        requestAnimationFrame(() => toast.classList.remove('translate-x-10', 'opacity-0'));
-        
-        setTimeout(() => { 
-            toast.classList.add('translate-x-10', 'opacity-0'); 
-            setTimeout(() => toast.remove(), 500); 
-        }, 3000);
-    }
-
-    window.toggleMenu = function() {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('mobileMenuOverlay');
-        if(sidebar && overlay) {
-            sidebar.classList.toggle('-translate-x-full');
-            overlay.classList.toggle('hidden');
-        }
-    }
-    
-    function cerrarSesion() { 
-        if(confirm('Salir?')) window.location.href='../index.html'; 
-    }
-
-    // 5. INICIALIZACIÓN
-    const fechaEl = document.getElementById('fecha-actual');
-    if(fechaEl) {
-        fechaEl.textContent = new Date().toLocaleDateString('es-ES', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        });
-    }
-
-    // Cargar datos de la DB al iniciar
-    loadConfig();
+document.addEventListener('DOMContentLoaded', async () => {
+    await cargarConfiguracion();
 });
+
+async function cargarConfiguracion() {
+    try {
+        const res = await fetch('/api/configuracion');
+        if (!res.ok) throw new Error('Error');
+        const data = await res.json();
+        
+        // Helper para asignar valor si existe
+        const val = (id) => document.getElementById(id) ? (document.getElementById(id).value = data[id] || '') : null;
+
+        // Generales
+        val('confNombre'); val('confNit'); val('confDireccion'); val('confTelefono');
+
+        // Particular (Antes Carro)
+        val('tp_hora'); val('tp_noche'); val('tp_semana'); val('tp_quincena'); val('tp_mes');
+
+        // Moto
+        val('tm_hora'); val('tm_noche'); val('tm_semana'); val('tm_quincena'); val('tm_mes');
+
+        // Camioneta
+        val('tc_hora'); val('tc_noche'); val('tc_semana'); val('tc_quincena'); val('tc_mes');
+
+        // Admin / Login
+        val('adminNombre'); val('adminEmail'); val('adminNotif');
+        val('adminUser'); 
+        // No cargamos la contraseña en el input por seguridad, pero el usuario puede cambiarla
+
+    } catch (error) {
+        console.error(error);
+        mostrarToast('Error cargando datos', 'error');
+    }
+}
+
+async function guardarConfiguracion(e) {
+    e.preventDefault();
+    const btn = document.querySelector('#formConfig button[type="submit"]');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+
+    const formData = {
+        // Generales
+        nombre: document.getElementById('confNombre').value,
+        nit: document.getElementById('confNit').value,
+        direccion: document.getElementById('confDireccion').value,
+        telefono: document.getElementById('confTelefono').value,
+        
+        // Particular
+        tarifa_particular_hora: document.getElementById('tp_hora').value,
+        tarifa_particular_noche: document.getElementById('tp_noche').value,
+        tarifa_particular_semana: document.getElementById('tp_semana').value,
+        tarifa_particular_quincena: document.getElementById('tp_quincena').value,
+        tarifa_particular_mes: document.getElementById('tp_mes').value,
+
+        // Moto
+        tarifa_moto_hora: document.getElementById('tm_hora').value,
+        tarifa_moto_noche: document.getElementById('tm_noche').value,
+        tarifa_moto_semana: document.getElementById('tm_semana').value,
+        tarifa_moto_quincena: document.getElementById('tm_quincena').value,
+        tarifa_moto_mes: document.getElementById('tm_mes').value,
+
+        // Camioneta
+        tarifa_camioneta_hora: document.getElementById('tc_hora').value,
+        tarifa_camioneta_noche: document.getElementById('tc_noche').value,
+        tarifa_camioneta_semana: document.getElementById('tc_semana').value,
+        tarifa_camioneta_quincena: document.getElementById('tc_quincena').value,
+        tarifa_camioneta_mes: document.getElementById('tc_mes').value,
+
+        // Admin
+        admin_nombre: document.getElementById('adminNombre').value,
+        admin_email: document.getElementById('adminEmail').value,
+        admin_notif: document.getElementById('adminNotif').value,
+        admin_user: document.getElementById('adminUser').value,
+        admin_pass: document.getElementById('adminPass').value // Se guarda solo si se escribe algo nuevo
+    };
+
+    try {
+        const res = await fetch('/api/configuracion', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+        const data = await res.json();
+        if(data.success) mostrarToast('Configuración actualizada correctamente');
+        else mostrarToast(data.error, 'error');
+    } catch (error) { mostrarToast('Error de conexión', 'error'); }
+    finally { btn.disabled = false; btn.innerHTML = originalText; }
+}
+
+function mostrarToast(msg, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-5 right-5 z-50 px-6 py-3 rounded-lg shadow-xl text-sm font-bold transition-all transform translate-y-10 opacity-0 ${type === 'error' ? 'bg-red-600 text-white' : 'bg-slate-800 text-white'}`;
+    toast.innerHTML = `<span class="flex items-center gap-2"><i class="fa-solid ${type === 'error' ? 'fa-circle-xmark' : 'fa-circle-check'}"></i> ${msg}</span>`; 
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.remove('translate-y-10', 'opacity-0'));
+    setTimeout(() => { toast.classList.add('translate-y-10', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm', 'border-t-2', 'border-indigo-600');
+        b.classList.add('text-slate-500', 'hover:text-slate-700', 'border-t-2', 'border-transparent');
+    });
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+    
+    const btn = document.getElementById('tab-' + tabName);
+    btn.classList.remove('text-slate-500', 'hover:text-slate-700', 'border-t-2', 'border-transparent');
+    btn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm', 'border-t-2', 'border-indigo-600');
+    
+    document.getElementById('content-' + tabName).classList.remove('hidden');
+}

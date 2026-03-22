@@ -48,7 +48,6 @@ document.addEventListener("DOMContentLoaded", function () {
       puestosCache = await resPuestos.json();
 
       await loadDeudores(1);
-
       currentPage = 1;
       renderTable();
       initAutocomplete();
@@ -58,15 +57,209 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // --- LÓGICA DE DEUDORES CON PAGINACIÓN ---
+  // --- CÁLCULO DE VENCIMIENTO ---
+  function calcularEstadoPago(transaccion, clienteMedioPago) {
+      if (!transaccion.date) return null;
+      
+      const pago = transaccion.date;
+      const tipo = clienteMedioPago || transaccion.period_type; 
+      
+      if (!tipo || tipo === 'Noche') return null;
+
+      const fechaPago = new Date(pago);
+      const hoy = new Date();
+      hoy.setHours(0,0,0,0);
+      
+      let diasAgregar = 0;
+      const t = tipo.toLowerCase();
+      
+      if (t === 'diario') diasAgregar = 1;
+      else if (t === 'semanal') diasAgregar = 7;
+      else if (t === 'quincenal') diasAgregar = 15;
+      else if (t === 'mensual') diasAgregar = 30;
+      else return null;
+
+      const fechaVencimiento = new Date(fechaPago);
+      fechaVencimiento.setDate(fechaVencimiento.getDate() + diasAgregar);
+      fechaVencimiento.setHours(0,0,0,0);
+
+      const diffTime = fechaVencimiento - hoy;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) {
+          return { texto: `Vencido hace ${Math.abs(diffDays)} días`, clase: 'bg-red-100 text-red-700 border-red-200' };
+      } else if (diffDays === 0) {
+          return { texto: 'Vence Hoy', clase: 'bg-amber-100 text-amber-700 border-amber-200' };
+      } else if (diffDays <= 3) {
+          return { texto: `Vence en ${diffDays} días`, clase: 'bg-amber-100 text-amber-700 border-amber-200' };
+      } else {
+          return { texto: 'Al día', clase: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
+      }
+  }
+
+  // --- CALENDARIO DIARIO ---
+  window.toggleDiaCalendario = async function(diaStr, clienteId, placa) {
+      const existe = allTransactions.find(t => t.plate === placa && t.date === diaStr);
+      
+      try {
+          if (existe) {
+              if(!confirm("¿Anular el pago de este día?")) return;
+              await fetch("/api/caja?id=" + existe.id, { method: "DELETE" });
+              mostrarToast("Pago anulado", "success");
+          } else {
+              const cliente = clientesCache.find(c => c.id === clienteId);
+              if(!cliente) return;
+
+              await fetch("/api/caja", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                      client: cliente.nombre,
+                      plate: cliente.placa,
+                      spot: "---", 
+                      phone: cliente.telefono,
+                      amount: 0, 
+                      method: "Efectivo",
+                      period_type: "Dias",
+                      period_quantity: 1,
+                      date: diaStr
+                  })
+              });
+              mostrarToast("Día marcado como pagado", "success");
+          }
+          loadData(); 
+      } catch(e) {
+          console.error(e);
+          mostrarToast("Error actualizando día", "error");
+      }
+  }
+
+  function renderCalendario(placa) {
+      const container = document.getElementById("calendarContainer");
+      if(!container) return;
+      container.innerHTML = "";
+      container.style.display = "grid";
+
+      const hoy = new Date();
+      const year = hoy.getFullYear();
+      const month = hoy.getMonth(); 
+      const diasEnMes = new Date(year, month + 1, 0).getDate();
+
+      const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+      container.innerHTML = `<div class="col-span-7 text-center font-bold text-slate-700 mb-2">${monthNames[month]} ${year}</div>`;
+
+      const diasSemana = ["L", "M", "M", "J", "V", "S", "D"];
+      diasSemana.forEach(d => {
+          container.innerHTML += `<div class="text-center text-xs font-bold text-slate-400 uppercase">${d}</div>`;
+      });
+
+      let primerDia = new Date(year, month, 1).getDay(); 
+      if (primerDia === 0) primerDia = 7; 
+      primerDia -= 1; 
+
+      for(let i=0; i<primerDia; i++) {
+          container.innerHTML += `<div></div>`;
+      }
+
+      for(let d=1; d<=diasEnMes; d++) {
+          const fechaStr = `${year}-${String(month+1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          
+          const pagado = allTransactions.find(t => t.plate === placa && t.date === fechaStr);
+          
+          let clases = "h-8 w-8 flex items-center justify-center rounded-full text-xs font-bold cursor-pointer transition-colors hover:opacity-80 ";
+          if (pagado) {
+              clases += "bg-green-500 text-white shadow-md shadow-green-200";
+          } else {
+              clases += "bg-slate-100 text-slate-400 hover:bg-slate-200";
+          }
+
+          if (d === hoy.getDate()) clases += " ring-2 ring-indigo-500 ring-offset-1";
+
+          container.innerHTML += `<div class="${clases}" onclick="toggleDiaCalendario('${fechaStr}', ${currentClientId}, '${placa}')">${d}</div>`;
+      }
+  }
+
+  let currentClientId = null;
+
+  // --- AUTOCOMPLETADO ---
+  function initAutocomplete() {
+    const inputCliente = document.getElementById("cajaCliente");
+    const containerCalendario = document.getElementById("calendarSection");
+    
+    if (!inputCliente) return; 
+    const listaSugerencias = document.createElement("div");
+    listaSugerencias.className = "absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl mt-1 max-h-40 overflow-y-auto z-20 hidden custom-scroll";
+    inputCliente.parentNode.style.position = "relative";
+    inputCliente.parentNode.appendChild(listaSugerencias);
+
+    inputCliente.addEventListener("input", (e) => {
+      const val = e.target.value.toLowerCase();
+      listaSugerencias.innerHTML = "";
+      if(val.length === 0) containerCalendario.classList.add('hidden');
+      if (val.length < 2) { listaSugerencias.classList.add("hidden"); return; }
+
+      const filtered = clientesCache.filter(c => c.nombre && c.nombre.toLowerCase().includes(val));
+      if (filtered.length > 0) {
+        filtered.forEach(c => {
+          const div = document.createElement("div");
+          div.className = "p-3 hover:bg-indigo-50 cursor-pointer border-b border-slate-100 flex justify-between transition-colors";
+          div.innerHTML = `<span class="font-medium text-sm text-slate-700">${c.nombre}</span> <span class="text-xs text-slate-500 font-mono">${c.placa}</span>`;
+          div.onclick = () => {
+            document.getElementById("cajaCliente").value = c.nombre;
+            document.getElementById("cajaPlaca").value = c.placa;
+            document.getElementById("cajaCelular").value = c.telefono || "";
+            
+            const puestoOcupado = puestosCache.find(p => p.cliente_id === c.id && p.estado === 'ocupado');
+            if (puestoOcupado) {
+                document.getElementById("cajaPuesto").value = puestoOcupado.numero;
+            } else {
+                document.getElementById("cajaPuesto").value = "";
+            }
+
+            currentClientId = c.id;
+            if (c.medio_pago === 'Diario') {
+                containerCalendario.classList.remove('hidden');
+                renderCalendario(c.placa);
+            } else {
+                containerCalendario.classList.add('hidden');
+            }
+
+            listaSugerencias.classList.add("hidden");
+          };
+          listaSugerencias.appendChild(div);
+        });
+        listaSugerencias.classList.remove("hidden");
+      } else {
+        listaSugerencias.classList.add("hidden");
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!inputCliente.contains(e.target) && !listaSugerencias.contains(e.target)) {
+        listaSugerencias.classList.add("hidden");
+      }
+    });
+  }
+
+  // --- DEUDORES (CON MANEJO DE ERRORES) ---
   async function loadDeudores(page) {
       try {
           const res = await fetch(`/api/caja?deudores=true&page=${page}`);
           const data = await res.json();
           
+          // Validar que la respuesta tenga la estructura esperada
+          if (!data || !Array.isArray(data.rows)) {
+              console.error("Estructura de datos incorrecta en deudores", data);
+              renderDeudores(0, 1, 1); // Renderizar vacío
+              return;
+          }
+
           deudoresList = data.rows;
           renderDeudores(data.total, data.totalPages, data.page);
-      } catch(e) { console.error(e); }
+      } catch(e) { 
+          console.error("Error cargando deudores:", e); 
+          renderDeudores(0, 1, 1);
+      }
   }
 
   function renderDeudores(total, totalPages, currentPage) {
@@ -75,7 +268,6 @@ document.addEventListener("DOMContentLoaded", function () {
       if(!container || !paginationContainer) return;
       
       container.innerHTML = "";
-      
       if (deudoresList.length === 0) {
           container.innerHTML = `<div class="text-center text-sm text-green-600 py-4 font-medium"><i class="fa-solid fa-check-circle"></i> ¡Al día! No hay deudores este mes.</div>`;
           paginationContainer.innerHTML = "";
@@ -126,65 +318,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
   window.enviarRecordatorio = function(nombre, telefono) {
       const saludo = getSaludo();
-      // Mensaje actualizado: Más cordial y con emojis
       const mensaje = `¡${saludo}! 👋 ${nombre}.\n\n` +
                       `Esperamos que estés teniendo un excelente día. 🌟\n\n` +
                       `Te saluda el equipo de *${PARKING.nombre}* 🚗. Queremos recordarte amablemente que, hasta el momento, no tenemos registrado el pago de la mensualidad de este mes. 📅\n\n` +
                       `Quedamos atentos a tu amable colaboración para mantener tu servicio al día. ¡Muchas gracias! 💰✨`;
-      
       const url = `https://wa.me/57${telefono}?text=${encodeURIComponent(mensaje)}`;
       window.open(url, "_blank");
-  }
-
-  // --- AUTOCOMPLETADO ---
-  function initAutocomplete() {
-    const inputCliente = document.getElementById("cajaCliente");
-    if (!inputCliente) return; 
-    const listaSugerencias = document.createElement("div");
-    listaSugerencias.className = "absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl mt-1 max-h-40 overflow-y-auto z-20 hidden custom-scroll";
-    inputCliente.parentNode.style.position = "relative";
-    inputCliente.parentNode.appendChild(listaSugerencias);
-
-    inputCliente.addEventListener("input", (e) => {
-      const val = e.target.value.toLowerCase();
-      listaSugerencias.innerHTML = "";
-      if (val.length < 2) {
-        listaSugerencias.classList.add("hidden");
-        return;
-      }
-
-      const filtered = clientesCache.filter(c => c.nombre && c.nombre.toLowerCase().includes(val));
-      if (filtered.length > 0) {
-        filtered.forEach(c => {
-          const div = document.createElement("div");
-          div.className = "p-3 hover:bg-indigo-50 cursor-pointer border-b border-slate-100 flex justify-between transition-colors";
-          div.innerHTML = `<span class="font-medium text-sm text-slate-700">${c.nombre}</span> <span class="text-xs text-slate-500 font-mono">${c.placa}</span>`;
-          div.onclick = () => {
-            document.getElementById("cajaCliente").value = c.nombre;
-            document.getElementById("cajaPlaca").value = c.placa;
-            document.getElementById("cajaCelular").value = c.telefono || "";
-            
-            const puestoOcupado = puestosCache.find(p => p.cliente_id === c.id && p.estado === 'ocupado');
-            if (puestoOcupado) {
-                document.getElementById("cajaPuesto").value = puestoOcupado.numero;
-            } else {
-                document.getElementById("cajaPuesto").value = "";
-            }
-            listaSugerencias.classList.add("hidden");
-          };
-          listaSugerencias.appendChild(div);
-        });
-        listaSugerencias.classList.remove("hidden");
-      } else {
-        listaSugerencias.classList.add("hidden");
-      }
-    });
-
-    document.addEventListener("click", (e) => {
-      if (!inputCliente.contains(e.target) && !listaSugerencias.contains(e.target)) {
-        listaSugerencias.classList.add("hidden");
-      }
-    });
   }
 
   // --- FILTRADO ---
@@ -229,7 +368,7 @@ document.addEventListener("DOMContentLoaded", function () {
     set("kpiCount", allTransactions.length);
 
     if (pageData.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400">No se encontraron registros.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400">No se encontraron registros.</td></tr>`;
     } else {
       pageData.forEach(tx => {
         let fechaDisplay = "N/A";
@@ -248,6 +387,12 @@ document.addEventListener("DOMContentLoaded", function () {
         else if (tx.method === "Tarjeta") methodBadge = `<span class="px-2 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">TARJETA</span>`;
         else methodBadge = `<span class="px-2 py-1 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700 border border-indigo-200">TRANSF.</span>`;
 
+        let alertaHTML = '';
+        const estadoPago = calcularEstadoPago(tx, tx.cliente_medio_pago);
+        if (estadoPago) {
+            alertaHTML = `<div class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-bold border ${estadoPago.clase}"><i class="fa-regular fa-clock"></i> ${estadoPago.texto}</div>`;
+        }
+
         const tr = document.createElement("tr");
         tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0 group";
         
@@ -258,12 +403,16 @@ document.addEventListener("DOMContentLoaded", function () {
             <div class="flex flex-col">
               <span class="font-mono font-bold">${tx.plate}</span>
               <span class="text-xs text-slate-400">Puesto: ${tx.spot} | ${periodoTexto}</span>
+              ${alertaHTML}
             </div>
           </td>
           <td class="px-6 py-4" data-label="Método">${methodBadge}</td>
           <td class="px-6 py-4 text-right font-bold text-slate-800" data-label="Valor">${formatMoney(tx.amount)}</td>
           <td class="px-6 py-4 text-center" data-label="Acciones">
-             <button onclick="deleteTransaction(${tx.id})" class="text-rose-500 hover:bg-rose-50 p-2 rounded-lg transition-all text-xs" title="Anular"><i class="fa-solid fa-trash"></i></button>
+             <div class="flex items-center justify-center gap-2">
+                <button onclick="openEditModal(${tx.id})" class="text-indigo-500 hover:bg-indigo-50 p-2 rounded-lg transition-all text-xs" title="Editar Fecha/Datos"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="deleteTransaction(${tx.id})" class="text-rose-500 hover:bg-rose-50 p-2 rounded-lg transition-all text-xs" title="Anular"><i class="fa-solid fa-trash"></i></button>
+             </div>
           </td>
         `;
         tbody.appendChild(tr);
@@ -295,7 +444,7 @@ document.addEventListener("DOMContentLoaded", function () {
     renderTable();
   }
 
-  // --- REGISTRAR COBRO (CON PERIODO) ---
+  // --- REGISTRAR COBRO ---
   window.registrarCobro = async function(e) {
     if (e) e.preventDefault();
     const client = document.getElementById("cajaCliente").value;
@@ -306,6 +455,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const celular = document.getElementById("cajaCelular").value;
     const periodType = document.getElementById("cajaPeriodType").value;
     const periodQty = document.getElementById("cajaPeriodQty").value;
+    const date = document.getElementById("cajaDate").value; 
 
     if (!amount || amount <= 0) { mostrarToast("Ingrese un monto válido", "error"); return; }
 
@@ -321,7 +471,8 @@ document.addEventListener("DOMContentLoaded", function () {
           amount,
           method,
           period_type: periodType,
-          period_quantity: periodQty
+          period_quantity: periodQty,
+          date
         })
       });
 
@@ -330,7 +481,8 @@ document.addEventListener("DOMContentLoaded", function () {
       if (data.success) {
         document.getElementById("formCaja").reset();
         document.getElementById("cajaPeriodQty").value = 1;
-        
+        document.getElementById("cajaDate").valueAsDate = new Date();
+        document.getElementById("calendarSection").classList.add('hidden');
         currentPage = 1;
         loadData(); 
         mostrarToast("Cobro registrado correctamente");
@@ -355,6 +507,68 @@ document.addEventListener("DOMContentLoaded", function () {
           mostrarToast(data.error || "Error", "error");
       }
     } catch (e) { mostrarToast("Error al anular", "error"); }
+  }
+
+  // --- EDITAR TRANSACCIÓN ---
+  window.openEditModal = async function(id) {
+      const tx = allTransactions.find(t => t.id === id);
+      if(!tx) return;
+
+      document.getElementById("editId").value = tx.id;
+      document.getElementById("editClient").value = tx.client;
+      document.getElementById("editPlate").value = tx.plate;
+      document.getElementById("editAmount").value = tx.amount;
+      document.getElementById("editMethod").value = tx.method;
+      document.getElementById("editPeriodType").value = tx.period_type;
+      document.getElementById("editPeriodQty").value = tx.period_quantity;
+      document.getElementById("editDate").value = tx.date;
+
+      const modal = document.getElementById("modalEdit");
+      const content = document.getElementById("modalEditContent");
+      modal.classList.remove("hidden");
+      setTimeout(() => {
+          modal.classList.remove("opacity-0");
+          content.classList.remove("scale-95", "opacity-0");
+      }, 10);
+  }
+
+  window.closeEditModal = function() {
+      const modal = document.getElementById("modalEdit");
+      const content = document.getElementById("modalEditContent");
+      modal.classList.add("opacity-0");
+      content.classList.add("scale-95", "opacity-0");
+      setTimeout(() => { modal.classList.add("hidden"); }, 200);
+  }
+
+  window.saveEditTransaction = async function() {
+      const id = document.getElementById("editId").value;
+      const client = document.getElementById("editClient").value;
+      const plate = document.getElementById("editPlate").value.toUpperCase();
+      const amount = document.getElementById("editAmount").value;
+      const method = document.getElementById("editMethod").value;
+      const periodType = document.getElementById("editPeriodType").value;
+      const periodQty = document.getElementById("editPeriodQty").value;
+      const date = document.getElementById("editDate").value;
+
+      if(!amount || amount <= 0) { mostrarToast("Monto inválido", "error"); return; }
+
+      try {
+          const res = await fetch("/api/caja", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id, client, plate, spot: "---", phone: "", amount, method, period_type: periodType, period_quantity: periodQty, date })
+          });
+          const data = await res.json();
+          if(data.success) {
+              closeEditModal();
+              loadData();
+              mostrarToast("Transacción actualizada");
+          } else {
+              mostrarToast(data.error || "Error", "error");
+          }
+      } catch(e) {
+          mostrarToast("Error de conexión", "error");
+      }
   }
 
   // Inicializar

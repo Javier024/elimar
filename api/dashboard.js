@@ -5,99 +5,166 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
 
-  if (req.method !== 'GET') {
+  if (req.method !== "GET") {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
   try {
-    // 1. Vehículos Dentro
-    const resultDentro = await db.execute("SELECT COUNT(*) as count FROM historial WHERE exit IS NULL OR exit = ''");
+    const hoy = new Date().toISOString().split("T")[0];
     
-    // 2. Puestos Totales
-    const resultTotalPuestos = await db.execute("SELECT COUNT(*) as count FROM puestos");
-    const totalPuestos = resultTotalPuestos.rows[0].count;
-
-    // 3. Puestos Libres
-    const resultLibres = await db.execute("SELECT COUNT(*) as count FROM puestos WHERE estado = 'libre'");
-    
-    // 4. Puestos Reservados
-    const resultReservados = await db.execute("SELECT COUNT(*) as count FROM puestos WHERE estado = 'reservado'");
-    
-    // 5. Clientes Registrados
-    const resultClientes = await db.execute("SELECT COUNT(*) as count FROM clientes");
-
-    // 6. Ingresos de Hoy (Caja)
-    const resultIngresosHoy = await db.execute(`
-      SELECT COALESCE(SUM(amount), 0) as total 
-      FROM caja 
-      WHERE date = DATE('now', 'localtime')
-    `);
-
-    // 7. Gastos de Hoy (Gastos)
-    const resultGastosHoy = await db.execute(`
-      SELECT COALESCE(SUM(amount), 0) as total 
-      FROM gastos 
-      WHERE date = DATE('now', 'localtime')
-    `);
-
-    // 8. Alertas (Vehículos > 24h)
-    const resultAlertas = await db.execute(`
-      SELECT COUNT(*) as count 
-      FROM historial 
-      WHERE (exit IS NULL OR exit = '') 
-      AND datetime(entry) < datetime('now', '-24 hours')
-    `);
-
-    // 9. Gráfico Financiero (Últimos 7 días)
-    const resultFinanzas = await db.execute(`
-        SELECT date, SUM(amount) as amount, 'ingreso' as type FROM caja WHERE date >= DATE('now', '-6 days', 'localtime') GROUP BY date
-        UNION ALL
-        SELECT date, SUM(amount) as amount, 'gasto' as type FROM gastos WHERE date >= DATE('now', '-6 days', 'localtime') GROUP BY date
-        ORDER BY date ASC
-    `);
-
-    // 10. Movimientos Recientes
-    const resultMovimientos = await db.execute(`
-        SELECT * FROM historial 
-        ORDER BY id DESC 
-        LIMIT 5
-    `);
-
-    // 11. NUEVO: DEUDORES DEL MES (Integración con Caja)
-    const currentMonthPrefix = new Date().toISOString().slice(0, 7);
-    const resultDeudores = await db.execute(`
-      SELECT COUNT(*) as total 
-      FROM clientes 
-      WHERE placa NOT IN (
-        SELECT plate FROM caja 
-        WHERE date LIKE ? AND plate != '---'
-      )
-    `, [`${currentMonthPrefix}%`]);
-
-    const vehiculosDentro = resultDentro.rows[0].count;
-    const libres = resultLibres.rows[0].count;
-    const reservados = resultReservados.rows[0].count;
-
-    const data = {
-      kpi: {
-        vehiculos: vehiculosDentro,
-        libres: libres,
-        reservados: reservados,
-        ingresos: resultIngresosHoy.rows[0].total,
-        gastos: resultGastosHoy.rows[0].total,
-        alertas: resultAlertas.rows[0].count,
-        clientes: resultClientes.rows[0].count,
-        deudores: resultDeudores.rows[0].total, // Nuevo KPI
-        ocupacionPorcentaje: totalPuestos > 0 ? Math.round(((totalPuestos - libres) / totalPuestos) * 100) : 0
-      },
-      chartFinanzas: resultFinanzas.rows,
-      movimientosRecientes: resultMovimientos.rows
+    let kpi = {
+      vehiculos: 0,
+      libres: 0,
+      reservados: 0,
+      ingresos: 0,
+      gastos: 0,
+      clientes: 0,
+      alertas: 0,
+      deudores: 0,
+      ocupacionPorcentaje: 0
     };
+    
+    let chartFinanzasData = [];
+    let movimientosRecientes = [];
 
-    return res.status(200).json(data);
+    // --- 1. PUESTOS ---
+    try {
+      const puestosResult = await db.execute(`
+        SELECT 
+          COUNT(*) as total,
+          SUM(CASE WHEN estado = 'ocupado' THEN 1 ELSE 0 END) as ocupados,
+          SUM(CASE WHEN estado = 'libre' THEN 1 ELSE 0 END) as libres,
+          SUM(CASE WHEN estado = 'reservado' THEN 1 ELSE 0 END) as reservados
+        FROM puestos
+      `);
+      const data = puestosResult.rows[0];
+      if (data) {
+        kpi.vehiculos = data.ocupados || 0;
+        kpi.libres = data.libres || 0;
+        kpi.reservados = data.reservados || 0;
+        kpi.ocupacionPorcentaje = data.total > 0 ? Math.round((data.ocupados / data.total) * 100) : 0;
+      }
+    } catch (e) {
+      console.error("Error puestos:", e);
+    }
+
+    // --- 2. CAJA Y GASTOS (USANDO COLUMNAS REALES: amount, category) ---
+    try {
+      // Consultamos la tabla 'caja'. 
+      // Ingresos = category 'Ingreso' (O similares) o category null por defecto
+      // Gastos = category 'Gasto' o los que están en la tabla 'gastos'
+      
+      // Para simplificar y unificar, sumamos TODO de 'caja' positivo como ingreso 
+      // y buscamos en 'gastos' para los egresos, basado en tu estructura.
+      
+      // A. INGRESOS (Suma de todo lo que esté en la tabla 'caja' hoy, asumiendo que ahí registras cobros)
+      const ingresosResult = await db.execute(`
+        SELECT COALESCE(SUM(amount), 0) as total
+        FROM caja 
+        WHERE date = ?
+      `, [hoy]);
+      kpi.ingresos = ingresosResult.rows[0]?.total || 0;
+
+      // B. GASTOS (Suma de lo que esté en la tabla 'gastos' hoy)
+      const gastosResult = await db.execute(`
+        SELECT COALESCE(SUM(amount), 0) as total
+        FROM gastos 
+        WHERE date = ?
+      `, [hoy]);
+      kpi.gastos = gastosResult.rows[0]?.total || 0;
+
+    } catch (e) {
+      console.error("Error finanzas:", e);
+    }
+
+    // --- 3. CLIENTES ---
+    try {
+      const cRes = await db.execute("SELECT COUNT(*) as total FROM clientes");
+      kpi.clientes = cRes.rows[0]?.total || 0;
+    } catch (e) {}
+
+    // --- 4. ALERTAS ---
+    try {
+      const aRes = await db.execute(`
+        SELECT COUNT(*) as total 
+        FROM clientes 
+        WHERE fecha_registro < date('now', '-24 hours')
+      `);
+      kpi.alertas = aRes.rows[0]?.total || 0;
+    } catch (e) {}
+
+    // --- 5. DEUDORES ---
+    try {
+      const mesActual = new Date().toISOString().slice(0, 7);
+      const dRes = await db.execute(`
+        SELECT COUNT(*) as total
+        FROM clientes c
+        WHERE c.placa NOT IN (
+          SELECT plate FROM caja ca 
+          WHERE ca.date LIKE ? AND ca.plate != '---'
+        )
+      `, [`${mesActual}%`]);
+      kpi.deudores = dRes.rows[0]?.total || 0;
+    } catch (e) {}
+
+    // --- 6. GRÁFICA FINANCIERA (Unificando tabla caja y gastos) ---
+    try {
+      // Obtenemos ingresos de 'caja' y gastos de 'gastos' para los últimos 7 días
+      const ingresosChart = await db.execute(`
+        SELECT date, SUM(amount) as monto
+        FROM caja
+        WHERE date >= date('now', '-7 days')
+        GROUP BY date
+      `);
+
+      const gastosChart = await db.execute(`
+        SELECT date, SUM(amount) as monto
+        FROM gastos
+        WHERE date >= date('now', '-7 days')
+        GROUP BY date
+      `);
+
+      // Unimos datos en un solo mapa por fecha
+      const mapaFechas = {};
+      
+      ingresosChart.rows.forEach(r => {
+        if(!mapaFechas[r.date]) mapaFechas[r.date] = { ingresos: 0, gastos: 0 };
+        mapaFechas[r.date].ingresos += r.monto;
+      });
+
+      gastosChart.rows.forEach(r => {
+        if(!mapaFechas[r.date]) mapaFechas[r.date] = { ingresos: 0, gastos: 0 };
+        mapaFechas[r.date].gastos += r.monto;
+      });
+
+      // Convertimos a array plano para Chart.js
+      Object.keys(mapaFechas).sort().forEach(fecha => {
+        chartFinanzasData.push({ date: fecha, type: 'ingreso', amount: mapaFechas[fecha].ingresos });
+        chartFinanzasData.push({ date: fecha, type: 'gasto', amount: mapaFechas[fecha].gastos });
+      });
+
+    } catch (e) {
+      console.error("Error gráfica:", e);
+    }
+
+    // --- 7. HISTORIAL ---
+    try {
+      const hRes = await db.execute(`
+        SELECT type, spot, plate, date, entry, exit 
+        FROM historial 
+        ORDER BY id DESC LIMIT 5
+      `);
+      movimientosRecientes = hRes.rows;
+    } catch (e) {}
+
+    return res.status(200).json({
+      kpi: kpi,
+      chartFinanzas: chartFinanzasData,
+      movimientosRecientes: movimientosRecientes
+    });
 
   } catch (error) {
-    console.error("Error en API Dashboard:", error);
-    return res.status(500).json({ message: 'Error interno del servidor', error: error.message });
+    console.error("Error Dashboard:", error);
+    return res.status(500).json({ message: 'Error interno', error: error.message });
   }
 }

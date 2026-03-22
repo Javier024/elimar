@@ -41,7 +41,7 @@
         <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button>
         <div>
           <h2 class="text-lg lg:text-xl font-bold text-slate-800">Caja Diaria</h2>
-          <span class="hidden sm:inline text-xs text-slate-500">Registro de ingresos, periodos y cobranza</span>
+          <span class="hidden sm:inline text-xs text-slate-500">Control de pagos y vencimientos</span>
         </div>
       </div>
       <div class="flex items-center gap-2"><i class="fa-regular fa-calendar text-slate-400"></i><span id="fecha-actual" class="text-sm font-medium text-slate-600"></span></div>
@@ -57,24 +57,19 @@
           <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm"><p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Transacciones</p><p id="kpiCount" class="text-xl lg:text-2xl font-bold text-slate-800">0</p></div>
         </div>
         
-        <!-- SECCIÓN DE DEUDORES CON PAGINACIÓN -->
+        <!-- DEUDORES -->
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
                 <h3 class="font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Deudores del Mes</h3>
-                <span class="text-xs text-slate-500">Clientes sin registro de pago</span>
             </div>
             <div class="p-4 max-h-64 overflow-y-auto">
-                <!-- Lista de deudores -->
-                <div id="deudoresList" class="space-y-2">
-                    <div class="text-center text-slate-400 text-sm">Cargando...</div>
-                </div>
-                <!-- Paginación de deudores -->
+                <div id="deudoresList" class="space-y-2"><div class="text-center text-slate-400 text-sm">Cargando...</div></div>
                 <div id="deudoresPagination" class="mt-2"></div>
             </div>
         </div>
 
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          <!-- Formulario (Actualizado con Periodos) -->
+          <!-- Formulario -->
           <div class="xl:col-span-1">
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sticky top-4">
               <div class="flex items-center gap-2 mb-6"><div class="p-2 bg-indigo-50 rounded-lg text-indigo-600"><i class="fa-solid fa-money-bill-wave"></i></div><h3 class="font-bold text-slate-800">Registrar Cobro</h3></div>
@@ -103,6 +98,11 @@
                     <i class="fa-brands fa-whatsapp input-icon"></i>
                     <input id="cajaCelular" placeholder="Celular (Opcional)" class="custom-input">
                 </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Fecha de Pago</label>
+                    <div class="relative"><i class="fa-regular fa-calendar input-icon"></i><input id="cajaDate" type="date" required class="custom-input pl-10"></div>
+                </div>
                 
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Monto</label>
@@ -121,7 +121,6 @@
                     </div>
                 </div>
 
-                <!-- NUEVOS CAMPOS DE PERIODO -->
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Periodo</label>
@@ -142,6 +141,13 @@
                             <input id="cajaPeriodQty" type="number" value="1" min="1" class="custom-input pl-10 text-center">
                         </div>
                     </div>
+                </div>
+
+                <!-- CALENDARIO -->
+                <div id="calendarSection" class="hidden mt-4 pt-4 border-t border-slate-100">
+                    <h4 class="text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Calendario de Pagos Diarios</h4>
+                    <div id="calendarContainer" class="grid grid-cols-7 gap-1 bg-slate-50 p-3 rounded-lg border border-slate-200"></div>
+                    <p class="text-[10px] text-slate-400 mt-2 text-center">Haz clic en un día para marcar/desmarcar pago.</p>
                 </div>
                 
                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2"><i class="fa-solid fa-check"></i> Registrar</button>
@@ -165,10 +171,10 @@
                         <tr>
                           <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Fecha</th>
                           <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Cliente</th>
-                          <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Vehículo</th>
+                          <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Vehículo / Estado</th>
                           <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Método</th>
                           <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-right">Valor</th>
-                          <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-center">Acción</th>
+                          <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-center">Acciones</th>
                         </tr>
                       </thead>
                       <tbody id="listaCajaBody" class="divide-y divide-slate-100 text-sm"></tbody>
@@ -187,6 +193,66 @@
     </div>
   </main>
 
+  <!-- MODAL DE EDICIÓN -->
+  <div id="modalEdit" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 transition-opacity">
+    <div id="modalEditContent" class="bg-white w-full max-w-md rounded-2xl shadow-2xl transform transition-all scale-95 opacity-0 duration-200 flex flex-col">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl">
+            <h3 class="text-lg font-bold text-slate-800">Editar Transacción</h3>
+            <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-6 space-y-4">
+            <input type="hidden" id="editId">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">Fecha</label>
+                    <input type="date" id="editDate" class="w-full mt-1 p-2 border rounded text-sm">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">Monto</label>
+                    <input type="number" id="editAmount" class="w-full mt-1 p-2 border rounded text-sm font-bold">
+                </div>
+            </div>
+            <div>
+                <label class="text-xs font-bold text-slate-500 uppercase">Cliente</label>
+                <input type="text" id="editClient" class="w-full mt-1 p-2 border rounded text-sm">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">Placa</label>
+                    <input type="text" id="editPlate" class="w-full mt-1 p-2 border rounded text-sm uppercase">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">Método</label>
+                    <select id="editMethod" class="w-full mt-1 p-2 border rounded text-sm">
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Tarjeta">Tarjeta</option>
+                        <option value="Transferencia">Transferencia</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">Periodo</label>
+                    <select id="editPeriodType" class="w-full mt-1 p-2 border rounded text-sm">
+                        <option value="Noche">Noche</option>
+                        <option value="Dias">Días</option>
+                        <option value="Semana">Semana</option>
+                        <option value="Mes">Mes</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">Cantidad</label>
+                    <input type="number" id="editPeriodQty" class="w-full mt-1 p-2 border rounded text-sm">
+                </div>
+            </div>
+        </div>
+        <div class="p-6 pt-0 border-t border-slate-100 flex justify-end gap-3">
+            <button onclick="closeEditModal()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100">Cancelar</button>
+            <button onclick="saveEditTransaction()" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 shadow-md">Guardar Cambios</button>
+        </div>
+    </div>
+  </div>
+
   <script>
       function toggleMenu() {
           const sidebar = document.getElementById('sidebar');
@@ -199,9 +265,10 @@
           }
       }
       function cerrarSesion() { if(confirm("¿Cerrar sesión?")) window.location.href = "../index.html"; }
-      
       const fechaElement = document.getElementById("fecha-actual");
-      if (fechaElement) fechaElement.textContent = new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+      const fechaInput = document.getElementById("cajaDate");
+      if(fechaElement) fechaElement.textContent = new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+      if(fechaInput) fechaInput.valueAsDate = new Date(); 
   </script>
   <script src="../js/caja.js"></script>
 </body>
