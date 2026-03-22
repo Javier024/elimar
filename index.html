@@ -2,18 +2,19 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión | Parqueadero ELIMAR</title>
+    <!-- Viewport optimizado para móviles -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Iniciar Sesión | PARQUEADERO ELIMAR</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
 
         /* Estilo para el panel izquierdo con la imagen */
         .split-image-panel {
-            /* Aquí está la imagen que pediste */
+            /* Tu imagen */
             background-image: url('https://d2yoo3qu6vrk5d.cloudfront.net/pulzo-lite/images-resized/PP4603966-h-o.webp');
             background-size: cover;
             background-position: center;
@@ -21,9 +22,9 @@
             position: relative;
         }
 
-        /* Capa oscura sobre la imagen para que el texto blanco resalte */
+        /* Capa oscura sobre la imagen */
         .overlay-dark {
-            background: linear-gradient(to bottom, rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.9));
+            background: linear-gradient(to bottom, rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.9));
         }
 
         /* Ocultar pestañas con animación */
@@ -44,57 +45,55 @@
         }
     </style>
 </head>
-<body class="bg-white h-screen w-full flex flex-col md:flex-row overflow-hidden">
+<!-- Cambié h-screen por min-h-screen para permitir scroll en móviles pequeños -->
+<body class="bg-white min-h-screen w-full flex flex-col md:flex-row">
 
-    <!-- LADO IZQUIERDO: IMAGEN Y MARCA (50% en escritorio) -->
-    <div class="w-full md:w-1/2 h-64 md:h-full split-image-panel relative hidden md:flex flex-col justify-end p-12">
+    <!-- LADO IZQUIERDO: IMAGEN Y MARCA -->
+    <!-- En móvil: altura fija y visible (flex). En escritorio: 50% ancho (hidden md:flex) -->
+    <div class="w-full h-48 md:h-full md:w-1/2 split-image-panel relative flex flex-col justify-end p-6 md:p-12 shrink-0">
         
-        <!-- Capa oscura para legibilidad -->
+        <!-- Capa oscura -->
         <div class="absolute inset-0 overlay-dark z-0"></div>
 
         <!-- Contenido sobre la imagen -->
-        <div class="relative z-10 text-white mb-10">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-12 h-12 bg-emerald-500 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-500/40">
-                    <i class="fa-solid fa-square-parking text-white text-2xl"></i>
+        <div class="relative z-10 text-white">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 md:w-12 md:h-12 bg-emerald-500 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-500/40">
+                    <i class="fa-solid fa-square-parking text-white text-xl md:text-2xl"></i>
                 </div>
-                <h1 class="text-4xl font-extrabold tracking-tight">Parqueadero<br><span class="text-emerald-400 font-light">ELIMAR</span></h1>
+                <!-- Ajuste de tamaño de fuente para móvil -->
+                <h1 class="text-2xl md:text-4xl font-extrabold tracking-tight leading-tight">Parqueadero<br><span class="text-emerald-400 font-light">ELIMAR</span></h1>
             </div>
-            <p class="text-slate-300 text-sm md:text-base max-w-md leading-relaxed">
+            <!-- Ocultar párrafo largo en móvil para ahorrar espacio -->
+            <p class="text-slate-300 text-xs md:text-sm md:text-base max-w-md leading-relaxed hidden md:block">
                 Gestión eficiente y segura de tu espacio vehicular. Control total de ingresos, salidas y ocupación en tiempo real.
             </p>
         </div>
     </div>
 
-    <!-- LADO DERECHO: FORMULARIO (50% en escritorio, 100% en móvil) -->
-    <div class="w-full md:w-1/2 h-full flex flex-col justify-center items-center bg-white p-6 md:p-12 relative overflow-y-auto">
+    <!-- LADO DERECHO: FORMULARIO -->
+    <!-- En móvil: Ocupa el resto de la altura y permite scroll interno -->
+    <div class="w-full md:w-1/2 flex-1 bg-white flex flex-col items-center justify-center p-6 md:p-12 relative overflow-y-auto h-full">
         
-        <!-- Versión Móvil de la Marca (Solo visible en pantallas pequeñas) -->
-        <div class="md:hidden flex flex-col items-center mb-8 text-center">
-            <div class="w-16 h-16 bg-slate-900 rounded-xl flex items-center justify-center mb-3 shadow-xl">
-                <i class="fa-solid fa-square-parking text-white text-3xl"></i>
-            </div>
-            <h1 class="text-2xl font-bold text-slate-900">Parqueadero <span class="text-emerald-600">ELIMAR</span></h1>
-        </div>
-
-        <div class="w-full max-w-md">
+        <!-- Contenedor con ancho máximo para escritorio y centrado -->
+        <div class="w-full max-w-md py-4">
             
             <!-- Tabs -->
-            <div class="flex gap-8 mb-8 border-b border-slate-100">
-                <button onclick="showTab('login-section')" id="tab-login" class="pb-3 text-sm font-bold text-slate-900 border-b-2 border-slate-900 transition-colors">
+            <div class="flex gap-6 md:gap-8 mb-6 md:mb-8 border-b border-slate-100">
+                <button onclick="showTab('login-section')" id="tab-login" class="pb-3 text-sm font-bold text-slate-900 border-b-2 border-slate-900 transition-colors whitespace-nowrap">
                     Iniciar Sesión
                 </button>
-                <button onclick="showTab('recover-section')" id="tab-recover" class="pb-3 text-sm font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors">
-                    Recuperar Clave
+                <button onclick="showTab('recover-section')" id="tab-recover" class="pb-3 text-sm font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors whitespace-nowrap">
+                    Recuperar
                 </button>
             </div>
 
             <!-- SECCIÓN LOGIN -->
             <div id="login-section" class="auth-content">
-                <h2 class="text-2xl font-bold text-slate-900 mb-2">Bienvenido de nuevo</h2>
-                <p class="text-slate-500 text-sm mb-8">Por favor ingresa tus datos para acceder.</p>
+                <h2 class="text-xl md:text-2xl font-bold text-slate-900 mb-2">Bienvenido de nuevo</h2>
+                <p class="text-slate-500 text-sm mb-6 md:mb-8">Ingresa tus datos para acceder.</p>
 
-                <form onsubmit="handleLogin(event)" class="space-y-5">
+                <form onsubmit="handleLogin(event)" class="space-y-4 md:space-y-5">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Usuario</label>
                         <div class="relative group">
@@ -119,7 +118,7 @@
                         <a href="#" onclick="showTab('recover-section')" class="text-xs font-semibold text-slate-900 hover:text-emerald-600 transition-colors">¿Olvidaste tu contraseña?</a>
                     </div>
 
-                    <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-slate-900/20 transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 mt-2">
+                    <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-slate-900/20 transition-all transform active:scale-95 flex items-center justify-center gap-2 mt-2">
                         <span>Ingresar</span>
                         <i class="fa-solid fa-arrow-right text-xs"></i>
                     </button>
@@ -128,10 +127,10 @@
 
             <!-- SECCIÓN RECUPERAR -->
             <div id="recover-section" class="auth-content hidden-tab">
-                <h2 class="text-2xl font-bold text-slate-900 mb-2">Restablecer Acceso</h2>
-                <p class="text-slate-500 text-sm mb-8">Ingresa tu usuario para contactar al administrador.</p>
+                <h2 class="text-xl md:text-2xl font-bold text-slate-900 mb-2">Restablecer Acceso</h2>
+                <p class="text-slate-500 text-sm mb-6 md:mb-8">Ingresa tu usuario para contactar al administrador.</p>
 
-                <form onsubmit="handleRecover(event)" class="space-y-5">
+                <form onsubmit="handleRecover(event)" class="space-y-4 md:space-y-5">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Usuario Admin</label>
                         <div class="relative group">
@@ -142,7 +141,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-emerald-500/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 mt-2">
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-emerald-500/30 transition-all transform active:scale-95 flex items-center justify-center gap-2 mt-2">
                         <i class="fa-brands fa-whatsapp text-lg"></i>
                         <span>Enviar por WhatsApp</span>
                     </button>
@@ -155,9 +154,9 @@
                 </form>
             </div>
             
-            <!-- Footer solo en móvil -->
-            <div class="mt-12 text-center md:hidden">
-                <p class="text-xs text-slate-400">© 2023 Parqueadero ELIMAR</p>
+            <!-- Footer móvil -->
+            <div class="mt-8 md:mt-12 text-center">
+                <p class="text-[10px] md:text-xs text-slate-400">© 2023 PARQUEADERO ELIMAR</p>
             </div>
         </div>
     </div>
