@@ -34,7 +34,7 @@ const db = createClient({
 const ADMIN_USUARIO = "admin"; 
 const PASSWORD_PLANO = "1234"; 
 const ADMIN_NOMBRE = "Administrador";
-const ADMIN_EMAIL = "admin@elimar.com";
+const ADMIN_EMAIL = "guzmanmaceajavier@gmail.com";
 
 (async () => {
     try {
