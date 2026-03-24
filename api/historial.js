@@ -15,8 +15,7 @@ export default async function handler(req, res) {
       
       const logDate = ref_date || date || new Date().toISOString().split("T")[0];
       
-      // CORRECCIÓN HORA: Usamos toLocaleTimeString con 'en-GB' para forzar formato 24h (HH:mm)
-      // 'en-GB' usa 24 horas por defecto. También eliminamos segundos para limpiar la vista.
+      // Formato de hora 24h (HH:mm)
       const logTime = entry || new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
 
       const finalType = action_type || type || "SISTEMA";
@@ -38,10 +37,8 @@ export default async function handler(req, res) {
       
       if (paid !== undefined) { updates.push("paid=?"); args.push(paid); }
       
-      // CORRECCIÓN HORA: Si actualizamos la salida, también usamos formato 24h
       if (exit) { 
           updates.push("exit=?"); 
-          // Si 'exit' viene del frontend como string, lo usamos. Si no, generamos la hora actual aquí.
           const exitTime = (typeof exit === 'string' && exit.includes(':')) 
               ? exit 
               : new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -76,7 +73,7 @@ export default async function handler(req, res) {
 export async function logToHistory(action_type, description, amount = 0, plate = "---", ref_date = null) {
   try {
     const logDate = ref_date || new Date().toISOString().split("T")[0];
-    // CORRECCIÓN HORA: Formato 24h estandarizado
+    // Hora 24h
     const logTime = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
 
     await db.execute({

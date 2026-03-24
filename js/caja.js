@@ -1,3 +1,5 @@
+// parqueo/js/caja.js
+
 document.addEventListener("DOMContentLoaded", function () {
   let allTransactions = [];
   let filteredTransactions = [];
@@ -17,7 +19,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // --- UTILIDADES ---
   function formatMoney(amount) {
-    return "$" + parseFloat(amount).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return "$ " + parseFloat(amount || 0).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  }
+
+  // Convierte "$ 1.000" a 1000
+  function parseMoney(value) {
+    if(!value) return 0;
+    return parseFloat(value.toString().replace(/\./g, '').replace(/,/g, '').replace(/\$/g, '').trim()) || 0;
   }
 
   function mostrarToast(mensaje, tipo = 'success') {
@@ -57,129 +65,55 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // --- CÁLCULO DE VENCIMIENTO ---
-  function calcularEstadoPago(transaccion, clienteMedioPago) {
-      if (!transaccion.date) return null;
-      
-      const pago = transaccion.date;
-      const tipo = clienteMedioPago || transaccion.period_type; 
-      
-      if (!tipo || tipo === 'Noche') return null;
+  // --- CÁLCULO DE COBRO SUGERIDO ---
+  function calcularSugerencia(cliente) {
+    const inputMonto = document.getElementById("cajaMonto");
+    const infoDiv = document.getElementById("cajaInfo");
+    
+    if (!cliente) {
+        infoDiv.innerHTML = "";
+        return;
+    }
 
-      const fechaPago = new Date(pago);
-      const hoy = new Date();
-      hoy.setHours(0,0,0,0);
-      
-      let diasAgregar = 0;
-      const t = tipo.toLowerCase();
-      
-      if (t === 'diario') diasAgregar = 1;
-      else if (t === 'semanal') diasAgregar = 7;
-      else if (t === 'quincenal') diasAgregar = 15;
-      else if (t === 'mensual') diasAgregar = 30;
-      else return null;
+    // Buscar último pago de este cliente
+    const pagos = allTransactions.filter(t => t.plate === cliente.placa).sort((a, b) => new Date(b.date) - new Date(a.date));
+    const ultimoPago = pagos.length > 0 ? pagos[0] : null;
+    
+    let textoHTML = "";
+    let montoSugerido = 0;
 
-      const fechaVencimiento = new Date(fechaPago);
-      fechaVencimiento.setDate(fechaVencimiento.getDate() + diasAgregar);
-      fechaVencimiento.setHours(0,0,0,0);
+    if (ultimoPago) {
+        const fechaUltimo = new Date(ultimoPago.date);
+        const hoy = new Date();
+        const diffTime = Math.abs(hoy - fechaUltimo);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        
+        textoHTML += `<div class="text-xs text-slate-500 mb-1">Último pago: ${ultimoPago.date} (Hace ${diffDays} días)</div>`;
+        
+        // Lógica simple: si pasó más de 30 días, sugerir mensual. Si es diario, días * tarifa.
+        // Asumimos cuota_mensual como base.
+        const cuota = cliente.cuota_mensual || 0;
+        
+        if (cliente.medio_pago === 'Diario') {
+            montoSugerido = diffDays * (cuota / 30); // Estimado diario
+            textoHTML += `<div class="text-xs font-bold text-emerald-600 bg-emerald-50 p-2 rounded border border-emerald-100">Sugerencia: ${diffDays} días x $${Math.round(cuota/30)} ≈ ${formatMoney(montoSugerido)}</div>`;
+        } else if (cliente.medio_pago === 'Mensual' && diffDays > 28) {
+            montoSugerido = cuota;
+            textoHTML += `<div class="text-xs font-bold text-amber-600 bg-amber-50 p-2 rounded border border-amber-100">Vencido (Mes cumplido). Sugerencia: ${formatMoney(montoSugerido)}</div>`;
+        } else {
+            textoHTML += `<div class="text-xs text-slate-400">Al día. Sugerencia: ${formatMoney(cuota)}</div>`;
+            montoSugerido = cuota;
+        }
+    } else {
+        textoHTML += `<div class="text-xs text-rose-500 font-bold bg-rose-50 p-2 rounded border border-rose-100">¡Primer pago! Sugerencia: ${formatMoney(cliente.cuota_mensual || 0)}</div>`;
+        montoSugerido = cliente.cuota_mensual || 0;
+    }
 
-      const diffTime = fechaVencimiento - hoy;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays < 0) {
-          return { texto: `Vencido hace ${Math.abs(diffDays)} días`, clase: 'bg-red-100 text-red-700 border-red-200' };
-      } else if (diffDays === 0) {
-          return { texto: 'Vence Hoy', clase: 'bg-amber-100 text-amber-700 border-amber-200' };
-      } else if (diffDays <= 3) {
-          return { texto: `Vence en ${diffDays} días`, clase: 'bg-amber-100 text-amber-700 border-amber-200' };
-      } else {
-          return { texto: 'Al día', clase: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
-      }
+    infoDiv.innerHTML = textoHTML;
+    inputMonto.value = montoSugerido > 0 ? Math.round(montoSugerido) : "";
+    // Disparar evento input para formatear
+    inputMonto.dispatchEvent(new Event('input'));
   }
-
-  // --- CALENDARIO DIARIO ---
-  window.toggleDiaCalendario = async function(diaStr, clienteId, placa) {
-      const existe = allTransactions.find(t => t.plate === placa && t.date === diaStr);
-      
-      try {
-          if (existe) {
-              if(!confirm("¿Anular el pago de este día?")) return;
-              await fetch("/api/caja?id=" + existe.id, { method: "DELETE" });
-              mostrarToast("Pago anulado", "success");
-          } else {
-              const cliente = clientesCache.find(c => c.id === clienteId);
-              if(!cliente) return;
-
-              await fetch("/api/caja", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                      client: cliente.nombre,
-                      plate: cliente.placa,
-                      spot: "---", 
-                      phone: cliente.telefono,
-                      amount: 0, 
-                      method: "Efectivo",
-                      period_type: "Dias",
-                      period_quantity: 1,
-                      date: diaStr
-                  })
-              });
-              mostrarToast("Día marcado como pagado", "success");
-          }
-          loadData(); 
-      } catch(e) {
-          console.error(e);
-          mostrarToast("Error actualizando día", "error");
-      }
-  }
-
-  function renderCalendario(placa) {
-      const container = document.getElementById("calendarContainer");
-      if(!container) return;
-      container.innerHTML = "";
-      container.style.display = "grid";
-
-      const hoy = new Date();
-      const year = hoy.getFullYear();
-      const month = hoy.getMonth(); 
-      const diasEnMes = new Date(year, month + 1, 0).getDate();
-
-      const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-      container.innerHTML = `<div class="col-span-7 text-center font-bold text-slate-700 mb-2">${monthNames[month]} ${year}</div>`;
-
-      const diasSemana = ["L", "M", "M", "J", "V", "S", "D"];
-      diasSemana.forEach(d => {
-          container.innerHTML += `<div class="text-center text-xs font-bold text-slate-400 uppercase">${d}</div>`;
-      });
-
-      let primerDia = new Date(year, month, 1).getDay(); 
-      if (primerDia === 0) primerDia = 7; 
-      primerDia -= 1; 
-
-      for(let i=0; i<primerDia; i++) {
-          container.innerHTML += `<div></div>`;
-      }
-
-      for(let d=1; d<=diasEnMes; d++) {
-          const fechaStr = `${year}-${String(month+1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-          
-          const pagado = allTransactions.find(t => t.plate === placa && t.date === fechaStr);
-          
-          let clases = "h-8 w-8 flex items-center justify-center rounded-full text-xs font-bold cursor-pointer transition-colors hover:opacity-80 ";
-          if (pagado) {
-              clases += "bg-green-500 text-white shadow-md shadow-green-200";
-          } else {
-              clases += "bg-slate-100 text-slate-400 hover:bg-slate-200";
-          }
-
-          if (d === hoy.getDate()) clases += " ring-2 ring-indigo-500 ring-offset-1";
-
-          container.innerHTML += `<div class="${clases}" onclick="toggleDiaCalendario('${fechaStr}', ${currentClientId}, '${placa}')">${d}</div>`;
-      }
-  }
-
-  let currentClientId = null;
 
   // --- AUTOCOMPLETADO ---
   function initAutocomplete() {
@@ -191,6 +125,21 @@ document.addEventListener("DOMContentLoaded", function () {
     listaSugerencias.className = "absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl mt-1 max-h-40 overflow-y-auto z-20 hidden custom-scroll";
     inputCliente.parentNode.style.position = "relative";
     inputCliente.parentNode.appendChild(listaSugerencias);
+
+    // LISTENER PARA FORMATEO DE MONEDA
+    const inputMonto = document.getElementById("cajaMonto");
+    inputMonto.addEventListener('input', function(e) {
+        let value = e.target.value;
+        // Permitir solo números
+        let cleanValue = value.replace(/\D/g, '');
+        if (cleanValue === '') {
+            e.target.value = '';
+            return;
+        }
+        // Formatear con puntos
+        let formatted = parseInt(cleanValue, 10).toLocaleString('es-CO');
+        e.target.value = formatted;
+    });
 
     inputCliente.addEventListener("input", (e) => {
       const val = e.target.value.toLowerCase();
@@ -216,10 +165,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 document.getElementById("cajaPuesto").value = "";
             }
 
-            currentClientId = c.id;
+            calcularSugerencia(c); // Calcular deuda automáticamente
+
             if (c.medio_pago === 'Diario') {
                 containerCalendario.classList.remove('hidden');
-                renderCalendario(c.placa);
+                renderCalendario(c.id, c.placa);
             } else {
                 containerCalendario.classList.add('hidden');
             }
@@ -241,19 +191,89 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // --- DEUDORES (CON MANEJO DE ERRORES) ---
+  // --- CALENDARIO (ACTUALIZADO) ---
+  function renderCalendario(clienteId, placa) {
+      const container = document.getElementById("calendarContainer");
+      if(!container) return;
+      container.innerHTML = "";
+      container.style.display = "grid";
+
+      const hoy = new Date();
+      const year = hoy.getFullYear();
+      const month = hoy.getMonth(); 
+      const diasEnMes = new Date(year, month + 1, 0).getDate();
+
+      const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+      container.innerHTML = `<div class="col-span-7 text-center font-bold text-slate-700 mb-2">${monthNames[month]} ${year}</div>`;
+
+      const diasSemana = ["L", "M", "M", "J", "V", "S", "D"];
+      diasSemana.forEach(d => container.innerHTML += `<div class="text-center text-xs font-bold text-slate-400 uppercase">${d}</div>`);
+
+      let primerDia = new Date(year, month, 1).getDay(); 
+      if (primerDia === 0) primerDia = 7; 
+      primerDia -= 1; 
+
+      for(let i=0; i<primerDia; i++) container.innerHTML += `<div></div>`;
+
+      for(let d=1; d<=diasEnMes; d++) {
+          const fechaStr = `${year}-${String(month+1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          
+          const pagado = allTransactions.find(t => t.plate === placa && t.date === fechaStr);
+          
+          let clases = "h-8 w-8 flex items-center justify-center rounded-full text-xs font-bold cursor-pointer transition-colors hover:opacity-80 ";
+          if (pagado) clases += "bg-green-500 text-white shadow-md shadow-green-200";
+          else clases += "bg-slate-100 text-slate-400 hover:bg-slate-200";
+
+          if (d === hoy.getDate()) clases += " ring-2 ring-indigo-500 ring-offset-1";
+
+          container.innerHTML += `<div class="${clases}" onclick="toggleDiaCalendario('${fechaStr}', ${clienteId}, '${placa}')">${d}</div>`;
+      }
+  }
+
+  window.toggleDiaCalendario = async function(diaStr, clienteId, placa) {
+      const existe = allTransactions.find(t => t.plate === placa && t.date === diaStr);
+      const cliente = clientesCache.find(c => c.id === clienteId);
+      
+      try {
+          if (existe) {
+              if(!confirm("¿Anular el pago de este día?")) return;
+              await fetch("/api/caja?id=" + existe.id, { method: "DELETE" });
+              mostrarToast("Pago anulado", "success");
+          } else {
+              if(!cliente) return;
+              await fetch("/api/caja", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                      client: cliente.nombre,
+                      plate: cliente.placa,
+                      spot: "---", 
+                      phone: cliente.telefono,
+                      amount: cliente.cuota_mensual || 0, // Usa cuota mensual
+                      method: "Efectivo",
+                      period_type: "Dias",
+                      period_quantity: 1,
+                      date: diaStr
+                  })
+              });
+              mostrarToast("Día marcado como pagado", "success");
+          }
+          loadData(); 
+      } catch(e) {
+          console.error(e);
+          mostrarToast("Error actualizando día", "error");
+      }
+  }
+
+  // --- DEUDORES ---
   async function loadDeudores(page) {
       try {
           const res = await fetch(`/api/caja?deudores=true&page=${page}`);
           const data = await res.json();
           
-          // Validar que la respuesta tenga la estructura esperada
           if (!data || !Array.isArray(data.rows)) {
-              console.error("Estructura de datos incorrecta en deudores", data);
-              renderDeudores(0, 1, 1); // Renderizar vacío
-              return;
+              renderDeudores(0, 1, 1); return;
           }
-
           deudoresList = data.rows;
           renderDeudores(data.total, data.totalPages, data.page);
       } catch(e) { 
@@ -318,10 +338,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   window.enviarRecordatorio = function(nombre, telefono) {
       const saludo = getSaludo();
-      const mensaje = `¡${saludo}! 👋 ${nombre}.\n\n` +
-                      `Esperamos que estés teniendo un excelente día. 🌟\n\n` +
-                      `Te saluda el equipo de *${PARKING.nombre}* 🚗. Queremos recordarte amablemente que, hasta el momento, no tenemos registrado el pago de la mensualidad de este mes. 📅\n\n` +
-                      `Quedamos atentos a tu amable colaboración para mantener tu servicio al día. ¡Muchas gracias! 💰✨`;
+      const mensaje = `¡${saludo}! 👋 ${nombre}.\n\nEsperamos que estés teniendo un excelente día. 🌟\n\nTe saluda el equipo de *${PARKING.nombre}* 🚗. Queremos recordarte amablemente que, hasta el momento, no tenemos registrado el pago de la mensualidad de este mes. 📅\n\nQuedamos atentos a tu amable colaboración para mantener tu servicio al día. ¡Muchas gracias! 💰✨`;
       const url = `https://wa.me/57${telefono}?text=${encodeURIComponent(mensaje)}`;
       window.open(url, "_blank");
   }
@@ -368,7 +385,7 @@ document.addEventListener("DOMContentLoaded", function () {
     set("kpiCount", allTransactions.length);
 
     if (pageData.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400">No se encontraron registros.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400">No se encontraron registros.</td></tr>`;
     } else {
       pageData.forEach(tx => {
         let fechaDisplay = "N/A";
@@ -387,12 +404,6 @@ document.addEventListener("DOMContentLoaded", function () {
         else if (tx.method === "Tarjeta") methodBadge = `<span class="px-2 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">TARJETA</span>`;
         else methodBadge = `<span class="px-2 py-1 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700 border border-indigo-200">TRANSF.</span>`;
 
-        let alertaHTML = '';
-        const estadoPago = calcularEstadoPago(tx, tx.cliente_medio_pago);
-        if (estadoPago) {
-            alertaHTML = `<div class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-bold border ${estadoPago.clase}"><i class="fa-regular fa-clock"></i> ${estadoPago.texto}</div>`;
-        }
-
         const tr = document.createElement("tr");
         tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0 group";
         
@@ -403,7 +414,6 @@ document.addEventListener("DOMContentLoaded", function () {
             <div class="flex flex-col">
               <span class="font-mono font-bold">${tx.plate}</span>
               <span class="text-xs text-slate-400">Puesto: ${tx.spot} | ${periodoTexto}</span>
-              ${alertaHTML}
             </div>
           </td>
           <td class="px-6 py-4" data-label="Método">${methodBadge}</td>
@@ -450,7 +460,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const client = document.getElementById("cajaCliente").value;
     const plate = document.getElementById("cajaPlaca").value.toUpperCase();
     const spot = document.getElementById("cajaPuesto").value;
-    const amount = document.getElementById("cajaMonto").value;
+    // Parseamos el monto formateado
+    const amount = parseMoney(document.getElementById("cajaMonto").value);
     const method = document.getElementById("cajaMetodo").value;
     const celular = document.getElementById("cajaCelular").value;
     const periodType = document.getElementById("cajaPeriodType").value;
@@ -483,6 +494,7 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("cajaPeriodQty").value = 1;
         document.getElementById("cajaDate").valueAsDate = new Date();
         document.getElementById("calendarSection").classList.add('hidden');
+        document.getElementById("cajaInfo").innerHTML = "";
         currentPage = 1;
         loadData(); 
         mostrarToast("Cobro registrado correctamente");
@@ -517,7 +529,7 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("editId").value = tx.id;
       document.getElementById("editClient").value = tx.client;
       document.getElementById("editPlate").value = tx.plate;
-      document.getElementById("editAmount").value = tx.amount;
+      document.getElementById("editAmount").value = tx.amount; // El input de edición es tipo number, no necesita formato visual al cargar
       document.getElementById("editMethod").value = tx.method;
       document.getElementById("editPeriodType").value = tx.period_type;
       document.getElementById("editPeriodQty").value = tx.period_quantity;

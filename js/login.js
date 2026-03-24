@@ -1,40 +1,35 @@
 // parqueo/js/login.js
 
-// Función para cambiar entre Login y Recuperar
 function showTab(tabId) {
-    // 1. Ocultar todos los contenidos
+    // Ocultar todo
     document.querySelectorAll('.auth-content').forEach(el => {
-        el.classList.add('hidden-tab'); // Usamos la clase específica de tu HTML
-        el.classList.add('hidden');     // Y la clase hidden de Tailwind por seguridad
+        el.classList.add('hidden-tab');
+        el.classList.add('hidden');
     });
 
-    // 2. Mostrar el contenido deseado
+    // Mostrar objetivo
     const target = document.getElementById(tabId);
     if (target) {
         target.classList.remove('hidden-tab');
         target.classList.remove('hidden');
     }
 
-    // 3. Actualizar estilo de los botones (pestañas)
+    // Estilos de pestañas
     const btnLogin = document.getElementById('tab-login');
     const btnRecover = document.getElementById('tab-recover');
 
     if (tabId === 'login-section') {
-        // Estilo Activo para Login
-        btnLogin.classList.remove('text-slate-400', 'border-transparent');
         btnLogin.classList.add('text-slate-900', 'border-slate-900', 'font-bold');
+        btnLogin.classList.remove('text-slate-400', 'border-transparent');
         
-        // Estilo Inactivo para Recuperar
-        btnRecover.classList.add('text-slate-400', 'border-transparent');
         btnRecover.classList.remove('text-slate-900', 'border-slate-900', 'font-bold');
+        btnRecover.classList.add('text-slate-400', 'border-transparent');
     } else {
-        // Estilo Activo para Recuperar
-        btnRecover.classList.remove('text-slate-400', 'border-transparent');
         btnRecover.classList.add('text-slate-900', 'border-slate-900', 'font-bold');
-
-        // Estilo Inactivo para Login
-        btnLogin.classList.add('text-slate-400', 'border-transparent');
+        btnRecover.classList.remove('text-slate-400', 'border-transparent');
+        
         btnLogin.classList.remove('text-slate-900', 'border-slate-900', 'font-bold');
+        btnLogin.classList.add('text-slate-400', 'border-transparent');
     }
 }
 
@@ -47,7 +42,7 @@ async function handleLogin(e) {
     const pass = document.getElementById('loginPass').value;
 
     if (!user || !pass) {
-        showToast('Por favor ingresa usuario y contraseña', 'error');
+        showToast('Ingresa usuario y contraseña', 'error');
         return;
     }
 
@@ -64,69 +59,57 @@ async function handleLogin(e) {
         const data = await res.json();
 
         if (data.success) {
-            // Login Correcto
             sessionStorage.setItem('parkingUser', JSON.stringify(data.user));
-            showToast('¡Bienvenido al sistema!', 'success');
+            showToast('¡Bienvenido!', 'success');
             setTimeout(() => {
                 window.location.href = 'dashboard.html'; 
             }, 1000);
         } else {
-            // Login Incorrecto
-            showToast(data.message || 'Usuario o contraseña incorrectos', 'error');
+            showToast(data.message || 'Error de acceso', 'error');
         }
     } catch (error) {
-        console.error("Error de conexión:", error);
-        showToast('Error de conexión con el servidor', 'error');
+        console.error(error);
+        showToast('Error de conexión', 'error');
     } finally {
         btn.disabled = false;
         btn.innerHTML = originalText;
     }
 }
 
-async function handleRecover(e) {
-    e.preventDefault();
-    e.preventDefault(); // Doble prevent por seguridad
-
-    const btn = e.target.querySelector('button[type="submit"]');
-    const originalText = btn.innerHTML;
-    
+// Función unificada para recuperar
+async function handleRecoverMethod(method) {
     const user = document.getElementById('recoverUser').value;
-
-    if (!user || user.trim() === "") {
-        showToast('Debes ingresar un usuario para recuperar', 'error');
+    
+    if (!user) {
+        showToast('Ingresa tu usuario', 'error');
         return;
     }
 
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+    showToast('Procesando...', 'success');
 
     try {
-        console.log("Intentando recuperar para usuario:", user);
-
         const res = await fetch('/api/auth?action=recover', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user: user.trim() })
+            body: JSON.stringify({ user, method }) // Enviamos el método (whatsapp o email)
         });
 
         const data = await res.json();
 
         if (data.success) {
-            if(data.whatsappUrl) {
+            if (method === 'whatsapp' && data.whatsappUrl) {
                 showToast('Abriendo WhatsApp...', 'success');
-                setTimeout(() => window.open(data.whatsappUrl, '_blank'), 1000);
-            } else {
-                showToast(data.hint || 'No se pudo generar enlace', 'error');
+                // Redirección directa para que el teléfono abra la app
+                window.location.href = data.whatsappUrl;
+            } else if (method === 'email') {
+                showToast('Revisa tu correo electrónico', 'success');
             }
         } else {
-            showToast(data.message || 'Error al procesar la solicitud', 'error');
+            showToast(data.message || 'No se pudo procesar', 'error');
         }
     } catch (error) {
-        console.error("Error en recover:", error);
-        showToast('Error de conexión con el servidor', 'error');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
+        console.error(error);
+        showToast('Error de conexión', 'error');
     }
 }
 

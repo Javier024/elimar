@@ -1,19 +1,9 @@
 // parqueo/js/dashboard.js
 
-// --- 1. GUARDIÁN DE SEGURIDAD ---
-// Se ejecuta inmediatamente al cargar el archivo, ANTES de mostrar nada.
 (function checkAuth() {
     const user = sessionStorage.getItem('parkingUser');
-    
-    // Si NO hay usuario guardado en esta sesión:
-    if (!user) {
-        // Redirigir al login y REEMPLAZAR el historial.
-        // Esto hace que el botón "Atrás" ya no vuelva al dashboard.
-        window.location.replace('index.html');
-    }
+    if (!user) { window.location.replace('index.html'); }
 })();
-// ---------------------------------
-
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("Dashboard: Iniciando...");
@@ -28,11 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 const formatearMoneda = (amount) => {
     const valor = amount || 0;
-    return new Intl.NumberFormat('es-CO', { 
-        style: 'currency', 
-        currency: 'COP', 
-        minimumFractionDigits: 0 
-    }).format(valor);
+    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(valor);
 };
 
 function mostrarFecha() {
@@ -54,30 +40,19 @@ function toggleMenu() {
     if (sidebar && overlay) {
         sidebar.classList.toggle('-translate-x-full');
         if (sidebar.classList.contains('-translate-x-full')) {
-            overlay.classList.add('hidden');
-            overlay.classList.remove('flex');
+            overlay.classList.add('hidden'); overlay.classList.remove('flex');
         } else {
-            overlay.classList.remove('hidden');
-            overlay.classList.add('flex');
+            overlay.classList.remove('hidden'); overlay.classList.add('flex');
         }
     }
 }
 
-// --- 2. FUNCIÓN CERRAR SESIÓN (Bloqueo Total) ---
 function cerrarSesion() {
     if(confirm('¿Estás seguro de que deseas cerrar sesión?')) {
-        // 1. Borrar la marca de sesión
         sessionStorage.removeItem('parkingUser');
-        
-        // 2. Redirigir al Login
-        // IMPORTANTE: Usamos window.location.replace() en lugar de href
-        // Esto reemplaza el dashboard en el historial por el login.
-        // Resultado: El botón "Atrás" del navegador ya no funcionará para volver.
         window.location.replace('index.html');
     }
 }
-// ------------------------------------------------
-
 
 async function cargarDatosDashboard() {
     mostrarLoaders(true);
@@ -85,11 +60,7 @@ async function cargarDatosDashboard() {
 
     try {
         const respuesta = await fetch('/api/dashboard');
-        
-        if (!respuesta.ok) {
-            throw new Error(`Error del servidor: ${respuesta.status} ${respuesta.statusText}`);
-        }
-
+        if (!respuesta.ok) throw new Error(`Error del servidor: ${respuesta.status}`);
         const datos = await respuesta.json();
 
         if (datos.kpi) {
@@ -98,8 +69,9 @@ async function cargarDatosDashboard() {
             actualizarKPI('reservados', datos.kpi.reservados || 0);
             actualizarKPI('ingresos', formatearMoneda(datos.kpi.ingresos));
             actualizarKPI('gastos', formatearMoneda(datos.kpi.gastos));
+            actualizarKPI('ingresosTotal', formatearMoneda(datos.kpi.ingresosTotal)); // NUEVO
+            actualizarKPI('gastosTotal', formatearMoneda(datos.kpi.gastosTotal));     // NUEVO
             actualizarKPI('alertas', datos.kpi.alertas || 0);
-            actualizarKPI('clientes', datos.kpi.clientes || 0);
             actualizarKPI('deudores', datos.kpi.deudores || 0);
             
             const porcentajeElem = document.getElementById('ocupacion-porcentaje');
@@ -115,6 +87,13 @@ async function cargarDatosDashboard() {
         try {
             renderizarGraficoOcupacion(datos.kpi ? datos.kpi.ocupacionPorcentaje : 0);
         } catch (err) { console.error("Error renderizando ocupación:", err); }
+        
+        // Renderizar gráfica nueva (Ocupación Mensual)
+        try {
+            if (datos.chartOcupacionMes && Array.isArray(datos.chartOcupacionMes)) {
+                renderizarGraficoOcupacionMes(datos.chartOcupacionMes);
+            }
+        } catch (err) { console.error("Error renderizando ocupación mensual:", err); }
 
         try {
             if (datos.movimientosRecientes) {
@@ -132,9 +111,7 @@ async function cargarDatosDashboard() {
 
 function actualizarKPI(key, valor) {
     const elemento = document.querySelector(`[data-kpi="${key}"]`);
-    if (elemento) {
-        elemento.textContent = valor;
-    }
+    if (elemento) elemento.textContent = valor;
 }
 
 function mostrarLoaders(mostrar) {
@@ -158,12 +135,12 @@ function ocultarError() {
 
 let chartFinanzasInstance = null;
 let chartOcupacionInstance = null;
+let chartOcupacionMesInstance = null; // Nueva instancia
 
 function renderizarGraficoFinanzas(data) {
     const canvas = document.getElementById('ingresosGastosChart');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    
     if (!Array.isArray(data)) return;
 
     const mapaDatos = {};
@@ -197,7 +174,7 @@ function renderizarGraficoFinanzas(data) {
                     label: 'Gastos', 
                     data: datosGastos, 
                     borderColor: '#f43f5e', 
-                    backgroundColor: 'rgba(244, 63, 94, 0.05)', 
+                    backgroundColor: 'rgba(244, 63, 94, 0)', 
                     borderDash: [5, 5], 
                     tension: 0.4,
                     pointRadius: 3
@@ -222,7 +199,6 @@ function renderizarGraficoOcupacion(porcentaje) {
     const canvas = document.getElementById('ocupacionChart');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-
     if (chartOcupacionInstance) chartOcupacionInstance.destroy();
 
     chartOcupacionInstance = new Chart(ctx, {
@@ -245,6 +221,40 @@ function renderizarGraficoOcupacion(porcentaje) {
     });
 }
 
+// --- NUEVA FUNCIÓN: Gráfica de Ocupación Mensual ---
+function renderizarGraficoOcupacionMes(data) {
+    const canvas = document.getElementById('ocupacionMesChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (chartOcupacionMesInstance) chartOcupacionMesInstance.destroy();
+
+    const meses = data.map(d => d.mes.split('-')[1]); // EJ: "2023-10" -> "10"
+    const porcentajes = data.map(d => d.porcentaje);
+
+    chartOcupacionMesInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: meses,
+            datasets: [{
+                label: 'Ocupación Promedio (%)',
+                data: porcentajes,
+                backgroundColor: '#6366f1',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, max: 100 }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+}
+
 function renderizarMovimientosRecientes(movimientos) {
     const container = document.getElementById('movimientos-container');
     if(!container) return;
@@ -258,8 +268,6 @@ function renderizarMovimientosRecientes(movimientos) {
     movimientos.forEach(mov => {
         let icon = 'fa-car';
         let color = 'text-blue-600';
-        let detalle = mov.spot || "---";
-        
         const tipo = (mov.type || "").toLowerCase();
         if (tipo.includes('gasto')) { icon = 'fa-receipt'; color = 'text-rose-600'; }
         else if (tipo.includes('caja')) { icon = 'fa-cash-register'; color = 'text-emerald-600'; }

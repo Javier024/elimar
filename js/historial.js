@@ -1,3 +1,5 @@
+// parqueo/js/historial.js
+
 document.addEventListener("DOMContentLoaded", function () {
   let allHistory = [], filteredHistory = [], currentPage = 1, itemsPerPage = 8;
 
@@ -41,7 +43,7 @@ document.addEventListener("DOMContentLoaded", function () {
           await fetch(`/api/historial?id=${id}`, { method: "DELETE" });
           mostrarToast("Eliminado");
           loadHistory();
-      } catch(e) { mostrarToast("Error", "error"); }
+      } catch (e) { mostrarToast("Error", "error"); }
   }
 
   function mostrarToast(msg, type='success') {
@@ -97,9 +99,7 @@ document.addEventListener("DOMContentLoaded", function () {
             iconBg = item.exit ? "bg-emerald-100 text-emerald-600" : "bg-amber-100 text-amber-600";
             
             title = item.plate || "Sin Placa";
-            subhead = item.type; // Muestra el tipo tal cual (Carro, Moto, etc)
-            
-            // Hora visualizada directamente (formato 24h)
+            subhead = item.type; 
             const timeBadge = item.exit 
                 ? `<span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-100">Salida: ${item.exit}</span>`
                 : `<span class="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-100 flex items-center gap-1 animate-pulse"><i class="fa-solid fa-circle text-[8px]"></i> En curso</span>`;
@@ -149,7 +149,7 @@ document.addEventListener("DOMContentLoaded", function () {
             detailRight = `<span class="text-xs text-slate-400">Admin</span>`;
         }
 
-        el.className = `group relative p-4 rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 ${cardStyle} ${borderLeft} flex items-center justify-between gap-4`;
+        el.className = `group relative p-4 rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 ${cardStyle} ${borderLeft} flex flex items-center justify-between gap-4`;
         
         el.innerHTML = `
             <div class="flex items-center gap-4 flex-1 min-w-0">
@@ -192,8 +192,8 @@ document.addEventListener("DOMContentLoaded", function () {
     if(info) info.innerText = `${start}-${end} de ${filteredHistory.length}`;
     if(controls) {
         controls.innerHTML = `
-            <button onclick="changePage(-1)" class="p-2 rounded-lg bg-white border hover:bg-slate-50 ${currentPage===1?'opacity-50 cursor-not-allowed':''}" ${currentPage===1?'disabled':''}><i class="fa-solid fa-chevron-left"></i></button>
-            <button onclick="changePage(1)" class="p-2 rounded-lg bg-white border hover:bg-slate-50 ${currentPage>=totalPages?'opacity-50 cursor-not-allowed':''}" ${currentPage>=totalPages?'disabled':''}><i class="fa-solid fa-chevron-right"></i></button>
+            <button onclick="changePage(-1)" class="p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 ${currentPage===1?'opacity-50 cursor-not-allowed':''}" ${currentPage===1?'disabled':''}><i class="fa-solid fa-chevron-left"></i></button>
+            <button onclick="changePage(1)" class="p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 ${currentPage>=totalPages?'opacity-50 cursor-not-allowed':''}" ${currentPage>=totalPages?'disabled':''}><i class="fa-solid fa-chevron-right"></i></button>
         `;
     }
   }

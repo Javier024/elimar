@@ -5,9 +5,7 @@ let currentPage = 1;
 const itemsPerPage = 5;
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Sistema Clientes Iniciado...");
     loadClients();
-
     const form = document.getElementById('formCliente');
     if(form) form.addEventListener('submit', handleCreateClient);
 
@@ -19,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Lógica campo "Otro" en Crear
+    // Lógica "Otro" Crear
     const medioPagoSelect = document.getElementById('medioPago');
     const otroContainer = document.getElementById('otroPagoContainer');
     if(medioPagoSelect && otroContainer) {
@@ -28,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Lógica campo "Otro" en Editar
+    // Lógica "Otro" Editar
     const editMedioPagoSelect = document.getElementById('editMedioPago');
     const editOtroContainer = document.getElementById('editOtroPagoContainer');
     if(editMedioPagoSelect && editOtroContainer) {
@@ -48,7 +46,7 @@ async function loadClients() {
     } catch (error) {
         console.error(error);
         const tbody = document.getElementById('listaClientesBody');
-        if(tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-center text-red-500 py-4">Error cargando datos: ${error.message}</td></tr>`;
+        if(tbody) tbody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500 py-4">Error cargando datos</td></tr>`;
     }
 }
 
@@ -64,6 +62,7 @@ async function handleCreateClient(e) {
     const fecha_registro = document.getElementById('fechaRegistro').value;
     const medio_pago = document.getElementById('medioPago').value;
     const medio_detalle = document.getElementById('otroPagoInput').value;
+    const cuota_mensual = document.getElementById('cuotaMensual').value; // Capturar cuota
 
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
@@ -72,17 +71,14 @@ async function handleCreateClient(e) {
         const res = await fetch('/api/clientes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nombre, telefono, placa, tipo, fecha_registro, medio_pago, medio_detalle })
+            body: JSON.stringify({ nombre, telefono, placa, tipo, fecha_registro, medio_pago, medio_detalle, cuota_mensual })
         });
-
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Error desconocido');
-
         alert(data.message);
         e.target.reset();
         document.getElementById('otroPagoContainer').classList.add('hidden');
         loadClients();
-
     } catch (error) {
         alert("Error: " + error.message);
     } finally {
@@ -114,7 +110,7 @@ function renderTable(filterText = '') {
     document.getElementById('btnNext').disabled = currentPage === totalPages;
 
     if (pageData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-slate-400">No se encontraron clientes</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-400">No se encontraron clientes</td></tr>';
         return;
     }
 
@@ -122,33 +118,28 @@ function renderTable(filterText = '') {
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 border-b border-slate-50 transition-colors group";
         
-        const fechaDisplay = client.fecha_registro ? client.fecha_registro : '<span class="text-slate-300 text-xs">Sin fecha</span>';
-        let badgeMedio = '';
-        if(client.medio_pago) {
-            let colorClass = 'bg-slate-100 text-slate-600 border-slate-200';
-            if(['Mensual', 'Quincenal'].includes(client.medio_pago)) colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-100';
-            if(['Diario', 'Semanal'].includes(client.medio_pago)) colorClass = 'bg-amber-50 text-amber-700 border-amber-100';
-            badgeMedio = `<div class="mt-1"><span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${colorClass}">${client.medio_pago}</span></div>`;
-        }
+        // Formatear moneda
+        const cuotaFormatted = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(client.cuota_mensual || 0);
         
         tr.innerHTML = `
-            <td class="px-6 py-4">
+            <td class="px-4 py-4">
                 <div class="font-medium text-slate-800">${client.nombre}</div>
                 <div class="text-xs text-slate-400">ID: ${client.id}</div>
             </td>
-            <td class="px-6 py-4">
+            <td class="px-4 py-4">
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                    <i class="fa-solid ${getIconForType(client.tipo_vehiculo)}"></i> ${client.tipo_vehiculo || 'N/A'}
+                    <i class="fa-solid ${getIconForType(client.tipo_vehiculo)}"></i> ${client.tipo_vehiculo}
                 </span>
-                ${badgeMedio}
+                <div class="text-[10px] text-slate-400 mt-1 uppercase font-bold">${client.medio_pago}</div>
             </td>
-            <td class="px-6 py-4 font-mono text-slate-600 font-medium">${client.placa}</td>
-            <td class="px-6 py-4 text-slate-500">${client.telefono || '-'}</td>
-            <td class="px-6 py-4 text-slate-500 text-xs">${fechaDisplay}</td>
-            <td class="px-6 py-4 text-right">
+            <td class="px-4 py-4 font-mono text-slate-600 font-medium">${client.placa}</td>
+            <td class="px-4 py-4 text-right font-mono font-bold text-emerald-700">
+                ${cuotaFormatted}
+            </td>
+            <td class="px-4 py-4 text-right">
                 <div class="flex items-center justify-end gap-2">
-                    <button onclick="openEditModal(${client.id})" class="text-slate-400 hover:text-indigo-600 transition-colors p-1" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
-                    <button onclick="deleteClient(${client.id})" class="text-slate-400 hover:text-red-600 transition-colors p-1" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                    <button onclick="openEditModal(${client.id})" class="text-slate-400 hover:text-indigo-600 transition-colors p-2"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button onclick="deleteClient(${client.id})" class="text-slate-400 hover:text-red-600 transition-colors p-2"><i class="fa-solid fa-trash"></i></button>
                 </div>
             </td>
         `;
@@ -163,15 +154,13 @@ function changePage(direction) {
 }
 
 async function deleteClient(id) {
-    if(!confirm("¿Estás seguro de que deseas eliminar este cliente?")) return;
+    if(!confirm("¿Eliminar este cliente?")) return;
     try {
         const res = await fetch('/api/clientes', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
         if (!res.ok) throw new Error((await res.json()).error);
-        alert("Cliente eliminado");
+        alert("Eliminado");
         loadClients();
-    } catch (error) {
-        alert("Error: " + error.message);
-    }
+    } catch (error) { alert("Error: " + error.message); }
 }
 
 function openEditModal(id) {
@@ -183,6 +172,7 @@ function openEditModal(id) {
     document.getElementById('editTelefono').value = client.telefono || '';
     document.getElementById('editPlaca').value = client.placa;
     document.getElementById('editVehiculo').value = client.tipo_vehiculo || 'Carro';
+    document.getElementById('editCuotaMensual').value = client.cuota_mensual || 0; // Cargar cuota
     document.getElementById('editFechaRegistro').value = client.fecha_registro || '';
     
     const medio = client.medio_pago || 'Diario';
@@ -226,14 +216,15 @@ async function updateClient() {
     const fecha_registro = document.getElementById('editFechaRegistro').value;
     const medio_pago = document.getElementById('editMedioPago').value;
     const medio_detalle = document.getElementById('editOtroPagoInput').value;
+    const cuota_mensual = document.getElementById('editCuotaMensual').value; // Capturar cuota editar
 
-    if (!nombre || !placa) { alert("Nombre y placa son obligatorios"); return; }
+    if (!nombre || !placa) { alert("Nombre y placa obligatorios"); return; }
 
     try {
         const res = await fetch('/api/clientes', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, nombre, telefono, placa, tipo, fecha_registro, medio_pago, medio_detalle })
+            body: JSON.stringify({ id, nombre, telefono, placa, tipo, fecha_registro, medio_pago, medio_detalle, cuota_mensual })
         });
         if (!res.ok) throw new Error((await res.json()).error);
         alert("Actualizado");

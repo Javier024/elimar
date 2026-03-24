@@ -9,19 +9,26 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
-    .custom-input { background: #fff; border: 1px solid #cbd5e1; color: #334155; transition: all .3s ease; padding: 10px 12px 10px 40px; border-radius: 8px; width: 100%; }
+    .custom-input { background: #fff; border: 1px solid #cbd5e1; color: #334155; transition: all .3s ease; padding: 12px 12px 12px 40px; border-radius: 8px; width: 100%; font-size: 15px; }
     .custom-input:focus { outline: none; border-color: #6366f1; background-color: #fff; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
     .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
-    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 20px; }
+    /* Scrollbar fino */
+    ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 20px; }
   </style>
 </head>
-<body class="text-slate-700 antialiased flex h-screen overflow-hidden">
-  <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 z-30 hidden lg:hidden backdrop-blur-sm transition-opacity"></div>
-  <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform -translate-x-full lg:translate-x-0 lg:static lg:inset-auto transition-transform duration-300 ease-in-out">
-    <div class="h-16 flex items-center px-6 border-b border-slate-100">
+<body class="text-slate-700 antialiased flex h-screen overflow-hidden flex-col">
+  
+  <!-- Sidebar Móvil Overlay -->
+  <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 z-30 hidden backdrop-blur-sm transition-opacity"></div>
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform -translate-x-full lg:translate-x-0 lg:static lg:inset-auto transition-transform duration-300 ease-in-out flex flex-col">
+    <div class="h-16 flex items-center px-6 border-b border-slate-100 shrink-0">
       <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200"><i class="fa-solid fa-square-parking text-white text-sm"></i></div>
       <h1 class="text-lg font-bold text-slate-800">ELIMAR<span class="text-indigo-600">Sys</span></h1>
     </div>
+    
+    <!-- Navegación con Scroll -->
     <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
       <a href="../dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard</a>
       <a href="clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100 nav-item"><i class="fa-solid fa-users w-5 text-center"></i> Clientes</a>
@@ -31,99 +38,127 @@
       <a href="historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Historial</a>
       <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-gear w-5 text-center"></i> Configuración</a>
     </nav>
-    <div class="p-4 border-t border-slate-100">
-      <div class="flex items-center gap-3 px-2 py-2">
-        <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">A</div>
-        <div class="flex-1 min-w-0"><p class="text-sm font-medium text-slate-900 truncate">Admin User</p><p class="text-xs text-slate-500 truncate">admin@parking.com</p></div>
-      </div>
-      <button onclick="cerrarSesion()" class="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors"><i class="fa-solid fa-power-off"></i> Salir</button>
+
+    <!-- Botón Cerrar Sesión al Final -->
+    <div class="p-4 border-t border-slate-100 shrink-0">
+      <button onclick="cerrarSesion()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors">
+        <i class="fa-solid fa-power-off"></i> Cerrar Sesión
+      </button>
     </div>
   </aside>
+
+  <!-- Main Content -->
   <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
-    <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20">
+    <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20 shrink-0">
       <div class="flex items-center gap-4">
         <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button>
-        <div class="flex flex-col"><h2 class="text-xl font-bold text-slate-800">Gestión de Clientes</h2><span class="text-xs text-slate-500 font-medium">Administra la información de vehículos y propietarios</span></div>
+        <div class="flex flex-col"><h2 class="text-lg lg:text-xl font-bold text-slate-800">Gestión de Clientes</h2><span class="text-xs text-slate-500 font-medium hidden sm:block">Administra información y cuotas</span></div>
       </div>
-      <div class="flex items-center gap-3"><button class="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:border-indigo-200 shadow-sm transition-all"><i class="fa-regular fa-bell"></i></button></div>
     </header>
+
     <div class="flex-1 overflow-y-auto p-4 lg:p-8">
-      <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div class="lg:col-span-4 space-y-6">
-          <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <div class="flex items-center gap-2 mb-6"><div class="p-2 bg-indigo-50 rounded-lg text-indigo-600"><i class="fa-solid fa-user-plus"></i></div><h3 class="font-bold text-slate-800">Registrar Nuevo</h3></div>
+      <div class="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8">
+        
+        <!-- Formulario (Izquierda) -->
+        <div class="xl:col-span-4 space-y-6">
+          <div class="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-sm">
+            <div class="flex items-center gap-2 mb-6"><div class="p-2 bg-indigo-50 rounded-lg text-indigo-600"><i class="fa-solid fa-user-plus"></i></div><h3 class="font-bold text-slate-800 text-lg">Registrar Nuevo</h3></div>
             <form id="formCliente">
               <div class="space-y-4">
-                <div class="relative group"><i class="fa-regular fa-user input-icon group-focus-within:text-indigo-500 transition-colors"></i><input id="nombre" placeholder="Nombre completo" required class="custom-input peer"></div>
-                <div class="relative group"><i class="fa-solid fa-phone input-icon group-focus-within:text-indigo-500 transition-colors"></i><input id="telefono" placeholder="Teléfono (opcional)" class="custom-input peer"></div>
-                <div class="relative"><i class="fa-solid fa-id-card input-icon group-focus-within:text-indigo-500 transition-colors"></i><input id="placa" placeholder="Placa del vehículo" required class="custom-input uppercase peer"></div>
-                <div class="relative"><i class="fa-solid fa-car input-icon group-focus-within:text-indigo-500 transition-colors"></i><select id="vehiculo" class="custom-input appearance-none cursor-pointer"><option value="Carro">Carro Particular</option><option value="Moto">Motocicleta</option><option value="Camioneta">Camioneta / SUV</option></select><i class="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none"></i></div>
-                <div class="relative"><i class="fa-regular fa-calendar input-icon group-focus-within:text-indigo-500 transition-colors"></i><input type="date" id="fechaRegistro" required class="custom-input pl-10"></div>
-                <div class="relative"><i class="fa-solid fa-money-bill-wave input-icon group-focus-within:text-indigo-500 transition-colors"></i><select id="medioPago" class="custom-input appearance-none cursor-pointer"><option value="Diario">Diario</option><option value="Semanal">Semanal</option><option value="Quincenal">Quincenal</option><option value="Mensual">Mensual</option><option value="Otro">Otro...</option></select><i class="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none"></i></div>
-                <div id="otroPagoContainer" class="relative hidden animate-fade-in-down"><i class="fa-solid fa-pen input-icon group-focus-within:text-indigo-500 transition-colors"></i><input id="otroPagoInput" placeholder="Especifique medio..." class="custom-input pl-10"></div>
+                <div class="relative group"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Nombre</label><i class="fa-regular fa-user input-icon group-focus-within:text-indigo-500 transition-colors"></i><input id="nombre" placeholder="Nombre completo" required class="custom-input peer"></div>
+                <div class="relative group"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Teléfono</label><i class="fa-solid fa-phone input-icon group-focus-within:text-indigo-500 transition-colors"></i><input id="telefono" placeholder="Teléfono" class="custom-input peer"></div>
+                <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Placa</label><i class="fa-solid fa-id-card input-icon group-focus-within:text-indigo-500 transition-colors"></i><input id="placa" placeholder="Placa" required class="custom-input uppercase peer"></div>
+                <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Vehículo</label><i class="fa-solid fa-car input-icon group-focus-within:text-indigo-500 transition-colors"></i><select id="vehiculo" class="custom-input appearance-none cursor-pointer"><option value="Carro">Carro</option><option value="Moto">Moto</option><option value="Camioneta">Camioneta</option></select><i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 pointer-events-none"></i></div>
+                
+                <!-- CUOTA MENSUAL -->
+                <div class="relative">
+                    <label class="text-xs font-bold text-emerald-600 ml-1 mb-1 block">Cuota Mensual ($)</label>
+                    <i class="fa-solid fa-dollar-sign input-icon text-emerald-500"></i>
+                    <input type="number" id="cuotaMensual" placeholder="0.00" class="custom-input pl-10 font-mono font-bold text-emerald-700">
+                </div>
+
+                <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">F. Registro</label><i class="fa-regular fa-calendar input-icon group-focus-within:text-indigo-500 transition-colors"></i><input type="date" id="fechaRegistro" required class="custom-input pl-10"></div>
+                
+                <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Periodicidad</label><i class="fa-solid fa-money-bill-wave input-icon group-focus-within:text-indigo-500 transition-colors"></i><select id="medioPago" class="custom-input appearance-none cursor-pointer"><option value="Diario">Diario</option><option value="Semanal">Semanal</option><option value="Quincenal">Quincenal</option><option value="Mensual">Mensual</option><option value="Otro">Otro...</option></select><i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 pointer-events-none"></i></div>
+                <div id="otroPagoContainer" class="relative hidden animate-fade-in-down"><i class="fa-solid fa-pen input-icon group-focus-within:text-indigo-500 transition-colors"></i><input id="otroPagoInput" placeholder="Especifique..." class="custom-input pl-10"></div>
               </div>
-              <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg shadow-indigo-200 transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 mt-4"><i class="fa-solid fa-save"></i> Guardar Cliente</button>
+              <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg shadow-indigo-200 transition-all transform active:scale-95 flex items-center justify-center gap-2 mt-6"><i class="fa-solid fa-save"></i> Guardar Cliente</button>
             </form>
           </div>
         </div>
-        <div class="lg:col-span-8">
+
+        <!-- Lista (Derecha) -->
+        <div class="xl:col-span-8">
           <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full min-h-[500px]">
-            <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white">
+            <div class="p-4 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white shrink-0">
               <h3 class="font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-list-ul text-indigo-500"></i> Lista de Clientes</h3>
-              <div class="flex items-center gap-3 w-full sm:w-auto">
+              <div class="flex items-center gap-2 w-full sm:w-auto">
                 <div class="relative w-full sm:w-64"><i class="fa-solid fa-search absolute left-3 top-3 text-slate-400"></i><input type="text" id="searchInput" placeholder="Buscar..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"></div>
                 <div class="text-xs font-medium bg-slate-100 text-slate-600 px-3 py-2 rounded-lg border border-slate-200 whitespace-nowrap">Total: <span id="totalCount">0</span></div>
               </div>
             </div>
+            
+            <!-- Tabla con Scroll Horizontal en Móvil -->
             <div class="overflow-x-auto flex-1">
-              <table class="w-full text-left border-collapse">
+              <table class="w-full text-left border-collapse min-w-[600px]"> <!-- min-w fuerza scroll en móvil -->
                 <thead class="bg-slate-50/80 backdrop-blur sticky top-0 z-10">
                     <tr>
-                        <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Cliente</th>
-                        <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Vehículo</th>
-                        <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Placa</th>
-                        <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Teléfono</th>
-                        <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha Registro</th>
-                        <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Acciones</th>
+                        <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Info</th>
+                        <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Vehículo</th>
+                        <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Placa</th>
+                        <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Cuota</th>
+                        <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="listaClientesBody" class="text-sm text-slate-700 divide-y divide-slate-50"></tbody>
               </table>
             </div>
-            <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-between items-center text-sm">
-              <span class="text-slate-500">Página <span id="currentPage" class="font-bold text-slate-800">1</span> de <span id="totalPages">1</span></span>
+            
+            <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-between items-center text-sm shrink-0">
+              <span class="text-slate-500">Pág. <span id="currentPage" class="font-bold text-slate-800">1</span> de <span id="totalPages">1</span></span>
               <div class="flex gap-2">
-                <button onclick="changePage(-1)" id="btnPrev" class="px-3 py-1.5 border border-slate-300 rounded hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><i class="fa-solid fa-chevron-left"></i> Anterior</button>
-                <button onclick="changePage(1)" id="btnNext" class="px-3 py-1.5 border border-slate-300 rounded hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors">Siguiente <i class="fa-solid fa-chevron-right"></i></button>
+                <button onclick="changePage(-1)" id="btnPrev" class="px-3 py-1.5 border border-slate-300 rounded hover:bg-white disabled:opacity-50 transition-colors"><i class="fa-solid fa-chevron-left"></i></button>
+                <button onclick="changePage(1)" id="btnNext" class="px-3 py-1.5 border border-slate-300 rounded hover:bg-white disabled:opacity-50 transition-colors"><i class="fa-solid fa-chevron-right"></i></button>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Modal Editar -->
     <div id="modalEdit" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[70] transition-opacity opacity-0">
-      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0 duration-200" id="modalContent">
-        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-2xl">
-            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-user-pen text-indigo-500"></i> Editar Cliente</h3>
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0 duration-200 max-h-[90vh] overflow-y-auto" id="modalContent">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-2xl sticky top-0 z-10">
+            <h3 class="text-lg font-bold text-slate-800">Editar Cliente</h3>
             <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors z-10 relative"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="p-6 space-y-4">
           <input type="hidden" id="editId">
-          <div class="relative"><i class="fa-regular fa-user absolute left-3 top-3 text-slate-400"></i><input id="editNombre" class="custom-input pl-10" placeholder="Nombre"></div>
-          <div class="relative"><i class="fa-solid fa-phone absolute left-3 top-3 text-slate-400"></i><input id="editTelefono" class="custom-input pl-10" placeholder="Teléfono"></div>
-          <div class="relative"><i class="fa-solid fa-id-card absolute left-3 top-3 text-slate-400"></i><input id="editPlaca" class="custom-input pl-10 uppercase" placeholder="Placa"></div>
-          <div class="relative"><i class="fa-solid fa-car absolute left-3 top-3 text-slate-400"></i><select id="editVehiculo" class="custom-input pl-10 appearance-none"><option value="Carro">Carro</option><option value="Moto">Moto</option><option value="Camioneta">Camioneta</option></select><i class="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none"></i></div>
-          <div class="relative"><i class="fa-regular fa-calendar absolute left-3 top-3 text-slate-400"></i><input type="date" id="editFechaRegistro" class="custom-input pl-10"></div>
-          <div class="relative"><i class="fa-solid fa-money-bill-wave absolute left-3 top-3 text-slate-400"></i><select id="editMedioPago" class="custom-input pl-10 appearance-none cursor-pointer"><option value="Diario">Diario</option><option value="Semanal">Semanal</option><option value="Quincenal">Quincenal</option><option value="Mensual">Mensual</option><option value="Otro">Otro...</option></select><i class="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none"></i></div>
-          <div id="editOtroPagoContainer" class="relative hidden"><i class="fa-solid fa-pen absolute left-3 top-3 text-slate-400"></i><input id="editOtroPagoInput" placeholder="Especifique medio..." class="custom-input pl-10"></div>
+          <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Nombre</label><i class="fa-regular fa-user absolute left-3 top-9 text-slate-400"></i><input id="editNombre" class="custom-input pl-10 pt-6" placeholder="Nombre"></div>
+          <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Teléfono</label><i class="fa-solid fa-phone absolute left-3 top-9 text-slate-400"></i><input id="editTelefono" class="custom-input pl-10 pt-6" placeholder="Teléfono"></div>
+          <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Placa</label><i class="fa-solid fa-id-card absolute left-3 top-9 text-slate-400"></i><input id="editPlaca" class="custom-input pl-10 pt-6 uppercase" placeholder="Placa"></div>
+          <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Vehículo</label><i class="fa-solid fa-car absolute left-3 top-9 text-slate-400"></i><select id="editVehiculo" class="custom-input pl-10 pt-6 appearance-none"><option value="Carro">Carro</option><option value="Moto">Moto</option><option value="Camioneta">Camioneta</option></select><i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 pointer-events-none"></i></div>
+          
+          <!-- CUOTA EN EDITAR -->
+          <div class="relative">
+            <label class="text-xs font-bold text-emerald-600 ml-1 mb-1 block">Cuota Mensual ($)</label>
+            <i class="fa-solid fa-dollar-sign absolute left-3 top-9 text-emerald-500"></i>
+            <input type="number" id="editCuotaMensual" class="custom-input pl-10 pt-6 font-mono font-bold text-emerald-700" placeholder="0.00">
+          </div>
+
+          <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">F. Registro</label><i class="fa-regular fa-calendar absolute left-3 top-9 text-slate-400"></i><input type="date" id="editFechaRegistro" class="custom-input pl-10 pt-6"></div>
+          <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Periodicidad</label><i class="fa-solid fa-money-bill-wave absolute left-3 top-9 text-slate-400"></i><select id="editMedioPago" class="custom-input pl-10 pt-6 appearance-none cursor-pointer"><option value="Diario">Diario</option><option value="Semanal">Semanal</option><option value="Quincenal">Quincenal</option><option value="Mensual">Mensual</option><option value="Otro">Otro...</option></select><i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 pointer-events-none"></i></div>
+          <div id="editOtroPagoContainer" class="relative hidden"><i class="fa-solid fa-pen absolute left-3 top-9 text-slate-400"></i><input id="editOtroPagoInput" placeholder="Especifique..." class="custom-input pl-10 pt-6"></div>
         </div>
-        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-3">
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-3 sticky bottom-0">
           <button onclick="deleteClientFromModal()" class="text-rose-600 hover:bg-rose-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors mr-auto">Eliminar</button>
           <button onclick="closeModal()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200 transition-colors">Cancelar</button>
-          <button onclick="updateClient()" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-colors">Guardar Cambios</button>
+          <button onclick="updateClient()" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-colors">Guardar</button>
         </div>
       </div>
     </div>
+    
     <script src="../js/clientes.js"></script>
 </body>
 </html>

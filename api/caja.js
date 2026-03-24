@@ -1,20 +1,18 @@
+// parqueo/api/caja.js
 import { db } from "./db.js"
 import { logToHistory } from "./historial.js"
 
 export default async function handler(req, res) {
   try {
-    // --- GET: LISTA DE DEUDORES (CORREGIDO) ---
+    // --- GET: LISTA DE DEUDORES ---
     if (req.method === "GET" && req.query.deudores === "true") {
       const page = parseInt(req.query.page) || 1;
       const limit = 5;
       const offset = (page - 1) * limit;
-      
       const currentMonthPrefix = new Date().toISOString().slice(0, 7);
       
-      // Consulta mejorada: Unimos clientes para poder filtrar por medio_pago si fuera necesario
-      // Y usamos ca.date que existe en la tabla.
       const result = await db.execute(`
-        SELECT c.nombre, c.placa, c.telefono, c.medio_pago
+        SELECT c.id, c.nombre, c.placa, c.telefono, c.medio_pago, c.cuota_mensual
         FROM clientes c
         WHERE c.placa NOT IN (
           SELECT plate FROM caja ca 
@@ -23,7 +21,6 @@ export default async function handler(req, res) {
         LIMIT ? OFFSET ?
       `, [`${currentMonthPrefix}%`, limit, offset]);
 
-      // Contar total para paginación
       const countResult = await db.execute(`
         SELECT COUNT(*) as total 
         FROM clientes c
@@ -34,7 +31,6 @@ export default async function handler(req, res) {
       `, [`${currentMonthPrefix}%`]);
 
       const totalDeudores = countResult.rows[0].total;
-
       return res.status(200).json({ 
         rows: result.rows, 
         total: totalDeudores,
@@ -43,20 +39,22 @@ export default async function handler(req, res) {
       });
     }
 
-    // --- GET: LEER CAJA NORMAL ---
+    // --- GET: LEER CAJA NORMAL (Con última fecha de pago) ---
     if (req.method === "GET") {
-      // Si piden un registro específico para editar
       if (req.query.id) {
           const result = await db.execute({ sql: "SELECT * FROM caja WHERE id = ?", args: [req.query.id] });
           if (result.rows.length === 0) return res.status(404).json({ error: "Registro no encontrado" });
           return res.status(200).json(result.rows[0]);
       }
 
-      // Lista normal con JOIN para mostrar alertas de vencimiento
+      // Lista normal con JOIN para traer info del cliente y su último pago
       const result = await db.execute(`
         SELECT ca.*, 
                cli.medio_pago as cliente_medio_pago,
-               cli.nombre as cliente_nombre_completo
+               cli.nombre as cliente_nombre_completo,
+               cli.cuota_mensual,
+               -- Subconsulta para obtener la fecha del pago anterior inmediato
+               (SELECT date FROM caja c2 WHERE c2.plate = ca.plate AND c2.date < ca.date ORDER BY c2.date DESC LIMIT 1) as last_payment_date
         FROM caja ca
         LEFT JOIN clientes cli ON ca.plate = cli.placa
         ORDER BY ca.date DESC, ca.id DESC
@@ -98,7 +96,6 @@ export default async function handler(req, res) {
       }
 
       await logToHistory('CAJA', `Cobro: ${client} (${plate})`, amount, plate);
-
       return res.status(200).json({ success: true, message: "Cobro registrado" });
     }
 
@@ -110,12 +107,10 @@ export default async function handler(req, res) {
         if (!amount) return res.status(400).json({ error: "Monto requerido" });
 
         const paymentDate = date || new Date().toISOString().split("T")[0];
-
         await db.execute({
             sql: `UPDATE caja SET client=?, plate=?, spot=?, phone=?, amount=?, method=?, period_type=?, period_quantity=?, date=? WHERE id=?`,
             args: [client, plate, spot, phone, amount, method, period_type, period_quantity, paymentDate, id]
         });
-
         return res.status(200).json({ success: true, message: "Transacción actualizada" });
     }
 
@@ -128,7 +123,6 @@ export default async function handler(req, res) {
     }
 
     return res.status(405).json({ error: "Método no permitido" });
-
   } catch (error) {
     console.error("ERROR API CAJA:", error);
     return res.status(500).json({ error: "Error interno del servidor", detalle: error.message });
