@@ -1,20 +1,17 @@
 // parqueo/js/login.js
 
 function showTab(tabId) {
-    // Ocultar todo
     document.querySelectorAll('.auth-content').forEach(el => {
         el.classList.add('hidden-tab');
         el.classList.add('hidden');
     });
 
-    // Mostrar objetivo
     const target = document.getElementById(tabId);
     if (target) {
         target.classList.remove('hidden-tab');
         target.classList.remove('hidden');
     }
 
-    // Estilos de pestañas
     const btnLogin = document.getElementById('tab-login');
     const btnRecover = document.getElementById('tab-recover');
 
@@ -62,7 +59,8 @@ async function handleLogin(e) {
             sessionStorage.setItem('parkingUser', JSON.stringify(data.user));
             showToast('¡Bienvenido!', 'success');
             setTimeout(() => {
-                window.location.href = 'dashboard.html'; 
+                // IMPORTANTE: Usamos replace para evitar el botón atrás hacia el login
+                window.location.replace('dashboard.html'); 
             }, 1000);
         } else {
             showToast(data.message || 'Error de acceso', 'error');
@@ -76,7 +74,6 @@ async function handleLogin(e) {
     }
 }
 
-// Función unificada para recuperar
 async function handleRecoverMethod(method) {
     const user = document.getElementById('recoverUser').value;
     
@@ -91,7 +88,7 @@ async function handleRecoverMethod(method) {
         const res = await fetch('/api/auth?action=recover', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user, method }) // Enviamos el método (whatsapp o email)
+            body: JSON.stringify({ user, method })
         });
 
         const data = await res.json();
@@ -99,7 +96,6 @@ async function handleRecoverMethod(method) {
         if (data.success) {
             if (method === 'whatsapp' && data.whatsappUrl) {
                 showToast('Abriendo WhatsApp...', 'success');
-                // Redirección directa para que el teléfono abra la app
                 window.location.href = data.whatsappUrl;
             } else if (method === 'email') {
                 showToast('Revisa tu correo electrónico', 'success');

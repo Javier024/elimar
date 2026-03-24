@@ -16,6 +16,9 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .chart-wrapper { position: relative; width: 100%; }
     </style>
+    
+    <!-- AGREGADO: Script de Seguridad (Debe cargar primero) -->
+    <script src="./js/auth-manager.js"></script>
 </head>
 <body class="text-slate-700 antialiased flex h-screen overflow-hidden bg-slate-50 flex-col">
 
@@ -29,7 +32,11 @@
             <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200">
                 <i class="fa-solid fa-square-parking text-white text-sm"></i>
             </div>
-            <h1 class="text-lg font-bold text-slate-800">ELIMAR<span class="text-indigo-600">Sys</span></h1>
+            <div>
+                <h1 class="text-lg font-bold text-slate-800">ELIMAR<span class="text-indigo-600">Sys</span></h1>
+                <!-- Elemento para mostrar el nombre del usuario -->
+                <p class="text-[10px] text-slate-400 font-medium truncate" id="sidebar-user-name">Cargando...</p>
+            </div>
         </div>
         
         <!-- Navegación -->
@@ -57,9 +64,10 @@
             </a>
         </nav>
 
-        <!-- Botón Cerrar Sesión al Final -->
+        <!-- Botón Cerrar Sesión -->
         <div class="p-4 border-t border-slate-100 shrink-0">
-            <button onclick="cerrarSesion()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors">
+            <!-- MODIFICADO: Llama a la función global logout() -->
+            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors">
                 <i class="fa-solid fa-power-off"></i> Cerrar Sesión
             </button>
         </div>
@@ -101,7 +109,7 @@
                 <button onclick="location.reload()" class="text-xs bg-white border border-red-200 text-red-600 px-3 py-1.5 rounded hover:bg-red-50 font-medium">Reintentar</button>
             </div>
 
-            <!-- KPIs GRID (Responsive) -->
+            <!-- KPIs GRID -->
             <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-4 mb-8">
                 <!-- Vehículos -->
                 <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28">
@@ -121,12 +129,12 @@
                     <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shadow-sm"><i class="fa-solid fa-clock"></i></div>
                     <div class="mt-2"><h3 class="text-2xl font-bold text-slate-800" data-kpi="reservados">0</h3><p class="text-xs text-slate-500">Reservados</p></div>
                 </div>
-                <!-- Ingresos Totales (NUEVO) -->
+                <!-- Ingresos Totales -->
                 <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28">
                     <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-sm"><i class="fa-solid fa-wallet"></i></div>
                     <div class="mt-2"><h3 class="text-xl font-bold text-slate-800 leading-tight" data-kpi="ingresosTotal">$0</h3><p class="text-xs text-slate-500">Ingresos Total</p></div>
                 </div>
-                <!-- Gastos Totales (NUEVO) -->
+                <!-- Gastos Totales -->
                 <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28">
                     <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shadow-sm"><i class="fa-solid fa-arrow-trend-down"></i></div>
                     <div class="mt-2"><h3 class="text-xl font-bold text-slate-800 leading-tight" data-kpi="gastosTotal">$0</h3><p class="text-xs text-slate-500">Gastos Total</p></div>
@@ -166,13 +174,12 @@
                     </div>
                 </div>
                 
-                <!-- Sección Ocupación (Tortuga + Barras) -->
+                <!-- Sección Ocupación -->
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-chart-pie text-indigo-500"></i> Análisis de Ocupación</h3>
                     </div>
                     
-                    <!-- Gráfica de Tortuga (Hoy) -->
                     <div class="chart-wrapper h-40 flex items-center justify-center relative mb-4">
                         <canvas id="ocupacionChart"></canvas>
                         <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -181,7 +188,6 @@
                         </div>
                     </div>
 
-                    <!-- Gráfica de Barras (Mensual - NUEVO) -->
                     <div class="chart-wrapper h-40 relative">
                         <canvas id="ocupacionMesChart"></canvas>
                     </div>
@@ -206,7 +212,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT JS -->
+    <!-- Tu lógica de gráficos y dashboard -->
     <script src="./js/dashboard.js"></script>
 </body>
 </html>
