@@ -1,6 +1,35 @@
-import 'dotenv/config'; // Carga el .env
+// parqueo/crear-admin.js
+import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
-import { db } from "./api/db.js";
+import { createClient } from "@libsql/client";
+
+// 1. CARGAR VARIABLES EXPLÍCITAMENTE
+// Esto se ejecuta antes de intentar conectar a la BD
+dotenv.config({ path: '.env.local' });
+
+// 2. VERIFICAR QUE LAS VARIABLES EXISTEN (Debugging)
+const url = process.env.TURSO_DATABASE_URL;
+const token = process.env.TURSO_AUTH_TOKEN;
+
+if (!url) {
+    console.error("❌ ERROR CRÍTICO: No se encontró TURSO_DATABASE_URL en .env.local");
+    process.exit(1);
+}
+
+if (!token) {
+    console.error("❌ ERROR CRÍTICO: TURSO_AUTH_TOKEN está vacío en .env.local");
+    console.log("Por favor copia el token desde tu panel de Turso.");
+    process.exit(1);
+}
+
+// 3. CREAR CLIENTE DE BASE DE DATOS MANUALMENTE
+// Ya no importamos desde api/db.js para evitar el problema del orden de carga
+const db = createClient({
+  url: url,
+  authToken: token
+});
+
+// --- LÓGICA DEL ADMIN ---
 
 const ADMIN_USUARIO = "admin"; 
 const PASSWORD_PLANO = "1234"; 
@@ -9,30 +38,35 @@ const ADMIN_EMAIL = "admin@elimar.com";
 
 (async () => {
     try {
-        console.log("Conectando y verificando usuario...");
+        console.log("Conectando a Turso y verificando usuario...");
 
-        // 1. Generar el Hash SIEMPRE
+        // 1. Generar el Hash
         const hash = await bcrypt.hash(PASSWORD_PLANO, 10);
-        console.log("Hash generado.");
+        console.log("Hash generado correctamente.");
 
         // 2. Verificar si existe
-        const check = await db.execute("SELECT id FROM usuarios WHERE usuario = ?", [ADMIN_USUARIO]);
+        // Nota: En Turso/LibSQL la sintaxis puede variar ligeramente, usamos execute estándar
+        const check = await db.execute({
+            sql: "SELECT id FROM usuarios WHERE usuario = ?",
+            args: [ADMIN_USUARIO]
+        });
 
-        if (check.rows.length > 0) {
-            // SI EXISTE: Actualizamos la contraseña y el email por si acaso
-            console.log("Usuario existente detectado. Actualizando contraseña a HASH...");
-            await db.execute(
-                "UPDATE usuarios SET password = ?, email = ? WHERE usuario = ?", 
-                [hash, ADMIN_EMAIL, ADMIN_USUARIO]
-            );
+        // LibSQL devuelve las filas en .rows
+        if (check.rows && check.rows.length > 0) {
+            // SI EXISTE: Actualizamos
+            console.log("Usuario existente detectado. Actualizando contraseña...");
+            await db.execute({
+                sql: "UPDATE usuarios SET password = ?, email = ? WHERE usuario = ?", 
+                args: [hash, ADMIN_EMAIL, ADMIN_USUARIO]
+            });
             console.log("✅ Contraseña actualizada correctamente.");
         } else {
             // NO EXISTE: Lo creamos
-            console.log("Creando nuevo usuario...");
-            await db.execute(
-                "INSERT INTO usuarios (usuario, password, nombre, email, rol) VALUES (?, ?, ?, ?, ?)", 
-                [ADMIN_USUARIO, hash, ADMIN_NOMBRE, ADMIN_EMAIL, 'admin']
-            );
+            console.log("Creando nuevo usuario admin...");
+            await db.execute({
+                sql: "INSERT INTO usuarios (usuario, password, nombre, email, rol) VALUES (?, ?, ?, ?, ?)", 
+                args: [ADMIN_USUARIO, hash, ADMIN_NOMBRE, ADMIN_EMAIL, 'admin']
+            });
             console.log("✅ Usuario Admin creado.");
         }
 
@@ -43,6 +77,7 @@ const ADMIN_EMAIL = "admin@elimar.com";
         console.log("--------------------------------");
 
     } catch (error) {
-        console.error("❌ Error:", error);
+        console.error("❌ Error durante el proceso:", error.message);
+        console.error(error);
     }
 })();
