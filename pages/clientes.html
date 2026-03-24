@@ -7,31 +7,63 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- 1. Script de Seguridad -->
+  <script src="../js/auth-manager.js"></script>
+
   <style>
-    body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+    body { font-family: 'Inter', sans-serif; }
+    
+    /* Scrollbar personalizado */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
     .custom-input { background: #fff; border: 1px solid #cbd5e1; color: #334155; transition: all .3s ease; padding: 12px 12px 12px 40px; border-radius: 8px; width: 100%; font-size: 15px; }
     .custom-input:focus { outline: none; border-color: #6366f1; background-color: #fff; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
     .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
-    /* Scrollbar fino */
-    ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 20px; }
   </style>
 </head>
-<body class="text-slate-700 antialiased flex h-screen overflow-hidden flex-col">
-  
-  <!-- Sidebar Móvil Overlay -->
-  <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 z-30 hidden backdrop-blur-sm transition-opacity"></div>
 
-  <!-- SIDEBAR -->
-  <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform -translate-x-full lg:translate-x-0 lg:static lg:inset-auto transition-transform duration-300 ease-in-out flex flex-col">
+<!-- 
+  CAMBIO CLAVE EN BODY:
+  flex-col: Móvil.
+  lg:flex-row: PC (Menú lateral y contenido paralelos).
+  h-screen: Altura completa.
+-->
+<body class="text-slate-700 antialiased flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50 w-full">
+
+  <!-- Sidebar Móvil Overlay -->
+  <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 z-40 hidden backdrop-blur-sm transition-opacity"></div>
+
+  <!-- 
+    SIDEBAR
+    - fixed inset-y-0 left-0: Fijo en móvil.
+    - lg:static lg:translate-x-0: Estático y visible en PC.
+    - lg:z-auto: Evita conflictos de z-index en PC.
+  -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col lg:static lg:translate-x-0 lg:z-auto lg:flex lg:flex-col shadow-xl lg:shadow-none">
+    
     <div class="h-16 flex items-center px-6 border-b border-slate-100 shrink-0">
-      <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200"><i class="fa-solid fa-square-parking text-white text-sm"></i></div>
-      <h1 class="text-lg font-bold text-slate-800">ELIMAR<span class="text-indigo-600">Sys</span></h1>
+      <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200 flex-shrink-0">
+        <i class="fa-solid fa-square-parking text-white text-sm"></i>
+      </div>
+      <div class="min-w-0">
+        <h1 class="text-lg font-bold text-slate-800 truncate">ELIMAR<span class="text-indigo-600">Sys</span></h1>
+        <p class="text-[10px] text-slate-400 font-medium truncate" id="sidebar-user-name">Sistema</p>
+      </div>
     </div>
     
-    <!-- Navegación con Scroll -->
+    <!-- Navegación -->
     <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
       <a href="../dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard</a>
-      <a href="clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100 nav-item"><i class="fa-solid fa-users w-5 text-center"></i> Clientes</a>
+      
+      <!-- Página Activa -->
+      <a href="clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100 nav-item">
+        <i class="fa-solid fa-users w-5 text-center"></i> Clientes
+      </a>
+      
       <a href="puestos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-layer-group w-5 text-center"></i> Puestos</a>
       <a href="caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-cash-register w-5 text-center"></i> Caja</a>
       <a href="gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-receipt w-5 text-center"></i> Gastos</a>
@@ -39,23 +71,35 @@
       <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-gear w-5 text-center"></i> Configuración</a>
     </nav>
 
-    <!-- Botón Cerrar Sesión al Final -->
+    <!-- Botón Cerrar Sesión -->
     <div class="p-4 border-t border-slate-100 shrink-0">
-      <button onclick="cerrarSesion()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors">
+      <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors">
         <i class="fa-solid fa-power-off"></i> Cerrar Sesión
       </button>
     </div>
   </aside>
 
-  <!-- Main Content -->
-  <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
+  <!-- 
+    MAIN CONTENT WRAPPER
+    - flex-1: Ocupa el espacio restante.
+    - flex-col: Header arriba, contenido abajo.
+  -->
+  <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full bg-slate-50">
+    
+    <!-- HEADER -->
     <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20 shrink-0">
       <div class="flex items-center gap-4">
-        <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button>
-        <div class="flex flex-col"><h2 class="text-lg lg:text-xl font-bold text-slate-800">Gestión de Clientes</h2><span class="text-xs text-slate-500 font-medium hidden sm:block">Administra información y cuotas</span></div>
+        <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+          <i class="fa-solid fa-bars text-xl"></i>
+        </button>
+        <div class="flex flex-col">
+          <h2 class="text-lg lg:text-xl font-bold text-slate-800">Gestión de Clientes</h2>
+          <span class="text-xs text-slate-500 font-medium hidden sm:block">Administra información y cuotas</span>
+        </div>
       </div>
     </header>
 
+    <!-- CONTENIDO SCROLLABLE -->
     <div class="flex-1 overflow-y-auto p-4 lg:p-8">
       <div class="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8">
         
@@ -100,7 +144,7 @@
             
             <!-- Tabla con Scroll Horizontal en Móvil -->
             <div class="overflow-x-auto flex-1">
-              <table class="w-full text-left border-collapse min-w-[600px]"> <!-- min-w fuerza scroll en móvil -->
+              <table class="w-full text-left border-collapse min-w-[600px]">
                 <thead class="bg-slate-50/80 backdrop-blur sticky top-0 z-10">
                     <tr>
                         <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Info</th>
@@ -125,40 +169,41 @@
         </div>
       </div>
     </div>
+  </main>
 
-    <!-- Modal Editar -->
-    <div id="modalEdit" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[70] transition-opacity opacity-0">
+  <!-- Modal Editar -->
+  <div id="modalEdit" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[70] transition-opacity opacity-0">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0 duration-200 max-h-[90vh] overflow-y-auto" id="modalContent">
-        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-2xl sticky top-0 z-10">
-            <h3 class="text-lg font-bold text-slate-800">Editar Cliente</h3>
-            <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors z-10 relative"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="p-6 space-y-4">
-          <input type="hidden" id="editId">
-          <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Nombre</label><i class="fa-regular fa-user absolute left-3 top-9 text-slate-400"></i><input id="editNombre" class="custom-input pl-10 pt-6" placeholder="Nombre"></div>
-          <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Teléfono</label><i class="fa-solid fa-phone absolute left-3 top-9 text-slate-400"></i><input id="editTelefono" class="custom-input pl-10 pt-6" placeholder="Teléfono"></div>
-          <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Placa</label><i class="fa-solid fa-id-card absolute left-3 top-9 text-slate-400"></i><input id="editPlaca" class="custom-input pl-10 pt-6 uppercase" placeholder="Placa"></div>
-          <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Vehículo</label><i class="fa-solid fa-car absolute left-3 top-9 text-slate-400"></i><select id="editVehiculo" class="custom-input pl-10 pt-6 appearance-none"><option value="Carro">Carro</option><option value="Moto">Moto</option><option value="Camioneta">Camioneta</option></select><i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 pointer-events-none"></i></div>
-          
-          <!-- CUOTA EN EDITAR -->
-          <div class="relative">
-            <label class="text-xs font-bold text-emerald-600 ml-1 mb-1 block">Cuota Mensual ($)</label>
-            <i class="fa-solid fa-dollar-sign absolute left-3 top-9 text-emerald-500"></i>
-            <input type="number" id="editCuotaMensual" class="custom-input pl-10 pt-6 font-mono font-bold text-emerald-700" placeholder="0.00">
+          <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-2xl sticky top-0 z-10">
+              <h3 class="text-lg font-bold text-slate-800">Editar Cliente</h3>
+              <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors z-10 relative"><i class="fa-solid fa-xmark"></i></button>
           </div>
+          <div class="p-6 space-y-4">
+            <input type="hidden" id="editId">
+            <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Nombre</label><i class="fa-regular fa-user absolute left-3 top-9 text-slate-400"></i><input id="editNombre" class="custom-input pl-10 pt-6" placeholder="Nombre"></div>
+            <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Teléfono</label><i class="fa-solid fa-phone absolute left-3 top-9 text-slate-400"></i><input id="editTelefono" class="custom-input pl-10 pt-6" placeholder="Teléfono"></div>
+            <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Placa</label><i class="fa-solid fa-id-card absolute left-3 top-9 text-slate-400"></i><input id="editPlaca" class="custom-input pl-10 pt-6 uppercase" placeholder="Placa"></div>
+            <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Vehículo</label><i class="fa-solid fa-car absolute left-3 top-9 text-slate-400"></i><select id="editVehiculo" class="custom-input pl-10 pt-6 appearance-none"><option value="Carro">Carro</option><option value="Moto">Moto</option><option value="Camioneta">Camioneta</option></select><i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 pointer-events-none"></i></div>
+            
+            <!-- CUOTA EN EDITAR -->
+            <div class="relative">
+              <label class="text-xs font-bold text-emerald-600 ml-1 mb-1 block">Cuota Mensual ($)</label>
+              <i class="fa-solid fa-dollar-sign absolute left-3 top-9 text-emerald-500"></i>
+              <input type="number" id="editCuotaMensual" class="custom-input pl-10 pt-6 font-mono font-bold text-emerald-700" placeholder="0.00">
+            </div>
 
-          <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">F. Registro</label><i class="fa-regular fa-calendar absolute left-3 top-9 text-slate-400"></i><input type="date" id="editFechaRegistro" class="custom-input pl-10 pt-6"></div>
-          <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Periodicidad</label><i class="fa-solid fa-money-bill-wave absolute left-3 top-9 text-slate-400"></i><select id="editMedioPago" class="custom-input pl-10 pt-6 appearance-none cursor-pointer"><option value="Diario">Diario</option><option value="Semanal">Semanal</option><option value="Quincenal">Quincenal</option><option value="Mensual">Mensual</option><option value="Otro">Otro...</option></select><i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 pointer-events-none"></i></div>
-          <div id="editOtroPagoContainer" class="relative hidden"><i class="fa-solid fa-pen absolute left-3 top-9 text-slate-400"></i><input id="editOtroPagoInput" placeholder="Especifique..." class="custom-input pl-10 pt-6"></div>
-        </div>
-        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-3 sticky bottom-0">
-          <button onclick="deleteClientFromModal()" class="text-rose-600 hover:bg-rose-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors mr-auto">Eliminar</button>
-          <button onclick="closeModal()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200 transition-colors">Cancelar</button>
-          <button onclick="updateClient()" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-colors">Guardar</button>
-        </div>
+            <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">F. Registro</label><i class="fa-regular fa-calendar absolute left-3 top-9 text-slate-400"></i><input type="date" id="editFechaRegistro" class="custom-input pl-10 pt-6"></div>
+            <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Periodicidad</label><i class="fa-solid fa-money-bill-wave absolute left-3 top-9 text-slate-400"></i><select id="editMedioPago" class="custom-input pl-10 pt-6 appearance-none cursor-pointer"><option value="Diario">Diario</option><option value="Semanal">Semanal</option><option value="Quincenal">Quincenal</option><option value="Mensual">Mensual</option><option value="Otro">Otro...</option></select><i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 pointer-events-none"></i></div>
+            <div id="editOtroPagoContainer" class="relative hidden"><i class="fa-solid fa-pen absolute left-3 top-9 text-slate-400"></i><input id="editOtroPagoInput" placeholder="Especifique..." class="custom-input pl-10 pt-6"></div>
+          </div>
+          <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-3 sticky bottom-0">
+            <button onclick="deleteClientFromModal()" class="text-rose-600 hover:bg-rose-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors mr-auto">Eliminar</button>
+            <button onclick="closeModal()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200 transition-colors">Cancelar</button>
+            <button onclick="updateClient()" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-colors">Guardar</button>
+          </div>
       </div>
-    </div>
-    
-    <script src="../js/clientes.js"></script>
+  </div>
+  
+  <script src="../js/clientes.js"></script>
 </body>
 </html>

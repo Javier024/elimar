@@ -16,10 +16,10 @@ export default async function handler(req, res) {
       vehiculos: 0,
       libres: 0,
       reservados: 0,
-      ingresos: 0,       // Hoy
-      gastos: 0,         // Hoy
-      ingresosTotal: 0,  // Acumulado
-      gastosTotal: 0,    // Acumulado
+      ingresos: 0,       
+      gastos: 0,         
+      ingresosTotal: 0,  
+      gastosTotal: 0,    
       clientes: 0,
       alertas: 0,
       deudores: 0,
@@ -28,10 +28,10 @@ export default async function handler(req, res) {
     
     let chartFinanzasData = [];
     let chartOcupacionMesData = []; 
+    let chartMetodosPagoData = []; // NUEVO: Datos para métodos de pago
     let movimientosRecientes = [];
 
-    // --- 1. PUESTOS (Estado Actual) ---
-    // Usamos tu tabla 'puestos' y su columna 'estado'
+    // --- 1. PUESTOS ---
     try {
       const puestosResult = await db.execute(`
         SELECT COUNT(*) as total,
@@ -51,7 +51,6 @@ export default async function handler(req, res) {
 
     // --- 2. CAJA Y GASTOS ---
     try {
-      // Asumimos que 'caja' y 'gastos' tienen columnas 'amount' y 'date'
       const ingresosHoyResult = await db.execute(`SELECT COALESCE(SUM(amount), 0) as total FROM caja WHERE date = ?`, [hoy]);
       kpi.ingresos = ingresosHoyResult.rows[0]?.total || 0;
 
@@ -72,7 +71,7 @@ export default async function handler(req, res) {
       kpi.clientes = cRes.rows[0]?.total || 0;
     } catch (e) { console.error("Error clientes:", e); }
 
-    // --- 4. ALERTAS (Lógica original mantenida) ---
+    // --- 4. ALERTAS ---
     try {
       const aRes = await db.execute(`SELECT COUNT(*) as total FROM clientes WHERE fecha_registro < date('now', '-24 hours')`);
       kpi.alertas = aRes.rows[0]?.total || 0;
@@ -113,10 +112,22 @@ export default async function handler(req, res) {
       });
     } catch (e) { console.error("Error gráfica finanzas:", e); }
 
-    // --- 7. GRÁFICA ACTIVIDAD MENSUAL (CORREGIDO) ---
-    // ERROR ANTERIOR: Buscaba columna 'estado' en 'historial'.
-    // SOLUCIÓN: Contamos la cantidad de registros (movimientos) por mes.
+    // --- 7. GRÁFICA MÉTODOS DE PAGO (NUEVO) ---
     try {
+      const metodosResult = await db.execute(`
+        SELECT method, COALESCE(SUM(amount), 0) as total 
+        FROM caja 
+        GROUP BY method
+      `);
+      chartMetodosPagoData = metodosResult.rows.map(r => ({
+        metodo: r.method || 'Sin definir',
+        total: r.total
+      }));
+    } catch (e) { console.error("Error gráfica métodos:", e); }
+
+    // --- 8. GRÁFICA ACTIVIDAD MENSUAL ---
+    try {
+        // Traemos los movimientos de los últimos 6 meses
         const actividadMesResult = await db.execute(`
             SELECT 
                 strftime('%Y-%m', date) as mes, 
@@ -136,9 +147,8 @@ export default async function handler(req, res) {
         console.error("Error gráfica actividad mensual:", e); 
     }
 
-    // --- 8. HISTORIAL RECIENTE ---
+    // --- 9. HISTORIAL RECIENTE ---
     try {
-      // Usamos SELECT * para evitar errores si faltan columnas específicas
       const hRes = await db.execute(`SELECT * FROM historial ORDER BY id DESC LIMIT 5`);
       movimientosRecientes = hRes.rows;
     } catch (e) { console.error("Error historial:", e); }
@@ -147,6 +157,7 @@ export default async function handler(req, res) {
       kpi: kpi,
       chartFinanzas: chartFinanzasData,
       chartOcupacionMes: chartOcupacionMesData, 
+      chartMetodosPago: chartMetodosPagoData, // Enviando datos nuevos
       movimientosRecientes: movimientosRecientes
     });
 

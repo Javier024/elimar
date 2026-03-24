@@ -1,13 +1,12 @@
 // parqueo/js/dashboard.js
 
-(function checkAuth() {
-    const user = sessionStorage.getItem('parkingUser');
-    if (!user) { window.location.replace('index.html'); }
-})();
+// ELIMINADO: La comprobación inicial (checkAuth) para evitar conflictos con auth-manager.js
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("Dashboard: Iniciando...");
-    mostrarFecha();
+    mostrarFechaYHora();
+    actualizarSaludo();   // Intentará saludar si ya hay sesión
+    iniciarReloj();       
     try {
         await cargarDatosDashboard();
     } catch (error) {
@@ -21,17 +20,50 @@ const formatearMoneda = (amount) => {
     return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(valor);
 };
 
-function mostrarFecha() {
+// Función para mostrar Fecha y Hora
+function mostrarFechaYHora() {
     try {
         const fechaElemento = document.getElementById('fecha-actual');
         if (fechaElemento) {
-            const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            const hoy = new Date();
-            let textoFecha = hoy.toLocaleDateString('es-ES', opciones);
-            textoFecha = textoFecha.charAt(0).toUpperCase() + textoFecha.slice(1);
-            fechaElemento.textContent = textoFecha;
+            actualizarTextoHora();
         }
     } catch (e) { console.error("Error fecha:", e); }
+}
+
+function actualizarTextoHora() {
+    const fechaElemento = document.getElementById('fecha-actual');
+    if (!fechaElemento) return;
+
+    const ahora = new Date();
+    const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'long' };
+    const opcionesHora = { hour: 'numeric', minute: '2-digit' };
+    
+    const textoFecha = ahora.toLocaleDateString('es-ES', opcionesFecha);
+    const textoHora = ahora.toLocaleTimeString('es-ES', opcionesHora);
+    
+    const fechaFormateada = textoFecha.charAt(0).toUpperCase() + textoFecha.slice(1);
+    
+    fechaElemento.innerHTML = `<span class="hidden sm:inline">${fechaFormateada}</span> <span class="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded ml-1">${textoHora}</span>`;
+}
+
+function iniciarReloj() {
+    setInterval(actualizarTextoHora, 60000);
+}
+
+// Saludo basado en la hora
+function actualizarSaludo() {
+    const usuario = JSON.parse(sessionStorage.getItem('parkingUser'));
+    const usuarioDisplay = document.getElementById('sidebar-user-name');
+    
+    if (usuario && usuarioDisplay) {
+        const hora = new Date().getHours();
+        let saludo = "Buenas noches";
+        
+        if (hora >= 5 && hora < 12) saludo = "Buenos días";
+        else if (hora >= 12 && hora < 19) saludo = "Buenas tardes";
+        
+        usuarioDisplay.innerHTML = `<span class="text-indigo-600 font-bold">${saludo},</span> ${usuario.nombre.split(' ')[0]}`;
+    }
 }
 
 function toggleMenu() {
@@ -55,6 +87,9 @@ function cerrarSesion() {
 }
 
 async function cargarDatosDashboard() {
+    const btnIcon = document.querySelector('button[onclick="cargarDatosDashboard()"] i');
+    if(btnIcon) btnIcon.classList.add('fa-spin');
+    
     mostrarLoaders(true);
     ocultarError();
 
@@ -69,8 +104,8 @@ async function cargarDatosDashboard() {
             actualizarKPI('reservados', datos.kpi.reservados || 0);
             actualizarKPI('ingresos', formatearMoneda(datos.kpi.ingresos));
             actualizarKPI('gastos', formatearMoneda(datos.kpi.gastos));
-            actualizarKPI('ingresosTotal', formatearMoneda(datos.kpi.ingresosTotal)); // NUEVO
-            actualizarKPI('gastosTotal', formatearMoneda(datos.kpi.gastosTotal));     // NUEVO
+            actualizarKPI('ingresosTotal', formatearMoneda(datos.kpi.ingresosTotal));
+            actualizarKPI('gastosTotal', formatearMoneda(datos.kpi.gastosTotal));
             actualizarKPI('alertas', datos.kpi.alertas || 0);
             actualizarKPI('deudores', datos.kpi.deudores || 0);
             
@@ -88,12 +123,17 @@ async function cargarDatosDashboard() {
             renderizarGraficoOcupacion(datos.kpi ? datos.kpi.ocupacionPorcentaje : 0);
         } catch (err) { console.error("Error renderizando ocupación:", err); }
         
-        // Renderizar gráfica nueva (Ocupación Mensual)
         try {
             if (datos.chartOcupacionMes && Array.isArray(datos.chartOcupacionMes)) {
-                renderizarGraficoOcupacionMes(datos.chartOcupacionMes);
+                renderizarGraficaOcupacionMes(datos.chartOcupacionMes);
             }
         } catch (err) { console.error("Error renderizando ocupación mensual:", err); }
+
+        try {
+            if (datos.chartMetodosPago && Array.isArray(datos.chartMetodosPago)) {
+                renderizarGraficaMetodosPago(datos.chartMetodosPago);
+            }
+        } catch (err) { console.error("Error renderizando métodos:", err); }
 
         try {
             if (datos.movimientosRecientes) {
@@ -106,6 +146,7 @@ async function cargarDatosDashboard() {
         mostrarError(error.message || "Error de conexión desconocido");
     } finally {
         mostrarLoaders(false);
+        if(btnIcon) btnIcon.classList.remove('fa-spin');
     }
 }
 
@@ -135,7 +176,8 @@ function ocultarError() {
 
 let chartFinanzasInstance = null;
 let chartOcupacionInstance = null;
-let chartOcupacionMesInstance = null; // Nueva instancia
+let chartOcupacionMesInstance = null;
+let chartMetodosPagoInstance = null;
 
 function renderizarGraficoFinanzas(data) {
     const canvas = document.getElementById('ingresosGastosChart');
@@ -164,32 +206,59 @@ function renderizarGraficoFinanzas(data) {
                 { 
                     label: 'Ingresos', 
                     data: datosIngresos, 
-                    borderColor: '#4f46e5', 
-                    backgroundColor: 'rgba(79, 70, 229, 0.1)', 
-                    tension: 0.4, 
+                    borderColor: '#6366f1',
+                    backgroundColor: (context) => {
+                        const ctx = context.chart.ctx;
+                        const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+                        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.4)');
+                        gradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
+                        return gradient;
+                    },
                     fill: true,
-                    pointRadius: 3
+                    tension: 0.4, 
+                    pointRadius: 4,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#6366f1',
+                    pointBorderWidth: 2
                 },
                 { 
                     label: 'Gastos', 
                     data: datosGastos, 
-                    borderColor: '#f43f5e', 
-                    backgroundColor: 'rgba(244, 63, 94, 0)', 
+                    borderColor: '#f43f5e',
+                    backgroundColor: 'transparent', 
                     borderDash: [5, 5], 
                     tension: 0.4,
-                    pointRadius: 3
+                    pointRadius: 4,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#f43f5e',
+                    pointBorderWidth: 2
                 }
             ]
         },
         options: { 
             responsive: true, 
             maintainAspectRatio: false, 
+            interaction: { mode: 'index', intersect: false },
             plugins: { 
-                legend: { position: 'top', labels: { boxWidth: 10, usePointStyle: true } } 
+                legend: { position: 'top', labels: { boxWidth: 12, usePointStyle: true, font: { family: 'Inter' } } },
+                tooltip: { 
+                    backgroundColor: '#1e293b',
+                    padding: 12,
+                    cornerRadius: 8,
+                    titleFont: { size: 13 },
+                    bodyFont: { size: 13 }
+                }
             }, 
             scales: { 
-                y: { beginAtZero: true, grid: { borderDash: [2, 2] } }, 
-                x: { grid: { display: false } } 
+                y: { 
+                    beginAtZero: true, 
+                    grid: { borderDash: [2, 4], color: '#f1f5f9' },
+                    ticks: { font: { family: 'Inter' } }
+                }, 
+                x: { 
+                    grid: { display: false },
+                    ticks: { font: { family: 'Inter' } }
+                } 
             } 
         }
     });
@@ -215,41 +284,97 @@ function renderizarGraficoOcupacion(porcentaje) {
         options: { 
             responsive: true, 
             maintainAspectRatio: false, 
-            cutout: '75%', 
+            cutout: '80%', 
             plugins: { legend: { display: false } } 
         }
     });
 }
 
-// --- NUEVA FUNCIÓN: Gráfica de Ocupación Mensual ---
-function renderizarGraficoOcupacionMes(data) {
+function renderizarGraficaOcupacionMes(data) {
     const canvas = document.getElementById('ocupacionMesChart');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (chartOcupacionMesInstance) chartOcupacionMesInstance.destroy();
 
-    const meses = data.map(d => d.mes.split('-')[1]); // EJ: "2023-10" -> "10"
-    const porcentajes = data.map(d => d.porcentaje);
+    const labels = data.map(d => {
+        const fecha = new Date(d.mes + '-01');
+        return fecha.toLocaleDateString('es-ES', { month: 'short' });
+    });
+    const valores = data.map(d => d.total_movimientos);
 
     chartOcupacionMesInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: meses,
+            labels: labels,
             datasets: [{
-                label: 'Ocupación Promedio (%)',
-                data: porcentajes,
+                label: 'Movimientos',
+                data: valores,
                 backgroundColor: '#6366f1',
-                borderRadius: 4
+                borderRadius: 4,
+                barPercentage: 0.6
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: { beginAtZero: true, max: 100 }
+                y: { 
+                    beginAtZero: true, 
+                    grid: { color: '#f1f5f9' },
+                    ticks: { font: { family: 'Inter' } }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { family: 'Inter' } }
+                }
             },
             plugins: {
-                legend: { display: false }
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    padding: 10,
+                    cornerRadius: 6
+                }
+            }
+        }
+    });
+}
+
+function renderizarGraficaMetodosPago(data) {
+    const canvas = document.getElementById('metodosPagoChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (chartMetodosPagoInstance) chartMetodosPagoInstance.destroy();
+
+    const labels = data.map(d => d.metodo);
+    const valores = data.map(d => d.total);
+    const colors = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6']; 
+
+    chartMetodosPagoInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: valores,
+                backgroundColor: colors.slice(0, labels.length),
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        font: { family: 'Inter', size: 12 }
+                    }
+                }
             }
         }
     });

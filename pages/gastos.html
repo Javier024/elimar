@@ -7,28 +7,48 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- 1. Script de Seguridad -->
+    <script src="../js/auth-manager.js"></script>
+
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Scrollbar personalizado */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
         .custom-input { background: #fff; border: 1px solid #cbd5e1; color: #334155; transition: all .3s ease; padding: 12px 12px 12px 40px; border-radius: 8px; width: 100%; font-size: 15px; }
         .custom-input:focus { border-color: #6366f1; outline: 0; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
         .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 20px; }
     </style>
 </head>
-<body class="text-slate-700 antialiased flex h-screen overflow-hidden flex-col">
+
+<!-- 
+  CAMBIO CLAVE EN BODY:
+  flex-col: Móvil.
+  lg:flex-row: PC (Menú y contenido paralelos).
+  h-screen: Altura completa.
+-->
+<body class="text-slate-700 antialiased flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50 w-full">
 
     <!-- MOBILE MENU OVERLAY -->
-    <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 z-30 hidden backdrop-blur-sm transition-opacity"></div>
+    <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 z-40 hidden backdrop-blur-sm transition-opacity"></div>
 
     <!-- SIDEBAR -->
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform -translate-x-full lg:translate-x-0 lg:static lg:inset-auto transition-transform duration-300 ease-in-out flex flex-col">
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col lg:static lg:z-auto lg:flex lg:flex-col shadow-xl lg:shadow-none">
         
         <!-- Header Sidebar -->
         <div class="h-16 flex items-center px-6 border-b border-slate-100 shrink-0">
-            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200">
+            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200 flex-shrink-0">
                 <i class="fa-solid fa-square-parking text-white text-sm"></i>
             </div>
-            <h1 class="text-lg font-bold text-slate-800">ELIMAR<span class="text-indigo-600">Sys</span></h1>
+            <div class="min-w-0">
+                <h1 class="text-lg font-bold text-slate-800 truncate">ELIMAR<span class="text-indigo-600">Sys</span></h1>
+                <p class="text-[10px] text-slate-400 font-medium truncate" id="sidebar-user-name">Sistema</p>
+            </div>
         </div>
 
         <!-- Navegación -->
@@ -45,29 +65,38 @@
             <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-gear w-5 text-center"></i> Configuración</a>
         </nav>
 
-        <!-- Botón Cerrar Sesión al Final -->
+        <!-- Botón Cerrar Sesión -->
         <div class="p-4 border-t border-slate-100 shrink-0">
-            <button onclick="cerrarSesion()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors">
+            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors">
                 <i class="fa-solid fa-power-off"></i> Cerrar Sesión
             </button>
         </div>
     </aside>
 
     <!-- MAIN CONTENT WRAPPER -->
-    <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
-        <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 z-20 sticky top-0 shrink-0 shadow-sm">
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full bg-slate-50">
+        
+        <!-- Header -->
+        <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20 shrink-0 shadow-sm">
             <div class="flex items-center gap-4">
-                <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button>
+                <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
                 <div>
                     <h2 class="text-lg lg:text-xl font-bold text-slate-800">Control de Gastos</h2>
                     <span class="text-xs text-slate-500 hidden sm:block">Registro de egresos operativos</span>
                 </div>
             </div>
-            <div class="flex items-center gap-3"><span class="text-sm font-medium text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm" id="fecha-actual"></span></div>
+            <div class="flex items-center gap-2">
+                <i class="fa-regular fa-calendar text-slate-400"></i>
+                <span id="fecha-actual" class="text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200"></span>
+            </div>
         </header>
 
+        <!-- Contenido Scrollable -->
         <div class="flex-1 overflow-y-auto p-4 lg:p-8">
-            <!-- KPIs (Responsive Grid) -->
+            
+            <!-- KPIs -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 mb-8">
                 <div class="bg-white p-4 lg:p-6 rounded-xl border border-slate-100 shadow-sm flex flex-col border-l-4 border-l-indigo-600">
                     <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Total Gastado</span>
@@ -87,6 +116,7 @@
             </div>
 
             <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
+                <!-- Formulario -->
                 <div class="xl:col-span-1">
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 sticky top-4">
                         <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
@@ -94,7 +124,6 @@
                             <h3 class="text-lg font-bold text-slate-800">Nuevo Gasto</h3>
                         </div>
                         
-                        <!-- Formulario -->
                         <form id="formGasto" onsubmit="event.preventDefault(); guardarGasto();" class="space-y-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Concepto</label>
@@ -136,12 +165,12 @@
                                 </div>
                             </div>
                             
-                            <!-- BOTÓN AZUL -->
                             <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg shadow-md shadow-indigo-200 transition-all flex justify-center items-center gap-2 mt-2"><i class="fa-solid fa-save"></i> Guardar Gasto</button>
                         </form>
                     </div>
                 </div>
                 
+                <!-- Lista -->
                 <div class="xl:col-span-2">
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-full flex flex-col">
                         <div class="p-4 lg:p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
@@ -179,20 +208,32 @@
     </main>
 
     <script>
-        document.getElementById('gastoFecha').valueAsDate = new Date();
-        function toggleMenu() { 
+        // Lógica Menú Móvil
+        function toggleMenu() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('mobileMenuOverlay');
-            sidebar.classList.toggle('-translate-x-full'); 
+            
             if (sidebar.classList.contains('-translate-x-full')) {
-                overlay.classList.add('hidden'); overlay.classList.remove('flex');
+                // Abrir
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
             } else {
-                overlay.classList.remove('hidden'); overlay.classList.add('flex');
+                // Cerrar
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
             }
         }
-        function cerrarSesion() { 
-            if(confirm('¿Estás seguro de salir?')) window.location.href='../index.html'; 
-        }
+
+        // Inicialización de fechas
+        document.addEventListener('DOMContentLoaded', () => {
+            const dateInput = document.getElementById('gastoFecha');
+            if(dateInput) dateInput.valueAsDate = new Date();
+
+            const fechaDisplay = document.getElementById('fecha-actual');
+            if(fechaDisplay) fechaDisplay.textContent = new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+        });
     </script>
     
     <script src="../js/gastos.js"></script>

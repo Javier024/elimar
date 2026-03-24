@@ -1,5 +1,14 @@
 // parqueo/js/login.js
 
+// Verificar si ya hay sesión al cargar el login
+document.addEventListener('DOMContentLoaded', () => {
+    const user = JSON.parse(sessionStorage.getItem('parkingUser'));
+    if (user) {
+        // Si ya está logueado, lo mandamos al dashboard
+        window.location.replace('dashboard.html');
+    }
+});
+
 function showTab(tabId) {
     document.querySelectorAll('.auth-content').forEach(el => {
         el.classList.add('hidden-tab');
@@ -57,9 +66,12 @@ async function handleLogin(e) {
 
         if (data.success) {
             sessionStorage.setItem('parkingUser', JSON.stringify(data.user));
+            
+            // Preparamos el saludo para que el dashboard lo muestre al entrar
+            prepararSaludo(data.user);
+            
             showToast('¡Bienvenido!', 'success');
             setTimeout(() => {
-                // IMPORTANTE: Usamos replace para evitar el botón atrás hacia el login
                 window.location.replace('dashboard.html'); 
             }, 1000);
         } else {
@@ -72,6 +84,17 @@ async function handleLogin(e) {
         btn.disabled = false;
         btn.innerHTML = originalText;
     }
+}
+
+// NUEVO: Función auxiliar para guardar el saludo en sessionStorage si lo deseas usar globalmente
+function prepararSaludo(usuario) {
+    const hora = new Date().getHours();
+    let saludo = "Buenas noches";
+    if (hora >= 5 && hora < 12) saludo = "Buenos días";
+    else if (hora >= 12 && hora < 19) saludo = "Buenas tardes";
+    
+    // Guardamos el saludo calculado para usarlo en el dashboard
+    sessionStorage.setItem('parkingSaludo', `${saludo}`);
 }
 
 async function handleRecoverMethod(method) {

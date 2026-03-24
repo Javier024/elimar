@@ -2,350 +2,325 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configuración | PARQUEADERO ELIMAR</title>
     
-    <!-- Estilos Base -->
+    <!-- Librerías -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Estilos Personalizados -->
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; -webkit-tap-highlight-color: transparent; }
-        
-        /* Ocultar barra de scroll pero permitir scroll en tabs */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* Animaciones suaves */
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Estilo para inputs numéricos */
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-    </style>
-    
-    <!-- Script de Seguridad -->
+    <!-- 1. Script de Seguridad -->
     <script src="../js/auth-manager.js"></script>
-</head>
-<body class="text-slate-700 antialiased flex flex-col h-screen overflow-hidden">
 
-    <!-- SIDEBAR (Oculto en móvil, fijo en escritorio) -->
-    <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/60 z-40 hidden backdrop-blur-sm transition-opacity lg:hidden"></div>
-    
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 transform -translate-x-full lg:translate-x-0 lg:static lg:inset-auto transition-transform duration-300 ease-in-out flex flex-col shadow-2xl lg:shadow-none">
+    <!-- Estilos -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Scrollbar personalizado */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Inputs */
+        .input-group label { display: block; font-size: 0.75rem; font-weight: 600; color: #64748b; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .input-custom { width: 100%; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 0.875rem; transition: border-color 0.2s; background-color: white; }
+        .input-custom:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+    </style>
+</head>
+
+<!-- 
+  CAMBIO CLAVE EN BODY:
+  flex-col: Móvil.
+  lg:flex-row: PC (Menú y contenido paralelos).
+  h-screen: Altura completa.
+-->
+<body class="flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50 text-slate-700 w-full">
+
+    <!-- OVERLAY MÓVIL -->
+    <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 z-40 hidden backdrop-blur-sm transition-opacity"></div>
+
+    <!-- 
+      SIDEBAR BLANCO (Estilo Estándar)
+      - bg-white: Fondo blanco.
+      - lg:static: Se posiciona con el flujo en PC.
+    -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col lg:static lg:z-auto lg:flex lg:flex-col shadow-xl lg:shadow-none">
         
         <!-- Header Sidebar -->
-        <div class="h-20 flex items-center px-8 border-b border-slate-100 shrink-0 bg-indigo-600">
-            <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center mr-3 shadow-lg">
-                <i class="fa-solid fa-square-parking text-indigo-600 text-xl"></i>
+        <div class="h-16 flex items-center px-6 border-b border-slate-100 shrink-0">
+            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200 flex-shrink-0">
+                <i class="fa-solid fa-square-parking text-white text-sm"></i>
             </div>
-            <div>
-                <h1 class="text-xl font-bold text-white leading-tight">ELIMAR<span class="text-indigo-200">Sys</span></h1>
-                <p class="text-[10px] text-indigo-100 font-medium uppercase tracking-wider">Panel Admin</p>
+            <div class="min-w-0">
+                <h1 class="text-lg font-bold text-slate-800 truncate">ELIMAR<span class="text-indigo-600">Sys</span></h1>
+                <p class="text-[10px] text-slate-400 font-medium truncate" id="sidebar-user-name">Config</p>
             </div>
-            <!-- Botón cerrar móvil -->
-            <button onclick="toggleMenu()" class="ml-auto lg:hidden text-white hover:text-indigo-200">
-                <i class="fa-solid fa-xmark text-2xl"></i>
-            </button>
         </div>
-
+        
         <!-- Navegación -->
-        <nav class="flex-1 p-4 space-y-2 overflow-y-auto bg-slate-50/50">
-            <a href="../dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-white hover:text-indigo-600 transition-all shadow-sm hover:shadow-md border border-transparent hover:border-slate-100 nav-item"><i class="fa-solid fa-chart-pie w-6 text-center"></i> Dashboard</a>
-            <a href="clientes.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-white hover:text-indigo-600 transition-all shadow-sm hover:shadow-md border border-transparent hover:border-slate-100 nav-item"><i class="fa-solid fa-users w-6 text-center"></i> Clientes</a>
-            <a href="puestos.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-white hover:text-indigo-600 transition-all shadow-sm hover:shadow-md border border-transparent hover:border-slate-100 nav-item"><i class="fa-solid fa-layer-group w-6 text-center"></i> Puestos</a>
-            <a href="caja.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-white hover:text-indigo-600 transition-all shadow-sm hover:shadow-md border border-transparent hover:border-slate-100 nav-item"><i class="fa-solid fa-cash-register w-6 text-center"></i> Caja</a>
-            <a href="gastos.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-white hover:text-indigo-600 transition-all shadow-sm hover:shadow-md border border-transparent hover:border-slate-100 nav-item"><i class="fa-solid fa-receipt w-6 text-center"></i> Gastos</a>
-            <a href="historial.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-white hover:text-indigo-600 transition-all shadow-sm hover:shadow-md border border-transparent hover:border-slate-100 nav-item"><i class="fa-solid fa-clock-rotate-left w-6 text-center"></i> Historial</a>
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <a href="../dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item">
+                <i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard
+            </a>
+            <a href="clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item">
+                <i class="fa-solid fa-users w-5 text-center"></i> Clientes
+            </a>
+            <a href="puestos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item">
+                <i class="fa-solid fa-layer-group w-5 text-center"></i> Puestos
+            </a>
+            <a href="caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item">
+                <i class="fa-solid fa-cash-register w-5 text-center"></i> Caja
+            </a>
+            <a href="gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item">
+                <i class="fa-solid fa-receipt w-5 text-center"></i> Gastos
+            </a>
+            <a href="historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item">
+                <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Historial
+            </a>
             
-            <!-- Activo -->
-            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-inner nav-item"><i class="fa-solid fa-gear w-6 text-center"></i> Configuración</a>
+            <!-- Página Activa -->
+            <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100 nav-item">
+                <i class="fa-solid fa-gear w-5 text-center"></i> Configuración
+            </a>
         </nav>
 
         <!-- Botón Cerrar Sesión -->
-        <div class="p-4 border-t border-slate-200 shrink-0 bg-white">
-            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors">
+        <div class="p-4 border-t border-slate-100 shrink-0">
+            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors">
                 <i class="fa-solid fa-power-off"></i> Cerrar Sesión
             </button>
         </div>
     </aside>
 
-    <!-- MAIN CONTENT -->
+    <!-- 
+      MAIN CONTENT WRAPPER
+      - flex-1: Ocupa el espacio restante.
+      - flex-col: Header arriba, contenido abajo.
+    -->
     <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full bg-slate-50">
         
-        <!-- HEADER SUPERIOR -->
-        <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 shrink-0 z-30">
+        <!-- Header Superior (Estándar) -->
+        <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20 shrink-0">
             <div class="flex items-center gap-4">
                 <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
                     <i class="fa-solid fa-bars text-xl"></i>
                 </button>
-                <div class="flex flex-col">
-                    <h2 class="text-xl lg:text-2xl font-bold text-slate-800 leading-tight">Configuración</h2>
-                    <span class="text-xs text-slate-500 font-medium">Ajustes generales y tarifas</span>
+                <div>
+                    <h2 class="text-lg lg:text-xl font-bold text-slate-800">Configuración General</h2>
+                    <span class="hidden sm:inline text-xs text-slate-500">Ajustes del sistema y tarifas</span>
                 </div>
             </div>
-            
-            <div class="hidden md:flex items-center gap-2">
-                <div class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold border border-indigo-200">
-                    AD
-                </div>
+            <div class="flex items-center gap-2">
+                <i class="fa-regular fa-calendar text-slate-400"></i>
+                <span id="fecha-actual" class="text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200"></span>
             </div>
         </header>
 
-        <!-- CONTENIDO SCROLLABLE -->
-        <div class="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
-            <div class="max-w-6xl mx-auto pb-20"> <!-- Padding bottom extra para móvil -->
+        <!-- Área de Scroll -->
+        <div class="flex-1 overflow-y-auto p-4 lg:p-8">
+            <div class="max-w-5xl mx-auto">
                 
                 <form id="formConfig" onsubmit="guardarConfiguracion(event)">
                     
-                    <!-- PESTAÑAS (STICKY) -->
-                    <div class="sticky top-0 bg-slate-50/95 backdrop-blur z-20 pt-2 pb-4 mb-6 -mx-4 px-4 lg:mx-0 lg:px-0 border-b border-slate-200/60">
-                        <div class="flex space-x-2 overflow-x-auto no-scrollbar pb-1">
-                            <button onclick="switchTab('general')" id="tab-general" class="tab-btn px-6 py-2.5 text-sm font-bold rounded-full bg-white text-indigo-600 shadow-sm border border-indigo-100 transition-all whitespace-nowrap ring-1 ring-indigo-100">General</button>
-                            <button onclick="switchTab('tarifas')" id="tab-tarifas" class="tab-btn px-6 py-2.5 text-sm font-bold rounded-full text-slate-500 hover:bg-white hover:text-slate-700 hover:shadow-sm border border-transparent transition-all whitespace-nowrap">Tarifas</button>
-                            <button onclick="switchTab('acceso')" id="tab-acceso" class="tab-btn px-6 py-2.5 text-sm font-bold rounded-full text-slate-500 hover:bg-white hover:text-slate-700 hover:shadow-sm border border-transparent transition-all whitespace-nowrap">Acceso</button>
+                    <!-- Navegación de Pestañas (Pills) -->
+                    <div class="mb-8 border-b border-slate-200">
+                        <nav class="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
+                            <button type="button" onclick="switchTab('general')" id="tab-general" class="tab-btn border-indigo-500 text-indigo-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                                General
+                            </button>
+                            <button type="button" onclick="switchTab('tarifas')" id="tab-tarifas" class="tab-btn border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                                Tarifas
+                            </button>
+                            <button type="button" onclick="switchTab('acceso')" id="tab-acceso" class="tab-btn border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                                Acceso Admin
+                            </button>
+                        </nav>
+                    </div>
+
+                    <!-- CONTENIDO: GENERAL -->
+                    <div id="content-general" class="tab-content">
+                        <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6 mb-6">
+                            <h3 class="text-lg font-medium text-slate-900 mb-1">Información del Negocio</h3>
+                            <p class="text-sm text-slate-500 mb-6">Configura los datos que aparecen en tus reportes.</p>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="input-group">
+                                    <label>Nombre del Parqueadero</label>
+                                    <input type="text" id="confNombre" class="input-custom" placeholder="Ej. Parqueadero Elimar">
+                                </div>
+                                <div class="input-group">
+                                    <label>NIT</label>
+                                    <input type="text" id="confNit" class="input-custom" placeholder="900.123.456-7">
+                                </div>
+                                <div class="input-group md:col-span-2">
+                                    <label>Dirección</label>
+                                    <input type="text" id="confDireccion" class="input-custom" placeholder="Calle Principal #123">
+                                </div>
+                                <div class="input-group">
+                                    <label>Teléfono de Contacto</label>
+                                    <input type="tel" id="confTelefono" class="input-custom" placeholder="+57 300 123 4567">
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- TAB: GENERAL -->
-                    <div id="content-general" class="tab-content fade-in">
-                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                            <div class="p-6 border-b border-slate-100 bg-slate-50/50">
-                                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                    <i class="fa-solid fa-building text-indigo-500"></i> Información del Negocio
-                                </h3>
-                                <p class="text-sm text-slate-500 mt-1">Datos visibles en reportes y facturas.</p>
-                            </div>
-                            <div class="p-6 space-y-6">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Nombre del Parqueadero</label>
-                                    <input type="text" id="confNombre" class="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-slate-50 focus:bg-white transition-all" placeholder="Ej. Parqueadero Elimar">
-                                </div>
-                                
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">NIT</label>
-                                        <input type="text" id="confNit" class="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50 focus:bg-white transition-all" placeholder="900.123.456-7">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Teléfono</label>
-                                        <input type="tel" id="confTelefono" class="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50 focus:bg-white transition-all" placeholder="+57 300 123 4567">
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Dirección Física</label>
-                                    <input type="text" id="confDireccion" class="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50 focus:bg-white transition-all" placeholder="Calle Principal #123">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- TAB: TARIFAS -->
-                    <div id="content-tarifas" class="tab-content hidden space-y-8">
-                        
-                        <!-- Helper Function para crear tarjetas de tarifas -->
-                        <script>
-                            // Script para generar la estructura de tarifas repetitiva sería ideal, pero lo haremos en HTML directo
-                        </script>
-
-                        <!-- CARRO -->
-                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                            <div class="p-4 bg-blue-50/50 border-b border-blue-100 flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shadow-sm">
+                    <!-- CONTENIDO: TARIFAS -->
+                    <div id="content-tarifas" class="tab-content hidden">
+                        <div class="space-y-6">
+                            
+                            <!-- Tarjeta Carro -->
+                            <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center">
+                                    <div class="p-2 rounded-md bg-blue-100 text-blue-600 mr-3">
                                         <i class="fa-solid fa-car"></i>
                                     </div>
-                                    <div>
-                                        <h4 class="font-bold text-slate-800 text-sm uppercase tracking-wide">Carro Particular</h4>
-                                        <p class="text-xs text-slate-500">Vehículos estándar</p>
+                                    <h4 class="font-medium text-slate-900">Carro Particular</h4>
+                                </div>
+                                <div class="p-6">
+                                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                                        <div class="input-group">
+                                            <label>Hora</label>
+                                            <input type="number" id="tp_hora" class="input-custom text-center" placeholder="0">
+                                        </div>
+                                        <div class="input-group">
+                                            <label>Noche</label>
+                                            <input type="number" id="tp_noche" class="input-custom text-center" placeholder="0">
+                                        </div>
+                                        <div class="input-group">
+                                            <label>Semana</label>
+                                            <input type="number" id="tp_semana" class="input-custom text-center" placeholder="0">
+                                        </div>
+                                        <div class="input-group">
+                                            <label>Quincena</label>
+                                            <input type="number" id="tp_quincena" class="input-custom text-center" placeholder="0">
+                                        </div>
+                                        <div class="input-group">
+                                            <label>Mes</label>
+                                            <input type="number" id="tp_mes" class="input-custom text-center" placeholder="0">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="p-4 lg:p-6">
-                                <!-- Grid: 2 columnas en móvil, 5 en escritorio grande -->
-                                <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-                                    <div class="flex flex-col gap-2">
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase">Hora</label>
-                                        <input type="number" id="tp_hora" class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm font-mono bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-center" placeholder="$0">
-                                    </div>
-                                    <div class="flex flex-col gap-2">
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase">Noche</label>
-                                        <input type="number" id="tp_noche" class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm font-mono bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-center" placeholder="$0">
-                                    </div>
-                                    <div class="flex flex-col gap-2">
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase">Semana</label>
-                                        <input type="number" id="tp_semana" class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm font-mono bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-center" placeholder="$0">
-                                    </div>
-                                    <div class="flex flex-col gap-2">
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase">Quincena</label>
-                                        <input type="number" id="tp_quincena" class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm font-mono bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-center" placeholder="$0">
-                                    </div>
-                                    <div class="flex flex-col gap-2">
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase">Mes</label>
-                                        <input type="number" id="tp_mes" class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm font-mono bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-center" placeholder="$0">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
-                        <!-- MOTO -->
-                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                            <div class="p-4 bg-orange-50/50 border-b border-orange-100 flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center shadow-sm">
+                            <!-- Tarjeta Moto -->
+                            <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center">
+                                    <div class="p-2 rounded-md bg-orange-100 text-orange-600 mr-3">
                                         <i class="fa-solid fa-motorcycle"></i>
                                     </div>
-                                    <div>
-                                        <h4 class="font-bold text-slate-800 text-sm uppercase tracking-wide">Motocicletas</h4>
-                                        <p class="text-xs text-slate-500">Dos ruedas</p>
+                                    <h4 class="font-medium text-slate-900">Motocicletas</h4>
+                                </div>
+                                <div class="p-6">
+                                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                                        <div class="input-group">
+                                            <label>Hora</label>
+                                            <input type="number" id="tm_hora" class="input-custom text-center" placeholder="0">
+                                        </div>
+                                        <div class="input-group">
+                                            <label>Noche</label>
+                                            <input type="number" id="tm_noche" class="input-custom text-center" placeholder="0">
+                                        </div>
+                                        <div class="input-group">
+                                            <label>Semana</label>
+                                            <input type="number" id="tm_semana" class="input-custom text-center" placeholder="0">
+                                        </div>
+                                        <div class="input-group">
+                                            <label>Quincena</label>
+                                            <input type="number" id="tm_quincena" class="input-custom text-center" placeholder="0">
+                                        </div>
+                                        <div class="input-group">
+                                            <label>Mes</label>
+                                            <input type="number" id="tm_mes" class="input-custom text-center" placeholder="0">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="p-4 lg:p-6">
-                                <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-                                    <div class="flex flex-col gap-2">
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase">Hora</label>
-                                        <input type="number" id="tm_hora" class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm font-mono bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-center" placeholder="$0">
-                                    </div>
-                                    <div class="flex flex-col gap-2">
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase">Noche</label>
-                                        <input type="number" id="tm_noche" class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm font-mono bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-center" placeholder="$0">
-                                    </div>
-                                    <div class="flex flex-col gap-2">
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase">Semana</label>
-                                        <input type="number" id="tm_semana" class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm font-mono bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-center" placeholder="$0">
-                                    </div>
-                                    <div class="flex flex-col gap-2">
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase">Quincena</label>
-                                        <input type="number" id="tm_quincena" class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm font-mono bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-center" placeholder="$0">
-                                    </div>
-                                    <div class="flex flex-col gap-2">
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase">Mes</label>
-                                        <input type="number" id="tm_mes" class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm font-mono bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-center" placeholder="$0">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
-                        <!-- CAMIONETA -->
-                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                            <div class="p-4 bg-purple-50/50 border-b border-purple-100 flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shadow-sm">
+                            <!-- Tarjeta Camioneta -->
+                            <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center">
+                                    <div class="p-2 rounded-md bg-purple-100 text-purple-600 mr-3">
                                         <i class="fa-solid fa-truck-pickup"></i>
                                     </div>
-                                    <div>
-                                        <h4 class="font-bold text-slate-800 text-sm uppercase tracking-wide">Camionetas / SUV</h4>
-                                        <p class="text-xs text-slate-500">Vehículos grandes</p>
+                                    <h4 class="font-medium text-slate-900">Camionetas / SUV</h4>
+                                </div>
+                                <div class="p-6">
+                                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                                        <div class="input-group">
+                                            <label>Hora</label>
+                                            <input type="number" id="tc_hora" class="input-custom text-center" placeholder="0">
+                                        </div>
+                                        <div class="input-group">
+                                            <label>Noche</label>
+                                            <input type="number" id="tc_noche" class="input-custom text-center" placeholder="0">
+                                        </div>
+                                        <div class="input-group">
+                                            <label>Semana</label>
+                                            <input type="number" id="tc_semana" class="input-custom text-center" placeholder="0">
+                                        </div>
+                                        <div class="input-group">
+                                            <label>Quincena</label>
+                                            <input type="number" id="tc_quincena" class="input-custom text-center" placeholder="0">
+                                        </div>
+                                        <div class="input-group">
+                                            <label>Mes</label>
+                                            <input type="number" id="tc_mes" class="input-custom text-center" placeholder="0">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="p-4 lg:p-6">
-                                <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-                                    <div class="flex flex-col gap-2">
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase">Hora</label>
-                                        <input type="number" id="tc_hora" class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm font-mono bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-center" placeholder="$0">
-                                    </div>
-                                    <div class="flex flex-col gap-2">
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase">Noche</label>
-                                        <input type="number" id="tc_noche" class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm font-mono bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-center" placeholder="$0">
-                                    </div>
-                                    <div class="flex flex-col gap-2">
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase">Semana</label>
-                                        <input type="number" id="tc_semana" class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm font-mono bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-center" placeholder="$0">
-                                    </div>
-                                    <div class="flex flex-col gap-2">
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase">Quincena</label>
-                                        <input type="number" id="tc_quincena" class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm font-mono bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-center" placeholder="$0">
-                                    </div>
-                                    <div class="flex flex-col gap-2">
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase">Mes</label>
-                                        <input type="number" id="tc_mes" class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm font-mono bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-center" placeholder="$0">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
+                        </div>
                     </div>
 
-                    <!-- TAB: ACCESO -->
-                    <div id="content-acceso" class="tab-content hidden fade-in">
-                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                            <div class="p-6 border-b border-slate-100 bg-slate-50/50">
-                                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                    <i class="fa-solid fa-shield-halved text-indigo-500"></i> Seguridad y Acceso
-                                </h3>
-                                <p class="text-sm text-slate-500 mt-1">Configura cómo entras al sistema.</p>
-                            </div>
-                            <div class="p-6 space-y-6">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Nombre del Administrador</label>
-                                        <input type="text" id="adminNombre" class="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50 focus:bg-white transition-all">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Correo de Notificaciones</label>
-                                        <input type="email" id="adminEmail" class="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50 focus:bg-white transition-all">
-                                    </div>
+                    <!-- CONTENIDO: ACCESO -->
+                    <div id="content-acceso" class="tab-content hidden">
+                        <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6 mb-6">
+                            <h3 class="text-lg font-medium text-slate-900 mb-1">Credenciales de Administrador</h3>
+                            <p class="text-sm text-slate-500 mb-6">Actualiza tu usuario y contraseña de acceso.</p>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="input-group">
+                                    <label>Nombre Visible</label>
+                                    <input type="text" id="adminNombre" class="input-custom" placeholder="Nombre del Admin">
                                 </div>
-                                
-                                <div class="h-px bg-slate-100 my-6"></div> <!-- Separador -->
-
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Usuario de Ingreso</label>
-                                        <div class="relative">
-                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                                                <i class="fa-regular fa-user"></i>
-                                            </div>
-                                            <input type="text" id="adminUser" class="w-full border border-slate-300 rounded-xl pl-10 pr-4 py-3 text-sm font-mono font-medium bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="admin">
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Nueva Contraseña</label>
-                                        <div class="relative">
-                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                                                <i class="fa-solid fa-lock"></i>
-                                            </div>
-                                            <input type="password" id="adminPass" class="w-full border border-slate-300 rounded-xl pl-10 pr-4 py-3 text-sm font-medium bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="Dejar vacío para no cambiar">
-                                        </div>
-                                        <p class="text-[10px] text-slate-400 mt-2 ml-1">Escribe solo si deseas cambiar tu clave actual.</p>
-                                    </div>
+                                <div class="input-group">
+                                    <label>Correo Electrónico</label>
+                                    <input type="email" id="adminEmail" class="input-custom" placeholder="admin@elimar.com">
                                 </div>
-
-                                <div class="flex items-start gap-3 p-4 bg-indigo-50 rounded-xl border border-indigo-100 mt-4">
-                                    <div class="pt-1">
-                                        <input type="checkbox" id="adminNotif" class="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
-                                    </div>
-                                    <div class="flex flex-col">
-                                        <label for="adminNotif" class="text-sm text-slate-800 font-bold cursor-pointer">Activar reportes diarios</label>
-                                        <label for="adminNotif" class="text-xs text-slate-500 cursor-pointer">Recibir un resumen de ingresos y gastos cada noche.</label>
-                                    </div>
+                                <div class="input-group">
+                                    <label>Usuario de Ingreso</label>
+                                    <input type="text" id="adminUser" class="input-custom" placeholder="admin">
+                                </div>
+                                <div class="input-group">
+                                    <label>Nueva Contraseña</label>
+                                    <input type="password" id="adminPass" class="input-custom" placeholder="Dejar vacío para no cambiar">
+                                    <p class="text-xs text-slate-400 mt-1">Escribe solo si deseas cambiarla.</p>
+                                </div>
+                                <div class="input-group md:col-span-2 flex items-center">
+                                    <input type="checkbox" id="adminNotif" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                                    <label for="adminNotif" class="ml-2 block text-sm text-slate-700 font-normal">Recibir notificaciones de resumen diario</label>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- BOTÓN GUARDAR (Sticky Bottom en móvil para fácil acceso) -->
-                    <div class="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur border-t border-slate-200 p-4 z-30 md:static md:bg-transparent md:border-0 md:p-0 md:mt-8 md:z-auto md:flex md:justify-end">
-                        <button type="submit" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-8 rounded-xl shadow-lg shadow-indigo-200 transition-all transform active:scale-95 flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+                    <!-- Botón de Acción -->
+                    <div class="flex justify-end pt-4">
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-6 rounded shadow transition-colors flex items-center">
+                            <i class="fa-solid fa-save mr-2"></i> Guardar Cambios
                         </button>
                     </div>
-                    <!-- Espaciador invisible para que el contenido no quede tapado por el botón fijo en móvil -->
-                    <div class="h-24 md:h-0"></div>
 
                 </form>
             </div>
         </div>
     </main>
 
-    <!-- Scripts de Funcionalidad -->
     <script>
+        // Función Menú Móvil
         function toggleMenu() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('mobileMenuOverlay');
@@ -354,15 +329,41 @@
                 // Abrir
                 sidebar.classList.remove('-translate-x-full');
                 overlay.classList.remove('hidden');
-                setTimeout(() => overlay.classList.remove('opacity-0'), 10); // Fade in
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
             } else {
                 // Cerrar
                 sidebar.classList.add('-translate-x-full');
                 overlay.classList.add('opacity-0');
-                setTimeout(() => overlay.classList.add('hidden'), 300); // Esperar animación
+                setTimeout(() => overlay.classList.add('hidden'), 300);
             }
         }
+
+        // Función Pestañas
+        function switchTab(tabName) {
+            // Reset botones
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-indigo-500', 'text-indigo-600');
+                btn.classList.add('border-transparent', 'text-slate-500');
+            });
+            // Activar botón actual
+            const activeBtn = document.getElementById('tab-' + tabName);
+            activeBtn.classList.remove('border-transparent', 'text-slate-500');
+            activeBtn.classList.add('border-indigo-500', 'text-indigo-600');
+
+            // Ocultar contenidos
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            // Mostrar contenido actual
+            document.getElementById('content-' + tabName).classList.remove('hidden');
+        }
+
+        // Inicialización de fecha
+        const fechaElement = document.getElementById("fecha-actual");
+        if(fechaElement) fechaElement.textContent = new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
     </script>
+    
+    <!-- Tu lógica JS -->
     <script src="../js/configuracion.js"></script>
 </body>
 </html>

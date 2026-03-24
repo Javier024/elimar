@@ -1,11 +1,10 @@
 // parqueo/api/auth.js
-// AGREGAMOS ESTAS DOS LÍNEAS PARA FORZAR LA CARGA DE LAS VARIABLES
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' }); 
 
 import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
-import { db } from "./db.js";
+import { db } from "./db.js"; // Asegúrate que esta ruta apunta correctamente a tu db.js
 
 export default async function handler(req, res) {
     try {
@@ -17,27 +16,41 @@ export default async function handler(req, res) {
                 return res.status(400).json({ success: false, message: "Usuario y contraseña requeridos" });
             }
 
-            const result = await db.execute("SELECT * FROM usuarios WHERE usuario = ?", [user]);
-            const foundUser = result.rows[0];
+            console.log(`[DEBUG] Intentando login con usuario: ${user}`);
 
-            if (!foundUser) {
+            // 1. Buscar usuario en BD
+            const result = await db.execute("SELECT * FROM usuarios WHERE usuario = ?", [user]);
+            
+            // Verificar si la base de datos devolvió algo
+            if (!result.rows || result.rows.length === 0) {
+                console.log(`[DEBUG] Usuario '${user}' NO encontrado en BD.`);
                 return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
             }
 
-            // Verificar Hash
+            const foundUser = result.rows[0];
+            console.log(`[DEBUG] Usuario encontrado:`, foundUser.usuario);
+
+            // 2. Comparar contraseña (Hash vs Plano)
+            // Asegúrate que 'pass' es la contraseña que escribes en el formulario
+            // y 'foundUser.password' es el hash guardado en la BD
             const isMatch = await bcrypt.compare(pass, foundUser.password);
 
             if (isMatch) {
+                console.log(`[DEBUG] ¡Contraseña correcta! Login exitoso.`);
+                
+                // IMPORTANTE: CORRECCIÓN AQUÍ
+                // Tu tabla se llama 'rol', no 'role'.
                 return res.status(200).json({
                     success: true,
                     user: {
                         id: foundUser.id,
                         nombre: foundUser.nombre,
                         email: foundUser.email,
-                        rol: foundUser.role
+                        rol: foundUser.rol // <--- CORREGIDO
                     }
                 });
             } else {
+                console.log(`[DEBUG] Contraseña incorrecta para usuario: ${user}`);
                 return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
             }
         }
@@ -59,18 +72,24 @@ export default async function handler(req, res) {
 
             // --- MÉTODO WHATSAPP ---
             if (method === 'whatsapp') {
-                const configResult = await db.execute("SELECT telefono FROM configuracion WHERE id = 1");
-                const config = configResult.rows[0];
+                // Asumimos que existe una tabla configuración, si no, esto dará error
+                try {
+                    const configResult = await db.execute("SELECT telefono FROM configuracion WHERE id = 1");
+                    const config = configResult.rows[0];
 
-                if (!config || !config.telefono) {
-                    return res.status(400).json({ success: false, message: "No hay teléfono de contacto en configuración." });
+                    if (!config || !config.telefono) {
+                        return res.status(400).json({ success: false, message: "No hay teléfono de contacto en configuración." });
+                    }
+
+                    const mensaje = `Hola, soy el usuario *${user}* (${foundUser.nombre}). He olvidado mi contraseña del sistema PARQUEADERO ELIMAR. Por favor, ayúdenme a restablecerla.`;
+                    const cleanPhone = config.telefono.replace(/\D/g, '');
+                    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(mensaje)}`;
+
+                    return res.status(200).json({ success: true, whatsappUrl });
+                } catch (err) {
+                    console.error("Error configuración whatsapp:", err);
+                    return res.status(500).json({ success: false, message: "Error interno al recuperar por WhatsApp" });
                 }
-
-                const mensaje = `Hola, soy el usuario *${user}* (${foundUser.nombre}). He olvidado mi contraseña del sistema PARQUEADERO ELIMAR. Por favor, ayúdenme a restablecerla.`;
-                const cleanPhone = config.telefono.replace(/\D/g, '');
-                const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(mensaje)}`;
-
-                return res.status(200).json({ success: true, whatsappUrl });
             }
 
             // --- MÉTODO EMAIL ---
@@ -78,9 +97,6 @@ export default async function handler(req, res) {
                 if (!foundUser.email) {
                     return res.status(400).json({ success: false, message: "Este usuario no tiene correo registrado." });
                 }
-
-                // Depuración (Opcional): Imprime en consola lo que está leyendo
-                console.log("Enviando correo con usuario:", process.env.EMAIL_USER);
 
                 const transporter = nodemailer.createTransport({
                     service: 'gmail',
@@ -90,12 +106,10 @@ export default async function handler(req, res) {
                     }
                 });
 
-                // Generar nueva contraseña temporal
                 const tempPass = Math.random().toString(36).slice(-8);
                 const salt = await bcrypt.genSalt(10);
                 const hashPass = await bcrypt.hash(tempPass, salt);
 
-                // Guardar nueva contraseña hasheada
                 await db.execute("UPDATE usuarios SET password = ? WHERE id = ?", [hashPass, foundUser.id]);
 
                 const mailOptions = {
@@ -125,7 +139,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: "Método no permitido" });
 
     } catch (error) {
-        console.error("Error Auth:", error);
+        console.error("Error Auth General:", error);
         return res.status(500).json({ success: false, message: "Error interno del servidor" });
     }
 }

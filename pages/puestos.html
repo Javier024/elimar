@@ -8,9 +8,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- 1. Script de Seguridad -->
+    <script src="../js/auth-manager.js"></script>
+
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        body { font-family: 'Inter', sans-serif; }
         
+        /* Scrollbar personalizado */
+        ::-webkit-scrollbar { width: 6px; height: 6px; } 
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+
+        /* Estilos específicos de Puestos (Tarjetas) */
         .parking-card { 
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
             cursor: pointer; 
@@ -19,7 +28,7 @@
             flex-direction: column; 
             overflow: hidden;
             position: relative;
-            min-height: 120px; /* Altura mínima para consistencia móvil */
+            min-height: 120px;
         }
         .parking-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
         
@@ -31,24 +40,32 @@
 
         .parking-card.reservado { border: 1px solid #e9d5ff; background: linear-gradient(to bottom right, #faf5ff, #ffffff); }
         .parking-card.reservado:hover { border-color: #a855f7; }
-
-        ::-webkit-scrollbar { width: 6px; height: 6px; } 
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 20px; }
-        ::-webkit-scrollbar-track { background: transparent; }
     </style>
 </head>
-<body class="text-slate-700 antialiased flex h-screen overflow-hidden flex-col">
+
+<!-- 
+  CAMBIO CLAVE EN BODY:
+  flex-col: Móvil.
+  lg:flex-row: PC (Menú y contenido paralelos).
+  h-screen: Altura completa.
+-->
+<body class="text-slate-700 antialiased flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50 w-full">
 
     <!-- MOBILE MENU OVERLAY -->
-    <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 z-30 hidden backdrop-blur-sm transition-opacity"></div>
+    <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 z-40 hidden backdrop-blur-sm transition-opacity"></div>
 
     <!-- SIDEBAR -->
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform -translate-x-full lg:translate-x-0 lg:static lg:inset-auto transition-transform duration-300 ease-in-out flex flex-col">
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col lg:static lg:z-auto lg:flex lg:flex-col shadow-xl lg:shadow-none">
         
         <!-- Header Sidebar -->
         <div class="h-16 flex items-center px-6 border-b border-slate-100 shrink-0">
-            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200"><i class="fa-solid fa-square-parking text-white text-sm"></i></div>
-            <h1 class="text-lg font-bold text-slate-800">ELIMAR<span class="text-indigo-600">Sys</span></h1>
+            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200 flex-shrink-0">
+                <i class="fa-solid fa-square-parking text-white text-sm"></i>
+            </div>
+            <div class="min-w-0">
+                <h1 class="text-lg font-bold text-slate-800 truncate">ELIMAR<span class="text-indigo-600">Sys</span></h1>
+                <p class="text-[10px] text-slate-400 font-medium truncate" id="sidebar-user-name">Sistema</p>
+            </div>
         </div>
 
         <!-- Navegación -->
@@ -65,35 +82,37 @@
             <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-gear w-5 text-center"></i> Configuración</a>
         </nav>
 
-        <!-- Botón Cerrar Sesión al Final -->
+        <!-- Botón Cerrar Sesión -->
         <div class="p-4 border-t border-slate-100 shrink-0">
-            <button onclick="cerrarSesion()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors">
+            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors">
                 <i class="fa-solid fa-power-off"></i> Cerrar Sesión
             </button>
         </div>
     </aside>
 
-    <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full bg-slate-50">
+        
+        <!-- HEADER -->
         <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20 shrink-0">
             <div class="flex items-center gap-4">
-                <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button>
+                <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
                 <div class="flex flex-col">
                     <h2 class="text-lg lg:text-xl font-bold text-slate-800">Gestión Puestos</h2>
                     <span class="text-xs text-slate-500 hidden sm:block">Ingresos, Reservas y Llaves</span>
                 </div>
             </div>
-            <div class="flex items-center gap-3">
-                <!-- Buscador oculto en móvil muy pequeño -->
-                <div class="relative hidden sm:block">
-                    <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
-                    <input type="text" id="searchInput" placeholder="Buscar Puesto o Placa..." class="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 w-64 bg-white transition-shadow focus:ring-2 focus:ring-indigo-100">
-                </div>
-                <span id="fecha-actual" class="text-xs lg:text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200"></span>
+            <div class="flex items-center gap-2">
+                <i class="fa-regular fa-calendar text-slate-400"></i>
+                <span id="fecha-actual" class="text-xs lg:text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200"></span>
             </div>
         </header>
 
+        <!-- CONTENIDO SCROLLABLE -->
         <div class="flex-1 overflow-y-auto p-4 lg:p-8">
             <div class="max-w-7xl mx-auto space-y-6">
+                
                 <!-- Barra de Control -->
                 <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col md:flex-row justify-between items-center gap-4">
                     
@@ -134,7 +153,7 @@
     </main>
 
     <!-- MODAL DE ASIGNACIÓN -->
-    <div id="modalAsignar" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 transition-opacity">
+    <div id="modalAsignar" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden items-center justify-center p-4 transition-opacity">
         <div id="modalContent" class="bg-white w-full max-w-md rounded-2xl shadow-2xl transform transition-all scale-95 opacity-0 duration-200 flex flex-col max-h-[90vh]">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl shrink-0">
                 <h3 class="text-lg font-bold text-slate-800" id="modalSpotNumber">Asignar Vehículo</h3>
@@ -197,30 +216,41 @@
     </div>
 
     <script>
+        // Lógica específica del Modal de Llaves
         document.getElementById('checkKey').addEventListener('change', function() {
             const div = document.getElementById('keyDetailsDiv');
             if(this.checked) div.classList.remove('hidden');
             else div.classList.add('hidden');
         });
 
+        // Lógica Menú Móvil Estándar
         function toggleMenu() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('mobileMenuOverlay');
-            sidebar.classList.toggle('-translate-x-full');
+            
             if (sidebar.classList.contains('-translate-x-full')) {
-                overlay.classList.add('hidden'); overlay.classList.remove('flex');
+                // Abrir
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
             } else {
-                overlay.classList.remove('hidden'); overlay.classList.add('flex');
+                // Cerrar
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
             }
         }
 
-        const fechaSpan = document.getElementById('fecha-actual');
-        if(fechaSpan) {
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            let fechaStr = new Date().toLocaleDateString('es-ES', options);
-            fechaStr = fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1);
-            fechaSpan.innerText = fechaStr;
-        }
+        // Inicialización de Fecha
+        document.addEventListener('DOMContentLoaded', () => {
+            const fechaSpan = document.getElementById('fecha-actual');
+            if(fechaSpan) {
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                let fechaStr = new Date().toLocaleDateString('es-ES', options);
+                fechaStr = fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1);
+                fechaSpan.innerText = fechaStr;
+            }
+        });
     </script>
 
     <script src="../js/puestos.js"></script>
