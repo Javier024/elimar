@@ -8,13 +8,13 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
-  <!-- 1. Script de Seguridad -->
+  <!-- LIBRERÍA PARA PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  
   <script src="../js/auth-manager.js"></script>
 
   <style>
     body { font-family: 'Inter', sans-serif; }
-    
-    /* Scrollbar personalizado */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
@@ -25,54 +25,28 @@
     .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
   </style>
 </head>
-
-<!-- 
-  CAMBIO CLAVE EN BODY:
-  flex-col: Móvil (Contenido columna).
-  lg:flex-row: PC (Sidebar y Contenido en fila).
-  h-screen: Altura completa.
--->
 <body class="flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50 text-slate-700 w-full">
-
-  <!-- OVERLAY MÓVIL -->
   <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 z-40 hidden backdrop-blur-sm transition-opacity"></div>
 
-  <!-- 
-    SIDEBAR
-    - fixed inset-y-0 left-0: Fijo a la izquierda en móviles.
-    - lg:static lg:translate-x-0: Estático y visible en PC.
-    - transform -translate-x-full: Oculto en móvil por defecto.
-  -->
   <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col lg:static lg:translate-x-0 lg:z-auto lg:flex lg:flex-col shadow-xl lg:shadow-none">
-    
     <div class="h-16 flex items-center px-6 border-b border-slate-100 shrink-0">
       <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200 flex-shrink-0">
         <i class="fa-solid fa-square-parking text-white text-sm"></i>
       </div>
       <div class="min-w-0">
         <h1 class="text-lg font-bold text-slate-800 truncate">ELIMAR<span class="text-indigo-600">Sys</span></h1>
-        <!-- Elemento para mostrar el usuario si se desea -->
         <p class="text-[10px] text-slate-400 font-medium truncate" id="sidebar-user-name">Sistema</p>
       </div>
     </div>
-    
-    <!-- Navegación -->
     <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
       <a href="../dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard</a>
       <a href="clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-users w-5 text-center"></i> Clientes</a>
       <a href="puestos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-layer-group w-5 text-center"></i> Puestos</a>
-      
-      <!-- Página Activa -->
-      <a href="caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100 nav-item">
-        <i class="fa-solid fa-cash-register w-5 text-center"></i> Caja
-      </a>
-      
+      <a href="caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100 nav-item"><i class="fa-solid fa-cash-register w-5 text-center"></i> Caja</a>
       <a href="gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-receipt w-5 text-center"></i> Gastos</a>
       <a href="historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Historial</a>
       <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-gear w-5 text-center"></i> Configuración</a>
     </nav>
-
-    <!-- Botón Cerrar Sesión -->
     <div class="p-4 border-t border-slate-100 shrink-0">
       <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors">
         <i class="fa-solid fa-power-off"></i> Cerrar Sesión
@@ -80,14 +54,7 @@
     </div>
   </aside>
 
-  <!-- 
-    MAIN CONTENT WRAPPER
-    - flex-1: Ocupa el espacio restante.
-    - flex-col: Header arriba, contenido abajo.
-  -->
   <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full bg-slate-50">
-    
-    <!-- HEADER -->
     <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20 shrink-0">
       <div class="flex items-center gap-4">
         <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
@@ -95,7 +62,7 @@
         </button>
         <div>
           <h2 class="text-lg lg:text-xl font-bold text-slate-800">Caja Diaria</h2>
-          <span class="hidden sm:inline text-xs text-slate-500">Control de pagos y vencimientos</span>
+          <span class="hidden sm:inline text-xs text-slate-500">Control de pagos y facturación</span>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -104,10 +71,8 @@
       </div>
     </header>
     
-    <!-- CONTENIDO SCROLLABLE -->
     <div class="flex-1 overflow-y-auto p-4 lg:p-8">
       <div class="max-w-7xl mx-auto space-y-6">
-        
         <!-- KPIs -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm"><p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Total Ingresos</p><p id="kpiTotal" class="text-xl lg:text-2xl font-bold text-slate-800 font-mono">$0</p></div>
@@ -116,7 +81,7 @@
           <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm"><p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Transacciones</p><p id="kpiCount" class="text-xl lg:text-2xl font-bold text-slate-800">0</p></div>
         </div>
         
-        <!-- DEUDORES -->
+        <!-- Deudores -->
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
                 <h3 class="font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Deudores del Mes</h3>
@@ -141,7 +106,6 @@
                         <input id="cajaCliente" autocomplete="off" placeholder="Buscar cliente..." required class="custom-input">
                     </div>
                 </div>
-                
                 <div class="grid grid-cols-2 gap-4">
                     <div class="relative">
                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">Placa</label>
@@ -154,27 +118,21 @@
                         <input id="cajaPuesto" placeholder="---" readonly class="custom-input uppercase bg-slate-50 text-slate-600 text-sm">
                     </div>
                 </div>
-                
                 <div class="relative">
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Celular</label>
                     <i class="fa-brands fa-whatsapp input-icon"></i>
                     <input id="cajaCelular" placeholder="Celular (Opcional)" class="custom-input">
                 </div>
-
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Fecha de Pago</label>
                     <div class="relative"><i class="fa-regular fa-calendar input-icon"></i><input id="cajaDate" type="date" required class="custom-input pl-10"></div>
                 </div>
-
-                <!-- INFO DE CALCULO AUTOMATICO -->
                 <div id="cajaInfo" class="bg-slate-50 rounded-lg p-3 border border-slate-200 min-h-[50px] text-sm"></div>
-
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Monto a Cobrar</label>
                     <div class="relative"><i class="fa-solid fa-dollar-sign input-icon"></i><input id="cajaMonto" type="text" placeholder="0" required class="custom-input font-mono font-bold text-lg text-emerald-700"></div>
                     <p class="text-[10px] text-slate-400 mt-1 text-right">Se formatea automáticamente</p>
                 </div>
-                
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Método</label>
                     <div class="relative">
@@ -186,7 +144,6 @@
                         </select>
                     </div>
                 </div>
-
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Periodo</label>
@@ -208,14 +165,11 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- CALENDARIO -->
                 <div id="calendarSection" class="hidden mt-4 pt-4 border-t border-slate-100">
                     <h4 class="text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Calendario de Pagos Diarios</h4>
                     <div id="calendarContainer" class="grid grid-cols-7 gap-1 bg-slate-50 p-3 rounded-lg border border-slate-200"></div>
                     <p class="text-[10px] text-slate-400 mt-2 text-center">Haz clic en un día para marcar/desmarcar pago.</p>
                 </div>
-                
                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2"><i class="fa-solid fa-check"></i> Registrar</button>
               </form>
             </div>
@@ -259,7 +213,29 @@
     </div>
   </main>
 
-  <!-- MODAL DE EDICIÓN -->
+  <!-- MODAL HISTORIAL CLIENTE -->
+  <div id="modalHistorial" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden items-center justify-center p-4">
+    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl shrink-0">
+            <h3 class="text-lg font-bold text-slate-800" id="historialTitle">Historial de Pagos</h3>
+            <button onclick="cerrarModalHistorial()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-6 overflow-y-auto">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="p-2 text-xs font-bold text-slate-500 uppercase">Fecha</th>
+                        <th class="p-2 text-xs font-bold text-slate-500 uppercase">Periodo</th>
+                        <th class="p-2 text-xs font-bold text-slate-500 uppercase text-right">Valor</th>
+                    </tr>
+                </thead>
+                <tbody id="historialBody" class="divide-y divide-slate-100 text-sm"></tbody>
+            </table>
+        </div>
+    </div>
+  </div>
+
+  <!-- MODAL EDICIÓN (EXISTENTE) -->
   <div id="modalEdit" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden items-center justify-center p-4 transition-opacity">
     <div id="modalEditContent" class="bg-white w-full max-w-md rounded-2xl shadow-2xl transform transition-all scale-95 opacity-0 duration-200 flex flex-col">
         <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl">
@@ -331,7 +307,6 @@
           }
       }
       
-      // Inicialización de fecha
       const fechaElement = document.getElementById("fecha-actual");
       const fechaInput = document.getElementById("cajaDate");
       if(fechaElement) fechaElement.textContent = new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });

@@ -3,13 +3,16 @@ import { db } from "./db.js";
 
 export default async function handler(req, res) {
   try {
-    // --- GET: Obtener todos los clientes ---
     if (req.method === "GET") {
-      const result = await db.execute("SELECT * FROM clientes ORDER BY id DESC");
+      const result = await db.execute(`
+        SELECT c.*, 
+               (SELECT date FROM caja WHERE plate = c.placa ORDER BY date DESC LIMIT 1) as last_payment_date
+        FROM clientes c 
+        ORDER BY c.id DESC
+      `);
       return res.status(200).json(result.rows);
     }
 
-    // --- POST: Crear nuevo cliente ---
     if (req.method === "POST") {
       const { nombre, telefono, placa, tipo, fecha_registro, medio_pago, medio_detalle, cuota_mensual } = req.body;
 
@@ -27,9 +30,10 @@ export default async function handler(req, res) {
       }
 
       const pagoFinal = (medio_pago === 'Otro') ? medio_detalle : medio_pago;
-      const fechaAUsar = fecha_registro || new Date().toISOString().split("T")[0];
+      // CORRECCIÓN FECHA: Asegurar formato correcto YYYY-MM-DD
+      const fechaAUsar = fecha_registro ? new Date(fecha_registro).toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
       const timestampAhora = Date.now(); 
-      const cuota = cuota_mensual || 0; // Si no envía cuota, es 0
+      const cuota = cuota_mensual || 0;
       
       await db.execute({
         sql: `INSERT INTO clientes (nombre, telefono, placa, tipo_vehiculo, creado_en, created_at, fecha_registro, medio_pago, cuota_mensual) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -39,7 +43,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, message: "Cliente registrado correctamente" });
     }
 
-    // --- PUT: Actualizar cliente ---
     if (req.method === "PUT") {
       const { id, nombre, telefono, placa, tipo, fecha_registro, medio_pago, medio_detalle, cuota_mensual } = req.body;
       
@@ -47,21 +50,29 @@ export default async function handler(req, res) {
 
       const pagoFinal = (medio_pago === 'Otro') ? medio_detalle : medio_pago;
       const cuota = cuota_mensual || 0;
+      // CORRECCIÓN FECHA EN ACTUALIZACIÓN
+      const fechaFinal = fecha_registro ? new Date(fecha_registro).toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
 
       await db.execute({
         sql: `UPDATE clientes SET nombre = ?, telefono = ?, placa = ?, tipo_vehiculo = ?, fecha_registro = ?, medio_pago = ?, cuota_mensual = ? WHERE id = ?`,
-        args: [nombre, telefono, placa, tipo, fecha_registro, pagoFinal, cuota, id]
+        args: [nombre, telefono, placa, tipo, fechaFinal, pagoFinal, cuota, id]
       });
       
       return res.status(200).json({ success: true, message: "Cliente actualizado correctamente" });
     }
 
-    // --- DELETE: Eliminar cliente ---
     if (req.method === "DELETE") {
       const id = req.body.id || req.query.id;
       if (!id) return res.status(400).json({ error: "ID es requerido para eliminar" });
+
+      await db.execute({ 
+        sql: "UPDATE puestos SET cliente_id=NULL, estado='libre', hora_inicio=NULL, llave_caracteristicas=NULL, puesto_info=NULL WHERE cliente_id = ?", 
+        args: [id] 
+      });
+
       await db.execute({ sql: "DELETE FROM clientes WHERE id = ?", args: [id] });
-      return res.status(200).json({ success: true, message: "Cliente eliminado correctamente" });
+      
+      return res.status(200).json({ success: true, message: "Cliente eliminado y puesto liberado correctamente" });
     }
     
     return res.status(405).json({ error: "Método no permitido" });

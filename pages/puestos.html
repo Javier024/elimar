@@ -43,14 +43,7 @@
     </style>
 </head>
 
-<!-- 
-  CAMBIO CLAVE EN BODY:
-  flex-col: Móvil.
-  lg:flex-row: PC (Menú y contenido paralelos).
-  h-screen: Altura completa.
--->
 <body class="text-slate-700 antialiased flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50 w-full">
-
     <!-- MOBILE MENU OVERLAY -->
     <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 z-40 hidden backdrop-blur-sm transition-opacity"></div>
 
@@ -152,7 +145,7 @@
         </div>
     </main>
 
-    <!-- MODAL DE ASIGNACIÓN -->
+    <!-- MODAL DE ASIGNACIÓN (ACTUALIZADO CON SELECT) -->
     <div id="modalAsignar" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden items-center justify-center p-4 transition-opacity">
         <div id="modalContent" class="bg-white w-full max-w-md rounded-2xl shadow-2xl transform transition-all scale-95 opacity-0 duration-200 flex flex-col max-h-[90vh]">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl shrink-0">
@@ -169,22 +162,22 @@
                 </div>
 
                 <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-500 uppercase">Cliente / Propietario</label>
-                    <div class="relative">
-                        <i class="fa-solid fa-user absolute left-3 top-3 text-slate-400"></i>
-                        <input type="text" id="modalNombre" oninput="buscarClienteModal()" placeholder="Escriba nombre o placa..." class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
-                        <div id="listaResultadosClientes" class="hidden absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl mt-1 max-h-40 overflow-y-auto z-20"></div>
-                    </div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">Cliente Disponible (Lista Desplegable)</label>
+                    <!-- CAMBIO CLAVE: Select en lugar de Input -->
+                    <select id="modalClienteSelect" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white cursor-pointer">
+                        <option value="">-- Seleccione Cliente Disponible --</option>
+                    </select>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <!-- Campos informativos ocultos o de solo lectura para referencia visual -->
+                <div class="grid grid-cols-2 gap-4 opacity-75 pointer-events-none">
                     <div>
-                        <label class="text-xs font-bold text-slate-500 uppercase">Placa</label>
-                        <input type="text" id="modalPlaca" placeholder="---" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-slate-50 text-slate-500 font-mono" readonly>
+                        <label class="text-xs font-bold text-slate-400 uppercase">Placa (Auto)</label>
+                        <input type="text" id="modalPlacaDemo" placeholder="---" class="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-500 font-mono text-sm">
                     </div>
                     <div>
-                        <label class="text-xs font-bold text-slate-500 uppercase">Tipo</label>
-                        <input type="text" id="modalTipo" placeholder="---" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-slate-50 text-slate-500" readonly>
+                        <label class="text-xs font-bold text-slate-400 uppercase">Tipo (Auto)</label>
+                        <input type="text" id="modalTipoDemo" placeholder="---" class="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-500 text-sm">
                     </div>
                 </div>
 
@@ -221,6 +214,13 @@
             const div = document.getElementById('keyDetailsDiv');
             if(this.checked) div.classList.remove('hidden');
             else div.classList.add('hidden');
+        });
+
+        // Lógica para actualizar los campos demo cuando cambia el select
+        document.getElementById('modalClienteSelect').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            document.getElementById('modalPlacaDemo').value = selectedOption.dataset.placa || '';
+            document.getElementById('modalTipoDemo').value = selectedOption.dataset.tipo || '';
         });
 
         // Lógica Menú Móvil Estándar

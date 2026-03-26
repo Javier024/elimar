@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Lógica "Otro" Crear
     const medioPagoSelect = document.getElementById('medioPago');
     const otroContainer = document.getElementById('otroPagoContainer');
     if(medioPagoSelect && otroContainer) {
@@ -26,12 +25,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Lógica "Otro" Editar
     const editMedioPagoSelect = document.getElementById('editMedioPago');
     const editOtroContainer = document.getElementById('editOtroPagoContainer');
     if(editMedioPagoSelect && editOtroContainer) {
         editMedioPagoSelect.addEventListener('change', (e) => {
-            editOtroContainer.classList.toggle('hidden', e.target.value !== 'Otro');
+            editOtroPagoContainer.classList.toggle('hidden', e.target.value !== 'Otro');
         });
     }
 });
@@ -62,7 +60,7 @@ async function handleCreateClient(e) {
     const fecha_registro = document.getElementById('fechaRegistro').value;
     const medio_pago = document.getElementById('medioPago').value;
     const medio_detalle = document.getElementById('otroPagoInput').value;
-    const cuota_mensual = document.getElementById('cuotaMensual').value; // Capturar cuota
+    const cuota_mensual = document.getElementById('cuotaMensual').value;
 
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
@@ -118,8 +116,32 @@ function renderTable(filterText = '') {
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 border-b border-slate-50 transition-colors group";
         
-        // Formatear moneda
-        const cuotaFormatted = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(client.cuota_mensual || 0);
+        // Lógica de Estado de Pago
+        let estadoPagoHTML = '<span class="text-slate-400 text-xs">Sin pagos</span>';
+        if (client.last_payment_date) {
+            const lastPay = new Date(client.last_payment_date);
+            const today = new Date();
+            // Diferencia en días
+            const diffTime = Math.abs(today - lastPay);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            
+            if (diffDays <= 30) {
+                estadoPagoHTML = `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-emerald-100 text-emerald-800"><i class="fa-solid fa-check mr-1"></i> Al día</span>`;
+            } else {
+                estadoPagoHTML = `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Deuda (${diffDays - 30}d)</span>`;
+            }
+        } else {
+            // Si tiene fecha de registro pero no pagos
+            if(client.fecha_registro) {
+                 const regDate = new Date(client.fecha_registro);
+                 const today = new Date();
+                 const diffTime = Math.abs(today - regDate);
+                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                 if(diffDays > 5) {
+                    estadoPagoHTML = `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800">Sin Historial</span>`;
+                 }
+            }
+        }
         
         tr.innerHTML = `
             <td class="px-4 py-4">
@@ -133,8 +155,8 @@ function renderTable(filterText = '') {
                 <div class="text-[10px] text-slate-400 mt-1 uppercase font-bold">${client.medio_pago}</div>
             </td>
             <td class="px-4 py-4 font-mono text-slate-600 font-medium">${client.placa}</td>
-            <td class="px-4 py-4 text-right font-mono font-bold text-emerald-700">
-                ${cuotaFormatted}
+            <td class="px-4 py-4">
+                ${estadoPagoHTML}
             </td>
             <td class="px-4 py-4 text-right">
                 <div class="flex items-center justify-end gap-2">
@@ -154,11 +176,11 @@ function changePage(direction) {
 }
 
 async function deleteClient(id) {
-    if(!confirm("¿Eliminar este cliente?")) return;
+    if(!confirm("¿Eliminar este cliente? Esto liberará su puesto automáticamente.")) return;
     try {
         const res = await fetch('/api/clientes', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
         if (!res.ok) throw new Error((await res.json()).error);
-        alert("Eliminado");
+        alert("Eliminado y puesto liberado");
         loadClients();
     } catch (error) { alert("Error: " + error.message); }
 }
@@ -172,7 +194,7 @@ function openEditModal(id) {
     document.getElementById('editTelefono').value = client.telefono || '';
     document.getElementById('editPlaca').value = client.placa;
     document.getElementById('editVehiculo').value = client.tipo_vehiculo || 'Carro';
-    document.getElementById('editCuotaMensual').value = client.cuota_mensual || 0; // Cargar cuota
+    document.getElementById('editCuotaMensual').value = client.cuota_mensual || 0;
     document.getElementById('editFechaRegistro').value = client.fecha_registro || '';
     
     const medio = client.medio_pago || 'Diario';
@@ -216,7 +238,7 @@ async function updateClient() {
     const fecha_registro = document.getElementById('editFechaRegistro').value;
     const medio_pago = document.getElementById('editMedioPago').value;
     const medio_detalle = document.getElementById('editOtroPagoInput').value;
-    const cuota_mensual = document.getElementById('editCuotaMensual').value; // Capturar cuota editar
+    const cuota_mensual = document.getElementById('editCuotaMensual').value;
 
     if (!nombre || !placa) { alert("Nombre y placa obligatorios"); return; }
 
