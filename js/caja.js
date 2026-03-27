@@ -12,7 +12,34 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // --- UTILIDADES ---
   function formatMoney(amount) { return "$ " + parseFloat(amount || 0).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
-  function parseMoney(value) { if(!value) return 0; return parseFloat(value.toString().replace(/\./g, '').replace(/,/g, '').replace(/\$/g, '').trim()) || 0; }
+  
+  // CORREGIDO: Lógica robusta para formato colombino (1.000.000,50)
+  function parseMoney(value) { 
+    if(!value) return 0; 
+    let val = value.toString();
+    
+    // Si tiene punto y coma (ej: 1.000,50), removemos puntos y cambiamos coma por punto
+    if (val.includes('.') && val.includes(',')) {
+        val = val.replace(/\./g, '').replace(/,/g, '.');
+    } 
+    // Si solo tiene coma (ej: 1000,50), cambiamos por punto
+    else if (val.includes(',')) {
+        val = val.replace(/,/g, '.');
+    }
+    // Si solo tiene puntos (ej: 1000.50) o solo números, limpiamos símbolos
+    else {
+        val = val.replace(/\$/g, '').replace(/\./g, '');
+        // Si el resultado es un número entero pero el original tenía punto, podría ser miles o decimal.
+        // Para este sistema asumiremos que si se escribe manualmente sin coma, son centavos si tiene 2 digitos al final? 
+        // No, simplifiquemos: removemos todo lo que no sea dígito ni punto final único.
+        // Mejor enfoque: Remover todo lo que no sea número ni punto ni coma primero.
+        val = value.toString().replace(/[^0-9.,-]/g, '');
+        if (val.includes('.')) val = val.replace(/\./g, ''); // Asumimos que el punto es miles si no hay coma
+        if (val.includes(',')) val = val.replace(/,/g, '.'); // Asumimos que la coma es decimal
+    }
+
+    return parseFloat(val) || 0; 
+  }
 
   function mostrarToast(mensaje, tipo = 'success') {
     const toastExistente = document.getElementById('custom-toast');
@@ -28,17 +55,17 @@ document.addEventListener("DOMContentLoaded", function () {
     setTimeout(() => { toast.classList.add('translate-x-full', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
   }
 
-  // --- NUEVA FUNCIÓN: GENERAR FACTURA PDF PROFESIONAL ---
+  // --- FUNCIÓN: GENERAR FACTURA PDF ---
   function generarFacturaPDF(datosPago) {
       const { jsPDF } = window.jspdf;
-      if (!jsPDF) { alert("Error cargando librería PDF"); return; }
+      if (!jsPDF) { mostrarToast("Error cargando librería PDF", "error"); return; }
 
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const centerX = pageWidth / 2;
 
-      // 1. ENCABEZADO (Barra de color profesional)
-      doc.setFillColor(44, 62, 80); // Color corporativo (Azul oscuro)
+      // 1. ENCABEZADO
+      doc.setFillColor(44, 62, 80);
       doc.rect(0, 0, pageWidth, 40, 'F');
       
       doc.setTextColor(255, 255, 255);
@@ -48,59 +75,57 @@ document.addEventListener("DOMContentLoaded", function () {
       
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.text(PARKING.nombre.toUpperCase(), centerX, 35, { align: "center" });
+      doc.text(`No. ${datosPago.id} - ${PARKING.nombre.toUpperCase()}`, centerX, 35, { align: "center" });
 
-      // 2. INFORMACIÓN DEL CLIENTE Y PARQUEADERO
+      // 2. INFO CLIENTE
       let y = 60;
       doc.setTextColor(60, 60, 60);
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.text(`Cliente:`, 14, y);
       doc.setFont("helvetica", "normal");
-      doc.text(datosPago.client, 45, y);
+      doc.text(datosPago.client || "Cliente General", 45, y);
 
       y += 10;
       doc.setFont("helvetica", "bold");
-      doc.text(`Fecha de Emisión:`, 14, y);
+      doc.text(`Fecha:`, 14, y);
       doc.setFont("helvetica", "normal");
       const fechaFormateada = new Date(datosPago.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
-      doc.text(fechaFormateada, 65, y);
+      doc.text(fechaFormateada, 45, y);
 
       y += 10;
       doc.setFont("helvetica", "bold");
-      doc.text(`Detalle del Servicio:`, 14, y);
+      doc.text(`Detalle:`, 14, y);
       doc.setFont("helvetica", "normal");
-      doc.text(`Puesto #${datosPago.spot} | Placa: ${datosPago.plate} | ${datosPago.period_type}`, 45, y);
+      doc.text(`Puesto: ${datosPago.spot || "---"} | Placa: ${datosPago.plate || "---"} | ${datosPago.period_type}`, 45, y);
 
-      // 3. TABLA DE COBROS
+      // 3. TABLA
       y += 20;
-      
-      // Encabezado tabla
       doc.setFillColor(240, 240, 240);
       doc.rect(14, y, pageWidth - 28, 10, 'F');
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
       doc.text("Descripción", 20, y + 7);
-      doc.text("Periodo", 80, y + 7);
+      doc.text("Periodo", 100, y + 7);
       doc.text("Valor", 150, y + 7);
 
-      // Línea separadora
       y += 10;
       doc.setDrawColor(200);
       doc.line(14, y, pageWidth - 14, y);
       y += 10;
 
-      // Fila de datos
       doc.setFillColor(255, 255, 255);
       doc.rect(14, y, pageWidth - 28, 10, 'F');
       doc.setTextColor(50, 50, 50);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
       
-      const desc = datosPago.is_mensualidad ? "Mensualidad Parqueadero" : "Cobro por Salida / Tiempo";
+      const esMensualidad = datosPago.period_type === "Mes" || datosPago.period_quantity > 25;
+      const desc = esMensualidad ? "Mensualidad Parqueadero" : "Cobro por Servicio / Tiempo";
+      
       doc.text(desc, 20, y + 7);
-      doc.text(datosPago.period_type, 80, y + 7);
+      doc.text(`${datosPago.period_quantity} ${datosPago.period_type}`, 100, y + 7);
       doc.text(formatMoney(datosPago.amount), 150, y + 7);
 
       // 4. TOTALES
@@ -109,36 +134,38 @@ document.addEventListener("DOMContentLoaded", function () {
       doc.line(14, y, pageWidth - 14, y);
       y += 10;
 
-      doc.setFontSize(14);
+      doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 0, 0);
-      doc.text(`TOTAL A PAGAR: ${formatMoney(datosPago.amount)}`, 14, y);
+      doc.text(`TOTAL: ${formatMoney(datosPago.amount)}`, 14, y);
 
-      // 5. PIE DE PÁGINA
+      // 5. PIE
       y += 30;
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(100, 100, 100);
       doc.text("Gracias por su pago.", 14, y);
-      doc.text(" Parqueadero ELIMAR - Servicios de Calidad", 14, y + 5);
+      doc.text(` ${PARKING.nombre} - Servicios de Calidad`, 14, y + 5);
       
-      // Datos del parqueadero
       y += 10;
       doc.setFontSize(9);
       doc.text(`NIT: ${PARKING.nit} | Tel: ${PARKING.telefono}`, 14, y);
       doc.text(`Dirección: ${PARKING.direccion}`, 14, y + 5);
 
       // 6. GUARDAR Y WHATSAPP
-      const fileName = `Factura_${datosPago.plate}_${new Date().getTime()}.pdf`;
+      const fileName = `Factura_${datosPago.plate}_${datosPago.id}.pdf`;
       doc.save(fileName);
 
-      // Mensaje de WhatsApp (Referencia a la factura descargada)
-      const mensaje = `Hola *${datosPago.cliente}* 👋\n\nHemos generado tu factura de pago correctamente por un valor de *${formatMoney(datosPago.amount)}*.\n\n📄 Por favor revisa el archivo PDF descargado en tu dispositivo.\n\n¡Gracias por confiar en ${PARKING.nombre}! 🚗`;
-      const url = `https://wa.me/57${datosPago.phone}?text=${encodeURIComponent(mensaje)}`;
-      window.open(url, "_blank");
+      if (datosPago.phone) {
+          const mensaje = `Hola *${datosPago.client}* 👋\n\nHemos procesado tu pago exitosamente.\n\n🧾 *Factura No.* ${datosPago.id}\n💰 *Valor:* ${formatMoney(datosPago.amount)}\n📅 *Fecha:* ${fechaFormateada}\n\n📄 Por favor revisa el archivo PDF descargado con el detalle.\n\n¡Gracias por confiar en ${PARKING.nombre}! 🚗`;
+          const url = `https://wa.me/57${datosPago.phone}?text=${encodeURIComponent(mensaje)}`;
+          window.open(url, "_blank");
+      } else {
+          mostrarToast("Factura generada y descargada", "success");
+      }
   }
 
-  // --- CARGA DE DATOS (Manteniendo lógica anterior) ---
+  // CARGA INICIAL
   const pendingDataStr = localStorage.getItem('pending_payment');
   if (pendingDataStr) {
       try {
@@ -418,7 +445,7 @@ document.addEventListener("DOMContentLoaded", function () {
     renderTable();
   }
 
-  // --- REGISTRAR COBRO Y ENVIAR FACTURA ---
+  // --- REGISTRAR COBRO ---
   window.registrarCobro = async function(e) {
     if (e) e.preventDefault();
     const client = document.getElementById("cajaCliente").value;
@@ -431,23 +458,30 @@ document.addEventListener("DOMContentLoaded", function () {
     const periodQty = document.getElementById("cajaPeriodQty").value;
     const date = document.getElementById("cajaDate").value; 
     
+    const checkFactura = document.getElementById("checkFactura") ? document.getElementById("checkFactura").checked : false;
+
     if (!amount || amount <= 0) { mostrarToast("Ingrese un monto válido", "error"); return; }
 
     try {
-      const res = await fetch("/api/caja", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ client: client || "Cliente General", plate: plate || "---", spot: spot || "---", phone: celular || "", amount, method, period_type: periodType, period_quantity: periodQty, date }) });
+      const res = await fetch("/api/caja", { 
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify({ 
+          client: client || "Cliente General", 
+          plate: plate || "---", 
+          spot: spot || "---", 
+          phone: celular || "", 
+          amount, 
+          method, 
+          period_type: periodType, 
+          period_quantity: periodQty, 
+          date 
+        }) 
+      });
+      
       const data = await res.json();
+      
       if (data.success) {
-        // 1. Generar PDF y Enviar WhatsApp
-        generarFacturaWhatsApp({
-            client,
-            phone: celular,
-            amount,
-            period_type: periodType === 'Dias' ? `${periodQty} Días` : periodType,
-            date,
-            spot,
-            is_mensualidad: false // Detectado implícito si viene de pendiente o nuevo
-        });
-
         document.getElementById("formCaja").reset();
         document.getElementById("cajaPeriodQty").value = 1;
         document.getElementById("cajaDate").valueAsDate = new Date();
@@ -455,19 +489,20 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("cajaInfo").innerHTML = "";
         currentPage = 1;
         loadData(); 
-        mostrarToast("Cobro registrado y factura enviada");
-      } else { mostrarToast("Error al registrar", "error"); }
-    } catch (error) { console.error(error); mostrarToast("Error de conexión", "error"); }
-  }
 
-  // Función puente para manejar la bandera is_mensualidad si viene de localStorage
-  function generarFacturaWhatsApp(datosPago) {
-      // Si viene de localStorage (pago pendiente), usamos esa bandera. Si no, es un pago normal.
-      // Nota: Si es un pago nuevo normal, generamos factura pero no afectamos el puesto (ya se hizo antes si era salida).
-      generarFacturaPDF({
-          ...datosPago,
-          is_mensualidad: datosPago.is_mensualidad || false 
-      });
+        if (checkFactura) {
+            generarFacturaPDF(data.data);
+            mostrarToast("Cobro registrado y factura generada");
+        } else {
+            mostrarToast("Cobro registrado con éxito");
+        }
+      } else { 
+        mostrarToast("Error al registrar: " + (data.error || "Desconocido"), "error"); 
+      }
+    } catch (error) { 
+      console.error(error); 
+      mostrarToast("Error de conexión", "error"); 
+    }
   }
 
   window.deleteTransaction = async function(id) {

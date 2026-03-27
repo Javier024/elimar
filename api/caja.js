@@ -1,6 +1,5 @@
 // parqueo/api/caja.js
 import { db } from "./db.js"
-import { logToHistory } from "./historial.js"
 
 export default async function handler(req, res) {
   try {
@@ -39,7 +38,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // --- GET: LEER CAJA NORMAL (Con última fecha de pago) ---
+    // --- GET: LEER CAJA NORMAL ---
     if (req.method === "GET") {
       if (req.query.id) {
           const result = await db.execute({ sql: "SELECT * FROM caja WHERE id = ?", args: [req.query.id] });
@@ -47,13 +46,11 @@ export default async function handler(req, res) {
           return res.status(200).json(result.rows[0]);
       }
 
-      // Lista normal con JOIN para traer info del cliente y su último pago
       const result = await db.execute(`
         SELECT ca.*, 
                cli.medio_pago as cliente_medio_pago,
                cli.nombre as cliente_nombre_completo,
                cli.cuota_mensual,
-               -- Subconsulta para obtener la fecha del pago anterior inmediato
                (SELECT date FROM caja c2 WHERE c2.plate = ca.plate AND c2.date < ca.date ORDER BY c2.date DESC LIMIT 1) as last_payment_date
         FROM caja ca
         LEFT JOIN clientes cli ON ca.plate = cli.placa
@@ -72,31 +69,51 @@ export default async function handler(req, res) {
       const paymentDate = date || now.toISOString().split("T")[0];
       const time = now.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
 
-      await db.execute({
-        sql: `INSERT INTO caja (client, plate, spot, phone, amount, method, time, date, period_type, period_quantity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      // Convertimos explícitamente a números
+      const numAmount = parseFloat(amount);
+      const numQty = parseInt(period_quantity) || 1;
+
+      if (isNaN(numAmount) || numAmount <= 0) {
+          return res.status(400).json({ error: "Monto inválido" });
+      }
+
+      // INSERT total con columna 'paid' incluida
+      const result = await db.execute({
+        sql: `INSERT INTO caja (client, plate, spot, phone, amount, method, time, date, paid, period_quantity, period_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           client || "Cliente General", 
           plate || "---", 
           spot || "---", 
           phone || "", 
-          amount, 
+          numAmount, 
           method || "Efectivo", 
           time, 
           paymentDate,
-          period_type || "Noche",
-          period_quantity || 1
+          "0", // Valor por defecto para 'paid' (texto)
+          numQty,
+          period_type || "Noche"
         ]
       });
 
-      if (plate && plate !== "---") {
-          await db.execute({
-              sql: `UPDATE historial SET paid=? WHERE plate=? AND exit IS NOT NULL AND paid = 0`,
-              args: [amount, plate]
-          });
+      // OBTENCIÓN SEGURA DEL ID
+      // Verificamos si result existe y tiene la propiedad
+      let newId = 0;
+      if (result && result.lastInsertRowid !== undefined) {
+          // Forzamos a Number para evitar errores de BigInt en JSON
+          newId = Number(result.lastInsertRowid);
+      } else if (result && result.lastID !== undefined) {
+          // Algunos drivers usan lastID
+          newId = Number(result.lastID);
       }
 
-      await logToHistory('CAJA', `Cobro: ${client} (${plate})`, amount, plate);
-      return res.status(200).json({ success: true, message: "Cobro registrado" });
+      return res.status(200).json({ 
+        success: true, 
+        message: "Cobro registrado",
+        data: {
+          id: newId,
+          client, plate, spot, phone, amount: numAmount, method, time, date: paymentDate, period_type, period_quantity: numQty
+        }
+      });
     }
 
     // --- PUT: EDITAR COBRO ---
@@ -106,10 +123,13 @@ export default async function handler(req, res) {
         if (!id) return res.status(400).json({ error: "ID requerido" });
         if (!amount) return res.status(400).json({ error: "Monto requerido" });
 
+        const numAmount = parseFloat(amount);
+        const numQty = parseInt(period_quantity) || 1;
         const paymentDate = date || new Date().toISOString().split("T")[0];
+
         await db.execute({
             sql: `UPDATE caja SET client=?, plate=?, spot=?, phone=?, amount=?, method=?, period_type=?, period_quantity=?, date=? WHERE id=?`,
-            args: [client, plate, spot, phone, amount, method, period_type, period_quantity, paymentDate, id]
+            args: [client, plate, spot, phone, numAmount, method, period_type, numQty, paymentDate, id]
         });
         return res.status(200).json({ success: true, message: "Transacción actualizada" });
     }
@@ -124,7 +144,7 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ error: "Método no permitido" });
   } catch (error) {
-    console.error("ERROR API CAJA:", error);
+    console.error("ERROR API CAJA DETALLADO:", error);
     return res.status(500).json({ error: "Error interno del servidor", detalle: error.message });
   }
 }

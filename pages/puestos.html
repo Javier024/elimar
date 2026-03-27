@@ -7,201 +7,160 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- 1. Script de Seguridad -->
     <script src="../js/auth-manager.js"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         
-        /* Scrollbar personalizado */
+        /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; } 
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         ::-webkit-scrollbar-track { background: transparent; }
 
-        /* Estilos específicos de Puestos (Tarjetas) */
-        .parking-card { 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            cursor: pointer; 
-            border-radius: 0.75rem; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden;
-            position: relative;
-            min-height: 120px;
-        }
-        .parking-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-        
-        .parking-card.libre { border: 1px solid #e2e8f0; background: #fff; }
-        .parking-card.libre:hover { border-color: #22c55e; }
-
-        .parking-card.ocupado { border: 1px solid #c7d2fe; background: linear-gradient(to bottom right, #eef2ff, #ffffff); }
-        .parking-card.ocupado:hover { border-color: #6366f1; }
-
-        .parking-card.reservado { border: 1px solid #e9d5ff; background: linear-gradient(to bottom right, #faf5ff, #ffffff); }
-        .parking-card.reservado:hover { border-color: #a855f7; }
+        /* Animación del Modal */
+        .modal-enter { opacity: 0; transform: scale(0.95); }
+        .modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 0.2s, transform 0.2s; }
+        .modal-exit { opacity: 1; transform: scale(1); }
+        .modal-exit-active { opacity: 0; transform: scale(0.95); transition: opacity 0.2s, transform 0.2s; }
     </style>
 </head>
-
-<body class="text-slate-700 antialiased flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50 w-full">
-    <!-- MOBILE MENU OVERLAY -->
+<body class="text-slate-700 antialiased flex flex-col lg:flex-row h-screen overflow-hidden w-full">
+    
+    <!-- Sidebar (Estructura estándar) -->
     <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 z-40 hidden backdrop-blur-sm transition-opacity"></div>
 
-    <!-- SIDEBAR -->
     <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col lg:static lg:z-auto lg:flex lg:flex-col shadow-xl lg:shadow-none">
-        
-        <!-- Header Sidebar -->
         <div class="h-16 flex items-center px-6 border-b border-slate-100 shrink-0">
             <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200 flex-shrink-0">
                 <i class="fa-solid fa-square-parking text-white text-sm"></i>
             </div>
             <div class="min-w-0">
                 <h1 class="text-lg font-bold text-slate-800 truncate">ELIMAR<span class="text-indigo-600">Sys</span></h1>
-                <p class="text-[10px] text-slate-400 font-medium truncate" id="sidebar-user-name">Sistema</p>
+                <p class="text-[10px] text-slate-400 font-medium truncate" id="sidebar-user-name">Admin</p>
             </div>
         </div>
-
-        <!-- Navegación -->
         <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
             <a href="../dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard</a>
             <a href="clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-users w-5 text-center"></i> Clientes</a>
-            
-            <!-- Puestos Activo -->
             <a href="puestos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100 nav-item"><i class="fa-solid fa-layer-group w-5 text-center"></i> Puestos</a>
-            
-            <a href="caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-cash-register w-5 text-center"></i> Caja</a>
-            <a href="gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-receipt w-5 text-center"></i> Gastos</a>
-            <a href="historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Historial</a>
-            <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-gear w-5 text-center"></i> Configuración</a>
+            <a href="caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-cash-register w-5 text-center"></i> Caja</a>
+            <a href="gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-receipt w-5 text-center"></i> Gastos</a>
+            <a href="historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Historial</a>
+            <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-gear w-5 text-center"></i> Configuración</a>
         </nav>
-
-        <!-- Botón Cerrar Sesión -->
         <div class="p-4 border-t border-slate-100 shrink-0">
-            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors">
-                <i class="fa-solid fa-power-off"></i> Cerrar Sesión
-            </button>
+            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors"><i class="fa-solid fa-power-off"></i> Cerrar Sesión</button>
         </div>
     </aside>
 
-    <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full bg-slate-50">
-        
-        <!-- HEADER -->
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
         <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20 shrink-0">
             <div class="flex items-center gap-4">
-                <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
-                    <i class="fa-solid fa-bars text-xl"></i>
-                </button>
-                <div class="flex flex-col">
-                    <h2 class="text-lg lg:text-xl font-bold text-slate-800">Gestión Puestos</h2>
-                    <span class="text-xs text-slate-500 hidden sm:block">Ingresos, Reservas y Llaves</span>
+                <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button>
+                <div>
+                    <h2 class="text-lg lg:text-xl font-bold text-slate-800">Mapa de Puestos</h2>
+                    <span class="text-xs text-slate-500">Gestión en tiempo real</span>
                 </div>
             </div>
-            <div class="flex items-center gap-2">
-                <i class="fa-regular fa-calendar text-slate-400"></i>
-                <span id="fecha-actual" class="text-xs lg:text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200"></span>
-            </div>
+            <div class="text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200" id="fecha-actual"></div>
         </header>
 
-        <!-- CONTENIDO SCROLLABLE -->
-        <div class="flex-1 overflow-y-auto p-4 lg:p-8">
+        <div class="flex-1 overflow-y-auto p-4 lg:p-6">
             <div class="max-w-7xl mx-auto space-y-6">
-                
-                <!-- Barra de Control -->
-                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col md:flex-row justify-between items-center gap-4">
-                    
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
-                        <div>
-                            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-map-location-dot text-indigo-500"></i> Mapa de Puestos</h3>
-                            <p class="text-xs text-slate-400 mt-0.5">Vista en tiempo real con auditoría de temporales</p>
-                        </div>
-                        
+                <!-- Filtros y Stats -->
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="flex items-center gap-4">
+                        <h3 class="text-xl font-bold text-slate-800">Vista General</h3>
                         <div class="flex gap-2">
-                            <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold">
-                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> <span id="kpi-libres">0</span> Libres
-                            </div>
-                            <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold">
-                                <span class="w-2 h-2 rounded-full bg-indigo-500"></span> <span id="kpi-ocupados">0</span> Ocupados
-                            </div>
+                             <span class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span id="kpi-libres">0</span> Libres</span>
+                             <span class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold"><span class="w-2 h-2 rounded-full bg-indigo-500"></span> <span id="kpi-ocupados">0</span> Ocupados</span>
                         </div>
                     </div>
                     
-                    <!-- Botones Responsive -->
-                    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                        <button onclick="filtrarMapa('todos')" data-filter="todos" class="filter-btn px-3 py-2 rounded-lg text-sm font-semibold bg-slate-800 text-white shadow-sm transition-colors hover:bg-slate-700">Todos</button>
-                        <button onclick="filtrarMapa('libre')" data-filter="libre" class="filter-btn px-3 py-2 rounded-lg text-sm font-semibold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors">Libres</button>
-                        <button onclick="filtrarMapa('ocupado')" data-filter="ocupado" class="filter-btn px-3 py-2 rounded-lg text-sm font-semibold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors">Ocupados</button>
-                        
-                        <div class="h-6 w-px bg-slate-300 mx-1 hidden md:block"></div>
-                        
-                        <button onclick="crearPuestoRapido()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-sm font-semibold shadow-sm transition-all flex items-center justify-center gap-2 whitespace-nowrap hover:shadow-md"><i class="fa-solid fa-plus"></i> Crear</button>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button onclick="filtrarMapa('todos')" data-filter="todos" class="filter-btn px-4 py-2 rounded-lg text-xs font-bold bg-slate-800 text-white shadow-md transition-all">Todos</button>
+                        <button onclick="filtrarMapa('libre')" data-filter="libre" class="filter-btn px-4 py-2 rounded-lg text-xs font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-all">Libres</button>
+                        <button onclick="filtrarMapa('ocupado')" data-filter="ocupado" class="filter-btn px-4 py-2 rounded-lg text-xs font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-all">Ocupados</button>
+                        <div class="w-px bg-slate-300 h-8 mx-1 hidden sm:block"></div>
+                        <button onclick="crearPuestoRapido()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg shadow-indigo-200 transition-all flex items-center gap-2"><i class="fa-solid fa-plus"></i> Nuevo</button>
                     </div>
                 </div>
 
-                <!-- Mapa de Puestos -->
-                <div class="bg-slate-50 rounded-xl border border-slate-200 shadow-sm p-4 lg:p-6 min-h-[500px]">
-                    <div id="map-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-6"></div>
+                <!-- Grid de Puestos -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 lg:p-6 min-h-[600px]">
+                    <div class="mb-4 flex items-center gap-2 border-b border-slate-100 pb-2">
+                        <i class="fa-solid fa-search text-slate-400 text-sm"></i>
+                        <input type="text" id="searchInput" placeholder="Buscar por número o placa..." class="w-full max-w-xs text-sm outline-none text-slate-600 bg-transparent placeholder-slate-400">
+                    </div>
+                    <div id="map-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"></div>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- MODAL DE ASIGNACIÓN (ACTUALIZADO CON SELECT) -->
-    <div id="modalAsignar" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden items-center justify-center p-4 transition-opacity">
-        <div id="modalContent" class="bg-white w-full max-w-md rounded-2xl shadow-2xl transform transition-all scale-95 opacity-0 duration-200 flex flex-col max-h-[90vh]">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl shrink-0">
+    <!-- MODAL ASIGNAR (DISEÑO PROFESIONAL COMPLETO) -->
+    <div id="modalAsignar" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden items-center justify-center p-4">
+        <div id="modalContent" class="bg-white w-full max-w-md rounded-2xl shadow-2xl transform transition-all duration-200 flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl shrink-0">
                 <h3 class="text-lg font-bold text-slate-800" id="modalSpotNumber">Asignar Vehículo</h3>
-                <button onclick="cerrarModalAsignar()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
+                <button onclick="cerrarModalAsignar()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
-            <div class="p-6 space-y-4 overflow-y-auto">
-                <div class="flex items-center gap-3 p-3 bg-purple-50 rounded-lg border border-purple-100">
-                    <input type="checkbox" id="checkReserva" class="w-5 h-5 text-purple-600 rounded border-gray-300 focus:ring-purple-500 cursor-pointer">
-                    <label for="checkReserva" class="text-sm font-bold text-purple-800 cursor-pointer select-none">Marcar como Reserva</label>
+            <div class="p-6 space-y-5 overflow-y-auto">
+                <!-- Switch Tipo de Cliente -->
+                <div class="grid grid-cols-2 bg-slate-100 p-1 rounded-lg">
+                    <label class="cursor-pointer text-center">
+                        <input type="radio" name="clientType" value="registered" class="peer hidden" checked onchange="toggleInputType()">
+                        <div class="py-2 rounded-md text-xs font-bold text-slate-500 peer-checked:bg-white peer-checked:text-indigo-600 peer-checked:shadow-sm transition-all">Cliente Registrado</div>
+                    </label>
+                    <label class="cursor-pointer text-center">
+                        <input type="radio" name="clientType" id="inputTypeToggle" value="manual" class="peer hidden" onchange="toggleInputType()">
+                        <div class="py-2 rounded-md text-xs font-bold text-slate-500 peer-checked:bg-white peer-checked:text-amber-600 peer-checked:shadow-sm transition-all">Ingreso Manual</div>
+                    </label>
                 </div>
 
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-500 uppercase">Cliente Disponible (Lista Desplegable)</label>
-                    <!-- CAMBIO CLAVE: Select en lugar de Input -->
-                    <select id="modalClienteSelect" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white cursor-pointer">
-                        <option value="">-- Seleccione Cliente Disponible --</option>
-                    </select>
+                <!-- Opción: Registrado -->
+                <div id="registeredClientDiv">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Seleccionar Cliente</label>
+                    <select id="modalClienteSelect" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white cursor-pointer"></select>
                 </div>
 
-                <!-- Campos informativos ocultos o de solo lectura para referencia visual -->
-                <div class="grid grid-cols-2 gap-4 opacity-75 pointer-events-none">
+                <!-- Opción: Manual -->
+                <div id="manualClientDiv" class="hidden space-y-3">
                     <div>
-                        <label class="text-xs font-bold text-slate-400 uppercase">Placa (Auto)</label>
-                        <input type="text" id="modalPlacaDemo" placeholder="---" class="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-500 font-mono text-sm">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Nombre del Cliente</label>
+                        <input type="text" id="tempNameInput" placeholder="Ej. Juan Pérez" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none">
                     </div>
                     <div>
-                        <label class="text-xs font-bold text-slate-400 uppercase">Tipo (Auto)</label>
-                        <input type="text" id="modalTipoDemo" placeholder="---" class="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-500 text-sm">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Placa del Vehículo</label>
+                        <input type="text" id="tempPlateInput" placeholder="ABC-123" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm font-mono uppercase focus:ring-2 focus:ring-amber-500 outline-none">
                     </div>
                 </div>
 
-                <hr class="border-slate-100">
+                <!-- Opciones Extra -->
+                <div class="space-y-3 pt-2">
+                    <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+                        <input type="checkbox" id="checkReserva" class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
+                        <span class="text-sm font-semibold text-slate-700">Marcar como Reserva</span>
+                    </label>
 
-                <div class="space-y-3 bg-amber-50 p-3 rounded-lg border border-amber-100">
-                    <div class="flex items-center justify-between">
-                        <label class="text-sm font-bold text-amber-800 flex items-center gap-2">
-                            <i class="fa-solid fa-key"></i> Gestión de Llaves
-                        </label>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="checkKey" class="sr-only peer">
-                            <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
-                        </label>
-                    </div>
-                    
-                    <div id="keyDetailsDiv" class="hidden transition-all">
-                        <label class="text-xs font-bold text-amber-700 uppercase block mb-1">Descripción</label>
-                        <input type="text" id="modalKeyDesc" placeholder="Ej. Llave Negra con mancha roja" class="w-full px-3 py-2 text-sm border border-amber-200 rounded focus:ring-1 focus:ring-amber-500 outline-none">
+                    <div class="bg-amber-50 p-3 rounded-lg border border-amber-100">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-sm font-bold text-amber-800 flex items-center gap-2"><i class="fa-solid fa-key"></i> Custodia de Llave</label>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="checkKey" class="sr-only peer">
+                                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                            </label>
+                        </div>
+                        <div id="keyDetailsDiv" class="hidden transition-all">
+                            <label class="text-xs font-bold text-amber-700 uppercase block mb-1">Descripción</label>
+                            <input type="text" id="modalKeyDesc" placeholder="Ej. Llave negra..." class="w-full px-3 py-1.5 text-sm border border-amber-200 rounded focus:ring-1 focus:ring-amber-500 outline-none">
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="p-6 pt-0 border-t border-slate-100 shrink-0 flex gap-3">
+            <div class="p-5 pt-0 border-t border-slate-100 shrink-0 flex gap-3">
                 <button onclick="confirmarAsignar()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-95">Confirmar</button>
                 <button onclick="cerrarModalAsignar()" class="px-4 py-3 text-slate-500 hover:bg-slate-100 rounded-xl font-bold transition-all">Cancelar</button>
             </div>
@@ -209,50 +168,47 @@
     </div>
 
     <script>
-        // Lógica específica del Modal de Llaves
+        // Toggle Modal Visual
+        function abrirModal() {
+            const modal = document.getElementById('modalAsignar');
+            const content = document.getElementById('modalContent');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); }, 10);
+        }
+        function cerrarModal() {
+            const modal = document.getElementById('modalAsignar');
+            const content = document.getElementById('modalContent');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 200);
+        }
+
+        // Llave Toggle
         document.getElementById('checkKey').addEventListener('change', function() {
             const div = document.getElementById('keyDetailsDiv');
             if(this.checked) div.classList.remove('hidden');
             else div.classList.add('hidden');
         });
 
-        // Lógica para actualizar los campos demo cuando cambia el select
-        document.getElementById('modalClienteSelect').addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            document.getElementById('modalPlacaDemo').value = selectedOption.dataset.placa || '';
-            document.getElementById('modalTipoDemo').value = selectedOption.dataset.tipo || '';
-        });
-
-        // Lógica Menú Móvil Estándar
+        // Menu Lateral
         function toggleMenu() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('mobileMenuOverlay');
-            
             if (sidebar.classList.contains('-translate-x-full')) {
-                // Abrir
                 sidebar.classList.remove('-translate-x-full');
                 overlay.classList.remove('hidden');
-                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
             } else {
-                // Cerrar
                 sidebar.classList.add('-translate-x-full');
-                overlay.classList.add('opacity-0');
-                setTimeout(() => overlay.classList.add('hidden'), 300);
+                overlay.classList.add('hidden');
             }
         }
 
-        // Inicialización de Fecha
+        // Fecha
         document.addEventListener('DOMContentLoaded', () => {
-            const fechaSpan = document.getElementById('fecha-actual');
-            if(fechaSpan) {
-                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-                let fechaStr = new Date().toLocaleDateString('es-ES', options);
-                fechaStr = fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1);
-                fechaSpan.innerText = fechaStr;
-            }
+            const f = document.getElementById('fecha-actual');
+            if(f) f.innerText = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         });
     </script>
-
     <script src="../js/puestos.js"></script>
 </body>
 </html>

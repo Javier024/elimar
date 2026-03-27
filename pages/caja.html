@@ -7,10 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  
-  <!-- LIBRERÍA PARA PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  
   <script src="../js/auth-manager.js"></script>
 
   <style>
@@ -18,8 +15,6 @@
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
     .custom-input { width: 100%; padding: 12px 12px 12px 40px; border-radius: 8px; border: 1px solid #cbd5e1; background-color: #f8fafc; font-size: 15px; transition: all 0.2s ease; }
     .custom-input:focus { outline: none; border-color: #6366f1; background-color: #fff; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
     .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
@@ -98,7 +93,8 @@
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sticky top-4">
               <div class="flex items-center gap-2 mb-6"><div class="p-2 bg-indigo-50 rounded-lg text-indigo-600"><i class="fa-solid fa-money-bill-wave"></i></div><h3 class="font-bold text-slate-800">Registrar Cobro</h3></div>
               
-              <form id="formCaja" onsubmit="registrarCobro(event)" class="space-y-4">
+              <!-- MODIFICADO onsubmit para manejar 'Otro' -->
+              <form id="formCaja" onsubmit="handleCustomPeriod(event)" class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Cliente</label>
                     <div class="relative">
@@ -131,7 +127,6 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Monto a Cobrar</label>
                     <div class="relative"><i class="fa-solid fa-dollar-sign input-icon"></i><input id="cajaMonto" type="text" placeholder="0" required class="custom-input font-mono font-bold text-lg text-emerald-700"></div>
-                    <p class="text-[10px] text-slate-400 mt-1 text-right">Se formatea automáticamente</p>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Método</label>
@@ -144,16 +139,20 @@
                         </select>
                     </div>
                 </div>
+                
+                <!-- SELECTOR DE PERIODO CON OPCIÓN OTRO -->
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Periodo</label>
                         <div class="relative">
                             <i class="fa-solid fa-clock input-icon"></i>
-                            <select id="cajaPeriodType" class="custom-input appearance-none cursor-pointer text-sm">
+                            <!-- Agregado onchange para detectar 'Otro' -->
+                            <select id="cajaPeriodType" onchange="toggleCustomPeriod()" class="custom-input appearance-none cursor-pointer text-sm">
                                 <option value="Noche">Noche</option>
                                 <option value="Dias">Días</option>
                                 <option value="Semana">Semana</option>
                                 <option value="Mes">Mes</option>
+                                <option value="Otro">Otro (Escribir...)</option>
                             </select>
                         </div>
                     </div>
@@ -165,6 +164,24 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- CAMPO PERSONALIZADO (OCULTO POR DEFECTO) -->
+                <div id="customPeriodContainer" class="hidden animate-fade-in">
+                    <label class="block text-[10px] font-bold text-indigo-500 uppercase mb-1 ml-1">Concepto Personalizado</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-pen input-icon text-indigo-400"></i>
+                        <input id="cajaPeriodCustom" type="text" placeholder="Ej: Cortesía, Mantenimiento..." class="custom-input pl-10 text-sm border-indigo-300 focus:border-indigo-500">
+                    </div>
+                </div>
+                
+                <!-- CHECKBOX FACTURA -->
+                <div class="flex items-center gap-2 p-3 bg-indigo-50 rounded-lg border border-indigo-100 mt-2">
+                    <input type="checkbox" id="checkFactura" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 border-gray-300">
+                    <label for="checkFactura" class="text-xs font-bold text-indigo-900 cursor-pointer select-none">
+                        Generar y enviar Factura (PDF + WhatsApp)
+                    </label>
+                </div>
+
                 <div id="calendarSection" class="hidden mt-4 pt-4 border-t border-slate-100">
                     <h4 class="text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Calendario de Pagos Diarios</h4>
                     <div id="calendarContainer" class="grid grid-cols-7 gap-1 bg-slate-50 p-3 rounded-lg border border-slate-200"></div>
@@ -213,29 +230,7 @@
     </div>
   </main>
 
-  <!-- MODAL HISTORIAL CLIENTE -->
-  <div id="modalHistorial" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden items-center justify-center p-4">
-    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl shrink-0">
-            <h3 class="text-lg font-bold text-slate-800" id="historialTitle">Historial de Pagos</h3>
-            <button onclick="cerrarModalHistorial()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="p-6 overflow-y-auto">
-            <table class="w-full text-left border-collapse">
-                <thead class="bg-slate-50">
-                    <tr>
-                        <th class="p-2 text-xs font-bold text-slate-500 uppercase">Fecha</th>
-                        <th class="p-2 text-xs font-bold text-slate-500 uppercase">Periodo</th>
-                        <th class="p-2 text-xs font-bold text-slate-500 uppercase text-right">Valor</th>
-                    </tr>
-                </thead>
-                <tbody id="historialBody" class="divide-y divide-slate-100 text-sm"></tbody>
-            </table>
-        </div>
-    </div>
-  </div>
-
-  <!-- MODAL EDICIÓN (EXISTENTE) -->
+  <!-- MODAL EDICIÓN -->
   <div id="modalEdit" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden items-center justify-center p-4 transition-opacity">
     <div id="modalEditContent" class="bg-white w-full max-w-md rounded-2xl shadow-2xl transform transition-all scale-95 opacity-0 duration-200 flex flex-col">
         <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl">
@@ -304,6 +299,46 @@
               overlay.classList.add('hidden'); overlay.classList.remove('flex');
           } else {
               overlay.classList.remove('hidden'); overlay.classList.add('flex');
+          }
+      }
+      
+      // Lógica para mostrar/ocultar campo personalizado
+      function toggleCustomPeriod() {
+          const typeSelect = document.getElementById('cajaPeriodType');
+          const customContainer = document.getElementById('customPeriodContainer');
+          const customInput = document.getElementById('cajaPeriodCustom');
+          
+          if (typeSelect.value === 'Otro') {
+              customContainer.classList.remove('hidden');
+              customInput.required = true;
+          } else {
+              customContainer.classList.add('hidden');
+              customInput.required = false;
+              customInput.value = ''; // Limpiar valor al ocultar
+          }
+      }
+
+      // Lógica para capturar el valor personalizado antes de enviar
+      function handleCustomPeriod(e) {
+          const typeSelect = document.getElementById('cajaPeriodType');
+          
+          if (typeSelect.value === 'Otro') {
+              const customVal = document.getElementById('cajaPeriodCustom').value;
+              if (!customVal.trim()) {
+                  e.preventDefault();
+                  alert('Por favor escribe el concepto personalizado.');
+                  return;
+              }
+              // "Truco": Cambiamos el valor del select al texto personalizado
+              // Así la función 'registrarCobro' que lee el select recibirá el texto correcto
+              typeSelect.value = customVal;
+          }
+          
+          // Llamamos a la función original que está en caja.js
+          if (typeof window.registrarCobro === 'function') {
+              window.registrarCobro(e);
+          } else {
+              console.error("La función registrarCobro no se encontró. Asegúrate de cargar caja.js");
           }
       }
       
