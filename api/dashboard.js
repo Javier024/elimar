@@ -28,7 +28,8 @@ export default async function handler(req, res) {
     
     let chartFinanzasData = [];
     let chartOcupacionMesData = []; 
-    let chartMetodosPagoData = []; // NUEVO: Datos para métodos de pago
+    let chartMetodosPagoData = [];
+    let chartSemanalData = []; // NUEVO: Datos para gráfica semanal
     let movimientosRecientes = [];
 
     // --- 1. PUESTOS ---
@@ -112,7 +113,7 @@ export default async function handler(req, res) {
       });
     } catch (e) { console.error("Error gráfica finanzas:", e); }
 
-    // --- 7. GRÁFICA MÉTODOS DE PAGO (NUEVO) ---
+    // --- 7. GRÁFICA MÉTODOS DE PAGO ---
     try {
       const metodosResult = await db.execute(`
         SELECT method, COALESCE(SUM(amount), 0) as total 
@@ -127,7 +128,6 @@ export default async function handler(req, res) {
 
     // --- 8. GRÁFICA ACTIVIDAD MENSUAL ---
     try {
-        // Traemos los movimientos de los últimos 6 meses
         const actividadMesResult = await db.execute(`
             SELECT 
                 strftime('%Y-%m', date) as mes, 
@@ -153,11 +153,32 @@ export default async function handler(req, res) {
       movimientosRecientes = hRes.rows;
     } catch (e) { console.error("Error historial:", e); }
 
+    // --- 10. GRÁFICA SEMANAL (NUEVO: Ingresos de vehículos últimos 7 días) ---
+    try {
+        const semanalResult = await db.execute(`
+            SELECT 
+                date, 
+                COUNT(*) as total_vehiculos
+            FROM historial 
+            WHERE date >= date('now', '-7 days')
+            GROUP BY date
+            ORDER BY date ASC
+        `);
+        
+        chartSemanalData = semanalResult.rows.map(r => ({
+            fecha: r.date,
+            total: r.total_vehiculos
+        }));
+    } catch (e) {
+        console.error("Error gráfica semanal:", e);
+    }
+
     return res.status(200).json({
       kpi: kpi,
       chartFinanzas: chartFinanzasData,
       chartOcupacionMes: chartOcupacionMesData, 
-      chartMetodosPago: chartMetodosPagoData, // Enviando datos nuevos
+      chartMetodosPago: chartMetodosPagoData,
+      chartSemanal: chartSemanalData, // Enviando nuevo dato
       movimientosRecientes: movimientosRecientes
     });
 

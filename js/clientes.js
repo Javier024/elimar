@@ -1,8 +1,6 @@
-// parqueo/js/clientes.js
-
 let allClients = [];
 let currentPage = 1;
-const itemsPerPage = 5;
+const itemsPerPage = 8; 
 
 document.addEventListener('DOMContentLoaded', () => {
     loadClients();
@@ -29,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const editOtroContainer = document.getElementById('editOtroPagoContainer');
     if(editMedioPagoSelect && editOtroContainer) {
         editMedioPagoSelect.addEventListener('change', (e) => {
-            editOtroPagoContainer.classList.toggle('hidden', e.target.value !== 'Otro');
+            editOtroContainer.classList.toggle('hidden', e.target.value !== 'Otro');
         });
     }
 });
@@ -44,7 +42,7 @@ async function loadClients() {
     } catch (error) {
         console.error(error);
         const tbody = document.getElementById('listaClientesBody');
-        if(tbody) tbody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500 py-4">Error cargando datos</td></tr>`;
+        if(tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-center text-red-500 py-4">Error cargando datos</td></tr>`;
     }
 }
 
@@ -75,6 +73,8 @@ async function handleCreateClient(e) {
         if (!res.ok) throw new Error(data.error || 'Error desconocido');
         alert(data.message);
         e.target.reset();
+        // Resetear estado del "Otro"
+        document.getElementById('medioPago').value = 'Diario';
         document.getElementById('otroPagoContainer').classList.add('hidden');
         loadClients();
     } catch (error) {
@@ -95,20 +95,27 @@ function renderTable(filterText = '') {
         c.placa.toLowerCase().includes(filterText.toLowerCase())
     );
 
-    document.getElementById('totalCount').innerText = filtered.length;
+    const totalCountEl = document.getElementById('totalCount');
+    if(totalCountEl) totalCountEl.innerText = filtered.length;
+    
     const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+    
     if (currentPage > totalPages) currentPage = totalPages;
+    
+    const pageInfoEl = document.getElementById('pageInfo');
+    if(pageInfoEl) pageInfoEl.innerText = `Pág. ${currentPage} de ${totalPages}`;
+    
     const start = (currentPage - 1) * itemsPerPage;
     const end = start + itemsPerPage;
     const pageData = filtered.slice(start, end);
 
-    document.getElementById('currentPage').innerText = currentPage;
-    document.getElementById('totalPages').innerText = totalPages;
-    document.getElementById('btnPrev').disabled = currentPage === 1;
-    document.getElementById('btnNext').disabled = currentPage === totalPages;
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    if(btnPrev) btnPrev.disabled = currentPage === 1;
+    if(btnNext) btnNext.disabled = currentPage === totalPages;
 
     if (pageData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-400">No se encontraron clientes</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-slate-400">No se encontraron clientes</td></tr>';
         return;
     }
 
@@ -121,7 +128,6 @@ function renderTable(filterText = '') {
         if (client.last_payment_date) {
             const lastPay = new Date(client.last_payment_date);
             const today = new Date();
-            // Diferencia en días
             const diffTime = Math.abs(today - lastPay);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
             
@@ -131,7 +137,6 @@ function renderTable(filterText = '') {
                 estadoPagoHTML = `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Deuda (${diffDays - 30}d)</span>`;
             }
         } else {
-            // Si tiene fecha de registro pero no pagos
             if(client.fecha_registro) {
                  const regDate = new Date(client.fecha_registro);
                  const today = new Date();
@@ -144,21 +149,33 @@ function renderTable(filterText = '') {
         }
         
         tr.innerHTML = `
-            <td class="px-4 py-4">
+            <td class="px-4 py-3">
                 <div class="font-medium text-slate-800">${client.nombre}</div>
-                <div class="text-xs text-slate-400">ID: ${client.id}</div>
+                <div class="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                    <i class="fa-solid fa-phone text-[10px]"></i> ${client.telefono || '---'}
+                </div>
             </td>
-            <td class="px-4 py-4">
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+            <td class="px-4 py-3">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
                     <i class="fa-solid ${getIconForType(client.tipo_vehiculo)}"></i> ${client.tipo_vehiculo}
                 </span>
                 <div class="text-[10px] text-slate-400 mt-1 uppercase font-bold">${client.medio_pago}</div>
             </td>
-            <td class="px-4 py-4 font-mono text-slate-600 font-medium">${client.placa}</td>
-            <td class="px-4 py-4">
+            <td class="px-4 py-3 font-mono text-slate-600 font-medium">${client.placa}</td>
+            
+            <td class="px-4 py-3">
+                <div class="text-[10px] text-slate-500 flex items-center gap-1 mb-1">
+                    <i class="fa-regular fa-calendar"></i> ${client.fecha_registro || '---'}
+                </div>
+                <div class="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                    <i class="fa-solid fa-money-bill"></i> $${Number(client.cuota_mensual || 0).toLocaleString('es-CO')}
+                </div>
+            </td>
+
+            <td class="px-4 py-3">
                 ${estadoPagoHTML}
             </td>
-            <td class="px-4 py-4 text-right">
+            <td class="px-4 py-3 text-right">
                 <div class="flex items-center justify-end gap-2">
                     <button onclick="openEditModal(${client.id})" class="text-slate-400 hover:text-indigo-600 transition-colors p-2"><i class="fa-solid fa-pen-to-square"></i></button>
                     <button onclick="deleteClient(${client.id})" class="text-slate-400 hover:text-red-600 transition-colors p-2"><i class="fa-solid fa-trash"></i></button>
@@ -170,8 +187,15 @@ function renderTable(filterText = '') {
 }
 
 function changePage(direction) {
-    currentPage += direction;
-    const searchInput = document.getElementById('searchInput');
+    const totalPages = Math.ceil(allClients.length / itemsPerPage) || 1;
+    
+    if (direction === 'prev') {
+        if (currentPage > 1) currentPage--;
+    } else if (direction === 'next') {
+        if (currentPage < totalPages) currentPage++;
+    }
+    
+    const searchInput = document.getElementById("searchInput");
     renderTable(searchInput ? searchInput.value : '');
 }
 

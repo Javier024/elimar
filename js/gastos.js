@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
   let gastosData = []
   let currentPage = 1
-  const rowsPerPage = 5
+  const rowsPerPage = 8
 
   async function loadGastos(){
     try{

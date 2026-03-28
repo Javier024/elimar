@@ -93,15 +93,16 @@
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 sticky top-4">
               <div class="flex items-center gap-2 mb-6"><div class="p-2 bg-indigo-50 rounded-lg text-indigo-600"><i class="fa-solid fa-money-bill-wave"></i></div><h3 class="font-bold text-slate-800">Registrar Cobro</h3></div>
               
-              <!-- MODIFICADO onsubmit para manejar 'Otro' -->
               <form id="formCaja" onsubmit="handleCustomPeriod(event)" class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Cliente</label>
                     <div class="relative">
                         <i class="fa-solid fa-user input-icon"></i>
-                        <input id="cajaCliente" autocomplete="off" placeholder="Buscar cliente..." required class="custom-input">
+                        <input id="cajaCliente" list="clientListDatalist" autocomplete="off" placeholder="Buscar cliente..." required class="custom-input">
+                        <datalist id="clientListDatalist"></datalist>
                     </div>
                 </div>
+                
                 <div class="grid grid-cols-2 gap-4">
                     <div class="relative">
                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">Placa</label>
@@ -114,10 +115,16 @@
                         <input id="cajaPuesto" placeholder="---" readonly class="custom-input uppercase bg-slate-50 text-slate-600 text-sm">
                     </div>
                 </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">F. Entrada / Detalle</label>
+                    <input type="text" id="cajaFechaEntradaDisplay" readonly class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-xs text-slate-500">
+                </div>
+
                 <div class="relative">
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Celular</label>
                     <i class="fa-brands fa-whatsapp input-icon"></i>
-                    <input id="cajaCelular" placeholder="Celular (Opcional)" class="custom-input">
+                    <input id="cajaTelefono" placeholder="Celular" class="custom-input">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Fecha de Pago</label>
@@ -140,13 +147,11 @@
                     </div>
                 </div>
                 
-                <!-- SELECTOR DE PERIODO CON OPCIÓN OTRO -->
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Periodo</label>
                         <div class="relative">
                             <i class="fa-solid fa-clock input-icon"></i>
-                            <!-- Agregado onchange para detectar 'Otro' -->
                             <select id="cajaPeriodType" onchange="toggleCustomPeriod()" class="custom-input appearance-none cursor-pointer text-sm">
                                 <option value="Noche">Noche</option>
                                 <option value="Dias">Días</option>
@@ -165,7 +170,6 @@
                     </div>
                 </div>
 
-                <!-- CAMPO PERSONALIZADO (OCULTO POR DEFECTO) -->
                 <div id="customPeriodContainer" class="hidden animate-fade-in">
                     <label class="block text-[10px] font-bold text-indigo-500 uppercase mb-1 ml-1">Concepto Personalizado</label>
                     <div class="relative">
@@ -174,7 +178,6 @@
                     </div>
                 </div>
                 
-                <!-- CHECKBOX FACTURA -->
                 <div class="flex items-center gap-2 p-3 bg-indigo-50 rounded-lg border border-indigo-100 mt-2">
                     <input type="checkbox" id="checkFactura" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 border-gray-300">
                     <label for="checkFactura" class="text-xs font-bold text-indigo-900 cursor-pointer select-none">
@@ -182,11 +185,6 @@
                     </label>
                 </div>
 
-                <div id="calendarSection" class="hidden mt-4 pt-4 border-t border-slate-100">
-                    <h4 class="text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Calendario de Pagos Diarios</h4>
-                    <div id="calendarContainer" class="grid grid-cols-7 gap-1 bg-slate-50 p-3 rounded-lg border border-slate-200"></div>
-                    <p class="text-[10px] text-slate-400 mt-2 text-center">Haz clic en un día para marcar/desmarcar pago.</p>
-                </div>
                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2"><i class="fa-solid fa-check"></i> Registrar</button>
               </form>
             </div>
@@ -198,20 +196,20 @@
                     <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wide">Historial de Transacciones</h3>
                     <div class="relative w-full sm:w-auto">
                         <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
-                        <input type="text" id="searchInput" oninput="filtrarTabla()" placeholder="Buscar cliente o placa..." class="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 w-full bg-white">
+                        <input type="text" id="searchInput" oninput="renderTable(this.value)" placeholder="Buscar cliente..." class="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 w-full bg-white">
                     </div>
                 </div>
                 
                 <div class="overflow-x-auto flex-1">
-                    <table class="w-full text-left border-collapse min-w-[600px]">
+                    <table class="w-full text-left border-collapse min-w-[700px]">
                       <thead class="bg-slate-50 hidden lg:table-header-group">
                         <tr>
-                          <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Fecha</th>
-                          <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Cliente</th>
-                          <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Vehículo / Estado</th>
-                          <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Método</th>
-                          <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-right">Valor</th>
-                          <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-center">Acciones</th>
+                          <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase">F. Pago</th>
+                          <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase">Cliente / Tel</th>
+                          <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase">Vehículo / Puesto</th>
+                          <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase">Método</th>
+                          <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase text-right">Valor</th>
+                          <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase text-center">Acciones</th>
                         </tr>
                       </thead>
                       <tbody id="listaCajaBody" class="divide-y divide-slate-100 text-sm"></tbody>
@@ -302,7 +300,6 @@
           }
       }
       
-      // Lógica para mostrar/ocultar campo personalizado
       function toggleCustomPeriod() {
           const typeSelect = document.getElementById('cajaPeriodType');
           const customContainer = document.getElementById('customPeriodContainer');
@@ -314,32 +311,12 @@
           } else {
               customContainer.classList.add('hidden');
               customInput.required = false;
-              customInput.value = ''; // Limpiar valor al ocultar
+              customInput.value = '';
           }
       }
 
-      // Lógica para capturar el valor personalizado antes de enviar
-      function handleCustomPeriod(e) {
-          const typeSelect = document.getElementById('cajaPeriodType');
-          
-          if (typeSelect.value === 'Otro') {
-              const customVal = document.getElementById('cajaPeriodCustom').value;
-              if (!customVal.trim()) {
-                  e.preventDefault();
-                  alert('Por favor escribe el concepto personalizado.');
-                  return;
-              }
-              // "Truco": Cambiamos el valor del select al texto personalizado
-              // Así la función 'registrarCobro' que lee el select recibirá el texto correcto
-              typeSelect.value = customVal;
-          }
-          
-          // Llamamos a la función original que está en caja.js
-          if (typeof window.registrarCobro === 'function') {
-              window.registrarCobro(e);
-          } else {
-              console.error("La función registrarCobro no se encontró. Asegúrate de cargar caja.js");
-          }
+      function changePage(direction) {
+          alert("Paginación: Implementar lógica de backend o cálculo local completo.");
       }
       
       const fechaElement = document.getElementById("fecha-actual");

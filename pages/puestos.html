@@ -1,214 +1,229 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Puestos | PARQUEADERO ELIMAR</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="../js/auth-manager.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Puestos | PARQUEADERO ELIMAR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="../js/auth-manager.js"></script>
 
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; } 
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-
-        /* Animación del Modal */
-        .modal-enter { opacity: 0; transform: scale(0.95); }
-        .modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 0.2s, transform 0.2s; }
-        .modal-exit { opacity: 1; transform: scale(1); }
-        .modal-exit-active { opacity: 0; transform: scale(0.95); transition: opacity 0.2s, transform 0.2s; }
-    </style>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    .custom-input { background: #fff; border: 1px solid #cbd5e1; color: #334155; transition: all .3s ease; padding: 12px 12px 12px 40px; border-radius: 8px; width: 100%; font-size: 15px; }
+    .custom-input:focus { outline: none; border-color: #6366f1; background-color: #fff; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+    .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+  </style>
 </head>
-<body class="text-slate-700 antialiased flex flex-col lg:flex-row h-screen overflow-hidden w-full">
-    
-    <!-- Sidebar (Estructura estándar) -->
-    <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 z-40 hidden backdrop-blur-sm transition-opacity"></div>
+<body class="text-slate-700 antialiased flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50 w-full">
+  <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 z-40 hidden backdrop-blur-sm transition-opacity"></div>
 
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col lg:static lg:z-auto lg:flex lg:flex-col shadow-xl lg:shadow-none">
-        <div class="h-16 flex items-center px-6 border-b border-slate-100 shrink-0">
-            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200 flex-shrink-0">
-                <i class="fa-solid fa-square-parking text-white text-sm"></i>
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col lg:static lg:translate-x-0 lg:z-auto lg:flex lg:flex-col shadow-xl lg:shadow-none">
+    <div class="h-16 flex items-center px-6 border-b border-slate-100 shrink-0">
+      <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200 flex-shrink-0"><i class="fa-solid fa-square-parking text-white text-sm"></i></div>
+      <div class="min-w-0"><h1 class="text-lg font-bold text-slate-800 truncate">ELIMAR<span class="text-indigo-600">Sys</span></h1><p class="text-[10px] text-slate-400 font-medium truncate" id="sidebar-user-name">Sistema</p></div>
+    </div>
+    <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+      <a href="../dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard</a>
+      <a href="clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-users w-5 text-center"></i> Clientes</a>
+      <a href="puestos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100 nav-item"><i class="fa-solid fa-layer-group w-5 text-center"></i> Puestos</a>
+      <a href="caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-cash-register w-5 text-center"></i> Caja</a>
+      <a href="gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-receipt w-5 text-center"></i> Gastos</a>
+      <a href="historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Historial</a>
+      <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-gear w-5 text-center"></i> Configuración</a>
+    </nav>
+    <div class="p-4 border-t border-slate-100 shrink-0"><button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors"><i class="fa-solid fa-power-off"></i> Cerrar Sesión</button></div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full bg-slate-50">
+    <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20 shrink-0">
+      <div class="flex items-center gap-4">
+        <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button>
+        <div class="flex flex-col"><h2 class="text-lg lg:text-xl font-bold text-slate-800">Mapa de Puestos</h2><span class="text-xs text-slate-500 font-medium hidden sm:block">Control de ocupación y entradas</span></div>
+      </div>
+      <div class="text-right text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm" id="date-display">--:--</div>
+    </header>
+
+    <div class="flex-1 overflow-y-auto p-4 lg:p-6">
+      <div class="max-w-7xl mx-auto space-y-6">
+        
+        <!-- TOOLBAR & STATS -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+            <!-- Filtros -->
+            <div class="flex flex-wrap items-center gap-2">
+                <button onclick="window.filtrarMapa('todos')" class="filter-btn active-filter px-4 py-2 rounded-lg text-xs font-bold transition-colors bg-slate-800 text-white">Todos</button>
+                <button onclick="window.filtrarMapa('libre')" class="filter-btn px-4 py-2 rounded-lg text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">Libres</button>
+                <button onclick="window.filtrarMapa('ocupado')" class="filter-btn px-4 py-2 rounded-lg text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">Ocupados</button>
             </div>
-            <div class="min-w-0">
-                <h1 class="text-lg font-bold text-slate-800 truncate">ELIMAR<span class="text-indigo-600">Sys</span></h1>
-                <p class="text-[10px] text-slate-400 font-medium truncate" id="sidebar-user-name">Admin</p>
-            </div>
-        </div>
-        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-            <a href="../dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard</a>
-            <a href="clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-users w-5 text-center"></i> Clientes</a>
-            <a href="puestos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100 nav-item"><i class="fa-solid fa-layer-group w-5 text-center"></i> Puestos</a>
-            <a href="caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-cash-register w-5 text-center"></i> Caja</a>
-            <a href="gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-receipt w-5 text-center"></i> Gastos</a>
-            <a href="historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Historial</a>
-            <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-gear w-5 text-center"></i> Configuración</a>
-        </nav>
-        <div class="p-4 border-t border-slate-100 shrink-0">
-            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors"><i class="fa-solid fa-power-off"></i> Cerrar Sesión</button>
-        </div>
-    </aside>
 
-    <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
-        <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20 shrink-0">
-            <div class="flex items-center gap-4">
-                <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button>
-                <div>
-                    <h2 class="text-lg lg:text-xl font-bold text-slate-800">Mapa de Puestos</h2>
-                    <span class="text-xs text-slate-500">Gestión en tiempo real</span>
-                </div>
-            </div>
-            <div class="text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200" id="fecha-actual"></div>
-        </header>
-
-        <div class="flex-1 overflow-y-auto p-4 lg:p-6">
-            <div class="max-w-7xl mx-auto space-y-6">
-                <!-- Filtros y Stats -->
-                <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <div class="flex items-center gap-4">
-                        <h3 class="text-xl font-bold text-slate-800">Vista General</h3>
-                        <div class="flex gap-2">
-                             <span class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span id="kpi-libres">0</span> Libres</span>
-                             <span class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold"><span class="w-2 h-2 rounded-full bg-indigo-500"></span> <span id="kpi-ocupados">0</span> Ocupados</span>
-                        </div>
-                    </div>
-                    
-                    <div class="flex gap-2 w-full sm:w-auto">
-                        <button onclick="filtrarMapa('todos')" data-filter="todos" class="filter-btn px-4 py-2 rounded-lg text-xs font-bold bg-slate-800 text-white shadow-md transition-all">Todos</button>
-                        <button onclick="filtrarMapa('libre')" data-filter="libre" class="filter-btn px-4 py-2 rounded-lg text-xs font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-all">Libres</button>
-                        <button onclick="filtrarMapa('ocupado')" data-filter="ocupado" class="filter-btn px-4 py-2 rounded-lg text-xs font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-all">Ocupados</button>
-                        <div class="w-px bg-slate-300 h-8 mx-1 hidden sm:block"></div>
-                        <button onclick="crearPuestoRapido()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg shadow-indigo-200 transition-all flex items-center gap-2"><i class="fa-solid fa-plus"></i> Nuevo</button>
-                    </div>
-                </div>
-
-                <!-- Grid de Puestos -->
-                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 lg:p-6 min-h-[600px]">
-                    <div class="mb-4 flex items-center gap-2 border-b border-slate-100 pb-2">
-                        <i class="fa-solid fa-search text-slate-400 text-sm"></i>
-                        <input type="text" id="searchInput" placeholder="Buscar por número o placa..." class="w-full max-w-xs text-sm outline-none text-slate-600 bg-transparent placeholder-slate-400">
-                    </div>
-                    <div id="map-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"></div>
-                </div>
+            <!-- Buscador y Acciones -->
+            <div class="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
+                <div class="relative w-full sm:w-64"><i class="fa-solid fa-search absolute left-3 top-3 text-slate-400"></i><input type="text" id="searchInput" placeholder="Buscar placa o puesto..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 transition-colors"></div>
+                <button onclick="window.abrirModalCrearPuesto()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-plus"></i> Nuevo Puesto</button>
+                <button onclick="window.abrirModalNocturno()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-moon"></i> Ingreso Nocturno</button>
             </div>
         </div>
-    </main>
 
-    <!-- MODAL ASIGNAR (DISEÑO PROFESIONAL COMPLETO) -->
-    <div id="modalAsignar" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden items-center justify-center p-4">
-        <div id="modalContent" class="bg-white w-full max-w-md rounded-2xl shadow-2xl transform transition-all duration-200 flex flex-col max-h-[90vh]">
-            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl shrink-0">
-                <h3 class="text-lg font-bold text-slate-800" id="modalSpotNumber">Asignar Vehículo</h3>
-                <button onclick="cerrarModalAsignar()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors"><i class="fa-solid fa-xmark"></i></button>
+        <!-- KPIs -->
+        <div class="grid grid-cols-3 gap-4">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Total Puestos</span>
+                <span class="text-2xl font-bold text-slate-800 mt-1" id="kpi-total">0</span>
             </div>
-            
-            <div class="p-6 space-y-5 overflow-y-auto">
-                <!-- Switch Tipo de Cliente -->
-                <div class="grid grid-cols-2 bg-slate-100 p-1 rounded-lg">
-                    <label class="cursor-pointer text-center">
-                        <input type="radio" name="clientType" value="registered" class="peer hidden" checked onchange="toggleInputType()">
-                        <div class="py-2 rounded-md text-xs font-bold text-slate-500 peer-checked:bg-white peer-checked:text-indigo-600 peer-checked:shadow-sm transition-all">Cliente Registrado</div>
-                    </label>
-                    <label class="cursor-pointer text-center">
-                        <input type="radio" name="clientType" id="inputTypeToggle" value="manual" class="peer hidden" onchange="toggleInputType()">
-                        <div class="py-2 rounded-md text-xs font-bold text-slate-500 peer-checked:bg-white peer-checked:text-amber-600 peer-checked:shadow-sm transition-all">Ingreso Manual</div>
-                    </label>
-                </div>
-
-                <!-- Opción: Registrado -->
-                <div id="registeredClientDiv">
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Seleccionar Cliente</label>
-                    <select id="modalClienteSelect" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white cursor-pointer"></select>
-                </div>
-
-                <!-- Opción: Manual -->
-                <div id="manualClientDiv" class="hidden space-y-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Nombre del Cliente</label>
-                        <input type="text" id="tempNameInput" placeholder="Ej. Juan Pérez" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Placa del Vehículo</label>
-                        <input type="text" id="tempPlateInput" placeholder="ABC-123" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm font-mono uppercase focus:ring-2 focus:ring-amber-500 outline-none">
-                    </div>
-                </div>
-
-                <!-- Opciones Extra -->
-                <div class="space-y-3 pt-2">
-                    <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
-                        <input type="checkbox" id="checkReserva" class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
-                        <span class="text-sm font-semibold text-slate-700">Marcar como Reserva</span>
-                    </label>
-
-                    <div class="bg-amber-50 p-3 rounded-lg border border-amber-100">
-                        <div class="flex items-center justify-between mb-2">
-                            <label class="text-sm font-bold text-amber-800 flex items-center gap-2"><i class="fa-solid fa-key"></i> Custodia de Llave</label>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="checkKey" class="sr-only peer">
-                                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
-                            </label>
-                        </div>
-                        <div id="keyDetailsDiv" class="hidden transition-all">
-                            <label class="text-xs font-bold text-amber-700 uppercase block mb-1">Descripción</label>
-                            <input type="text" id="modalKeyDesc" placeholder="Ej. Llave negra..." class="w-full px-3 py-1.5 text-sm border border-amber-200 rounded focus:ring-1 focus:ring-amber-500 outline-none">
-                        </div>
-                    </div>
-                </div>
+            <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 shadow-sm flex flex-col items-center justify-center">
+                <span class="text-xs font-bold text-emerald-600 uppercase tracking-wide">Disponibles</span>
+                <span class="text-2xl font-bold text-emerald-700 mt-1" id="kpi-libres">0</span>
             </div>
-
-            <div class="p-5 pt-0 border-t border-slate-100 shrink-0 flex gap-3">
-                <button onclick="confirmarAsignar()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-95">Confirmar</button>
-                <button onclick="cerrarModalAsignar()" class="px-4 py-3 text-slate-500 hover:bg-slate-100 rounded-xl font-bold transition-all">Cancelar</button>
+            <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 shadow-sm flex flex-col items-center justify-center">
+                <span class="text-xs font-bold text-indigo-600 uppercase tracking-wide">Ocupados</span>
+                <span class="text-2xl font-bold text-indigo-700 mt-1" id="kpi-ocupados">0</span>
             </div>
+        </div>
+
+        <!-- MAPA GRID -->
+        <div id="map-container" class="grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <!-- Cards generadas por JS -->
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL CREAR PUESTO -->
+  <div id="modalCrearPuesto" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[80] transition-opacity opacity-0">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 transform transition-all scale-95 opacity-0 duration-200" id="modalCrearPuestoContent">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-2xl">
+            <h3 class="text-lg font-bold text-slate-800">Crear Nuevo Puesto</h3>
+            <button onclick="window.cerrarModalCrearPuesto()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Número de Puesto</label><i class="fa-solid fa-hashtag absolute left-3 top-9 text-slate-400"></i><input type="text" id="inputNuevoNumero" class="custom-input pl-10 pt-6" placeholder="Ej: 15"></div>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-3">
+            <button onclick="window.cerrarModalCrearPuesto()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200 transition-colors">Cancelar</button>
+            <button onclick="window.confirmarCrearPuesto()" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-colors">Crear</button>
         </div>
     </div>
+  </div>
 
-    <script>
-        // Toggle Modal Visual
-        function abrirModal() {
-            const modal = document.getElementById('modalAsignar');
-            const content = document.getElementById('modalContent');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); }, 10);
-        }
-        function cerrarModal() {
-            const modal = document.getElementById('modalAsignar');
-            const content = document.getElementById('modalContent');
-            content.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 200);
-        }
+  <!-- MODAL NOCTURNO (ACTUALIZADO CON SELECTOR DE CLIENTE) -->
+  <div id="modalNocturno" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[70] transition-opacity opacity-0">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0 duration-200" id="modalNocturnoContent">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-amber-50 rounded-t-2xl">
+            <h3 class="text-lg font-bold text-amber-800">Ingreso Nocturno</h3>
+            <button onclick="window.cerrarModalNocturno()" class="text-amber-900 hover:text-amber-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-amber-100 transition-colors"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-6 space-y-4">
+            <!-- Selector de Cliente -->
+            <div>
+                <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Seleccionar Cliente (Opcional)</label>
+                <div class="relative">
+                    <i class="fa-solid fa-users absolute left-3 top-9 text-slate-400"></i>
+                    <select id="nocturnoClientSelect" onchange="window.onNocturnoClientChange()" class="custom-input pl-10 pt-6 appearance-none cursor-pointer">
+                        <option value="">Seleccionar Cliente...</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 pointer-events-none"></i>
+                </div>
+            </div>
 
-        // Llave Toggle
-        document.getElementById('checkKey').addEventListener('change', function() {
-            const div = document.getElementById('keyDetailsDiv');
-            if(this.checked) div.classList.remove('hidden');
-            else div.classList.add('hidden');
-        });
+            <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Nombre</label><i class="fa-regular fa-user absolute left-3 top-9 text-slate-400"></i><input id="nocturnoNombre" class="custom-input pl-10 pt-6" placeholder="Nombre del visitante"></div>
+            <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Placa</label><i class="fa-solid fa-id-card absolute left-3 top-9 text-slate-400"></i><input id="nocturnoPlaca" class="custom-input pl-10 pt-6 uppercase" placeholder="Placa"></div>
+            <div>
+                <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Puesto a Asignar</label>
+                <div class="relative">
+                    <i class="fa-solid fa-square-parking absolute left-3 top-9 text-slate-400"></i>
+                    <select id="nocturnoSpotSelect" class="custom-input pl-10 pt-6 appearance-none cursor-pointer">
+                        <option value="">Seleccionar Puesto...</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 pointer-events-none"></i>
+                </div>
+            </div>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-3">
+            <button onclick="window.cerrarModalNocturno()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200 transition-colors">Cancelar</button>
+            <button onclick="window.confirmarNocturno()" class="px-4 py-2 rounded-lg text-sm font-medium bg-amber-500 text-white hover:bg-amber-600 shadow-md transition-colors">Ingresar</button>
+        </div>
+    </div>
+  </div>
 
-        // Menu Lateral
-        function toggleMenu() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('mobileMenuOverlay');
-            if (sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.remove('-translate-x-full');
-                overlay.classList.remove('hidden');
-            } else {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.add('hidden');
-            }
-        }
+  <!-- MODAL ASIGNAR CLIENTE -->
+  <div id="modalAsignar" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[70] transition-opacity opacity-0">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0 duration-200" id="modalAsignarContent">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-2xl">
+            <h3 id="modalAsignarTitle" class="text-lg font-bold text-slate-800">Asignar Cliente</h3>
+            <button onclick="window.cerrarModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-6 space-y-4">
+            <input type="hidden" id="currentSpotId">
+            
+            <div class="flex bg-slate-100 p-1 rounded-lg mb-4">
+                <label class="flex-1 text-center cursor-pointer">
+                    <input type="radio" name="clientType" value="registered" checked class="peer sr-only" onchange="window.toggleModalInputs()">
+                    <span class="block py-1.5 text-xs font-bold text-slate-500 rounded-md peer-checked:bg-white peer-checked:text-indigo-600 peer-checked:shadow-sm transition-all">Registrado</span>
+                </label>
+                <label class="flex-1 text-center cursor-pointer">
+                    <input type="radio" name="clientType" value="manual" class="peer sr-only" onchange="window.toggleModalInputs()">
+                    <span class="block py-1.5 text-xs font-bold text-slate-500 rounded-md peer-checked:bg-white peer-checked:text-indigo-600 peer-checked:shadow-sm transition-all">Manual</span>
+                </label>
+            </div>
 
-        // Fecha
-        document.addEventListener('DOMContentLoaded', () => {
-            const f = document.getElementById('fecha-actual');
-            if(f) f.innerText = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        });
-    </script>
-    <script src="../js/puestos.js"></script>
+            <div id="divRegistered">
+                <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Seleccionar Cliente</label>
+                <select id="modalClienteSelect" class="custom-input pl-10 pt-6 appearance-none cursor-pointer">
+                    <option value="">-- Seleccione Cliente --</option>
+                </select>
+            </div>
+
+            <div id="divManual" class="hidden space-y-3">
+                <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Nombre</label><i class="fa-regular fa-user absolute left-3 top-9 text-slate-400"></i><input id="inputNombre" class="custom-input pl-10 pt-6" placeholder="Nombre"></div>
+                <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Placa</label><i class="fa-solid fa-id-card absolute left-3 top-9 text-slate-400"></i><input id="inputPlaca" class="custom-input pl-10 pt-6 uppercase" placeholder="Placa"></div>
+            </div>
+
+            <div class="flex items-center gap-4 pt-2">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="checkLlave" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 border-gray-300" onchange="window.toggleKeyInput()">
+                    <span class="text-sm text-slate-600 font-medium">Tiene Llave</span>
+                </label>
+                <div id="keyDescDiv" class="relative flex-1 hidden">
+                    <input type="text" id="inputKeyDesc" placeholder="Descripción llave..." class="w-full pl-3 pr-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:outline-none">
+                </div>
+            </div>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-3">
+            <button onclick="window.cerrarModal()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200 transition-colors">Cancelar</button>
+            <button onclick="window.confirmarAsignar()" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-colors">Guardar</button>
+        </div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS AUXILIARES -->
+  <script>
+    function toggleMenu() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('mobileMenuOverlay');
+      if (sidebar.classList.contains('-translate-x-full')) {
+        sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden');
+      }
+    }
+    
+    function updateDate() {
+        const d = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const time = d.toLocaleTimeString('es-CO', {hour: '2-digit', minute:'2-digit'});
+        document.getElementById('date-display').innerText = d.toLocaleDateString('es-ES', options) + ' - ' + time;
+    }
+    setInterval(updateDate, 1000);
+    updateDate();
+  </script>
+  <!-- LOGICA PRINCIPAL -->
+  <script src="../js/puestos.js"></script>
 </body>
 </html>

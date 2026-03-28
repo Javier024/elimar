@@ -1,11 +1,9 @@
 // parqueo/js/dashboard.js
 
-// ELIMINADO: La comprobación inicial (checkAuth) para evitar conflictos con auth-manager.js
-
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("Dashboard: Iniciando...");
     mostrarFechaYHora();
-    actualizarSaludo();   // Intentará saludar si ya hay sesión
+    actualizarSaludo();
     iniciarReloj();       
     try {
         await cargarDatosDashboard();
@@ -20,7 +18,6 @@ const formatearMoneda = (amount) => {
     return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(valor);
 };
 
-// Función para mostrar Fecha y Hora
 function mostrarFechaYHora() {
     try {
         const fechaElemento = document.getElementById('fecha-actual');
@@ -50,7 +47,6 @@ function iniciarReloj() {
     setInterval(actualizarTextoHora, 60000);
 }
 
-// Saludo basado en la hora
 function actualizarSaludo() {
     const usuario = JSON.parse(sessionStorage.getItem('parkingUser'));
     const usuarioDisplay = document.getElementById('sidebar-user-name');
@@ -135,6 +131,13 @@ async function cargarDatosDashboard() {
             }
         } catch (err) { console.error("Error renderizando métodos:", err); }
 
+        // NUEVA GRÁFICA SEMANAL
+        try {
+            if (datos.chartSemanal && Array.isArray(datos.chartSemanal)) {
+                renderizarGraficaSemanal(datos.chartSemanal);
+            }
+        } catch (err) { console.error("Error renderizando gráfica semanal:", err); }
+
         try {
             if (datos.movimientosRecientes) {
                 renderizarMovimientosRecientes(datos.movimientosRecientes);
@@ -178,7 +181,9 @@ let chartFinanzasInstance = null;
 let chartOcupacionInstance = null;
 let chartOcupacionMesInstance = null;
 let chartMetodosPagoInstance = null;
+let chartSemanalInstance = null; // Nueva instancia
 
+// --- MODIFICADA: Ahora es Gráfico de Barras ---
 function renderizarGraficoFinanzas(data) {
     const canvas = document.getElementById('ingresosGastosChart');
     if (!canvas) return;
@@ -199,39 +204,29 @@ function renderizarGraficoFinanzas(data) {
     if (chartFinanzasInstance) chartFinanzasInstance.destroy();
 
     chartFinanzasInstance = new Chart(ctx, {
-        type: 'line',
+        type: 'bar', // CAMBIO: De 'line' a 'bar'
         data: {
-            labels: fechas,
+            labels: fechas.map(f => {
+                // Formatear fecha DD/MM para mejor lectura en barras
+                const parts = f.split('-');
+                return `${parts[2]}/${parts[1]}`;
+            }),
             datasets: [
                 { 
                     label: 'Ingresos', 
                     data: datosIngresos, 
-                    borderColor: '#6366f1',
-                    backgroundColor: (context) => {
-                        const ctx = context.chart.ctx;
-                        const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-                        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.4)');
-                        gradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
-                        return gradient;
-                    },
-                    fill: true,
-                    tension: 0.4, 
-                    pointRadius: 4,
-                    pointBackgroundColor: '#ffffff',
-                    pointBorderColor: '#6366f1',
-                    pointBorderWidth: 2
+                    backgroundColor: '#6366f1', // Color sólido
+                    borderRadius: 4, // Bordes redondeados estilo moderno
+                    barPercentage: 0.6,
+                    categoryPercentage: 0.8
                 },
                 { 
                     label: 'Gastos', 
                     data: datosGastos, 
-                    borderColor: '#f43f5e',
-                    backgroundColor: 'transparent', 
-                    borderDash: [5, 5], 
-                    tension: 0.4,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#ffffff',
-                    pointBorderColor: '#f43f5e',
-                    pointBorderWidth: 2
+                    backgroundColor: '#f43f5e', // Color sólido
+                    borderRadius: 4,
+                    barPercentage: 0.6,
+                    categoryPercentage: 0.8
                 }
             ]
         },
@@ -260,6 +255,58 @@ function renderizarGraficoFinanzas(data) {
                     ticks: { font: { family: 'Inter' } }
                 } 
             } 
+        }
+    });
+}
+
+// --- NUEVA: Gráfica Semanal ---
+function renderizarGraficaSemanal(data) {
+    const canvas = document.getElementById('semanalChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!Array.isArray(data)) return;
+    if (chartSemanalInstance) chartSemanalInstance.destroy();
+
+    const labels = data.map(d => {
+        const parts = d.fecha.split('-');
+        return `${parts[2]}/${parts[1]}`;
+    });
+    const valores = data.map(d => d.total);
+
+    chartSemanalInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Movimientos',
+                data: valores,
+                backgroundColor: '#0ea5e9', // Azul cielo
+                borderRadius: 4,
+                barPercentage: 0.5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { 
+                    beginAtZero: true, 
+                    grid: { color: '#f1f5f9' },
+                    ticks: { stepSize: 1, font: { family: 'Inter' } } // Enteros para coches
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { family: 'Inter' } }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    padding: 10,
+                    cornerRadius: 6
+                }
+            }
         }
     });
 }
@@ -309,7 +356,7 @@ function renderizarGraficaOcupacionMes(data) {
             datasets: [{
                 label: 'Movimientos',
                 data: valores,
-                backgroundColor: '#6366f1',
+                backgroundColor: '#8b5cf6', // Violeta
                 borderRadius: 4,
                 barPercentage: 0.6
             }]

@@ -1,4 +1,3 @@
-// parqueo/api/caja.js
 import { db } from "./db.js"
 
 export default async function handler(req, res) {
@@ -49,6 +48,7 @@ export default async function handler(req, res) {
       const result = await db.execute(`
         SELECT ca.*, 
                cli.medio_pago as cliente_medio_pago,
+               cli.telefono as cliente_telefono,
                cli.nombre as cliente_nombre_completo,
                cli.cuota_mensual,
                (SELECT date FROM caja c2 WHERE c2.plate = ca.plate AND c2.date < ca.date ORDER BY c2.date DESC LIMIT 1) as last_payment_date
@@ -69,15 +69,11 @@ export default async function handler(req, res) {
       const paymentDate = date || now.toISOString().split("T")[0];
       const time = now.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
 
-      // Convertimos explícitamente a números
       const numAmount = parseFloat(amount);
       const numQty = parseInt(period_quantity) || 1;
 
-      if (isNaN(numAmount) || numAmount <= 0) {
-          return res.status(400).json({ error: "Monto inválido" });
-      }
+      if (isNaN(numAmount) || numAmount <= 0) return res.status(400).json({ error: "Monto inválido" });
 
-      // INSERT total con columna 'paid' incluida
       const result = await db.execute({
         sql: `INSERT INTO caja (client, plate, spot, phone, amount, method, time, date, paid, period_quantity, period_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
@@ -89,22 +85,15 @@ export default async function handler(req, res) {
           method || "Efectivo", 
           time, 
           paymentDate,
-          "0", // Valor por defecto para 'paid' (texto)
+          "0", 
           numQty,
           period_type || "Noche"
         ]
       });
 
-      // OBTENCIÓN SEGURA DEL ID
-      // Verificamos si result existe y tiene la propiedad
       let newId = 0;
-      if (result && result.lastInsertRowid !== undefined) {
-          // Forzamos a Number para evitar errores de BigInt en JSON
-          newId = Number(result.lastInsertRowid);
-      } else if (result && result.lastID !== undefined) {
-          // Algunos drivers usan lastID
-          newId = Number(result.lastID);
-      }
+      if (result && result.lastInsertRowid !== undefined) newId = Number(result.lastInsertRowid);
+      else if (result && result.lastID !== undefined) newId = Number(result.lastID);
 
       return res.status(200).json({ 
         success: true, 
@@ -119,7 +108,6 @@ export default async function handler(req, res) {
     // --- PUT: EDITAR COBRO ---
     if (req.method === "PUT") {
         const { id, client, plate, spot, phone, amount, method, period_type, period_quantity, date } = req.body;
-        
         if (!id) return res.status(400).json({ error: "ID requerido" });
         if (!amount) return res.status(400).json({ error: "Monto requerido" });
 
@@ -144,7 +132,7 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ error: "Método no permitido" });
   } catch (error) {
-    console.error("ERROR API CAJA DETALLADO:", error);
+    console.error("ERROR API CAJA:", error);
     return res.status(500).json({ error: "Error interno del servidor", detalle: error.message });
   }
 }

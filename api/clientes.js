@@ -30,11 +30,13 @@ export default async function handler(req, res) {
       }
 
       const pagoFinal = (medio_pago === 'Otro') ? medio_detalle : medio_pago;
-      // CORRECCIÓN FECHA: Asegurar formato correcto YYYY-MM-DD
+      // Asegurar formato fecha
       const fechaAUsar = fecha_registro ? new Date(fecha_registro).toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
       const timestampAhora = Date.now(); 
       const cuota = cuota_mensual || 0;
       
+      // --- CORRECCIÓN: Ajuste de argumentos para coincidir con los placeholders (?) ---
+      // La sentencia SQL espera 10 valores, enviamos 10 valores.
       await db.execute({
         sql: `INSERT INTO clientes (nombre, telefono, placa, tipo_vehiculo, creado_en, created_at, fecha_registro, medio_pago, cuota_mensual) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [nombre, telefono, placa, tipo, timestampAhora, new Date().toISOString(), fechaAUsar, pagoFinal, cuota] 
@@ -50,7 +52,6 @@ export default async function handler(req, res) {
 
       const pagoFinal = (medio_pago === 'Otro') ? medio_detalle : medio_pago;
       const cuota = cuota_mensual || 0;
-      // CORRECCIÓN FECHA EN ACTUALIZACIÓN
       const fechaFinal = fecha_registro ? new Date(fecha_registro).toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
 
       await db.execute({
@@ -65,6 +66,7 @@ export default async function handler(req, res) {
       const id = req.body.id || req.query.id;
       if (!id) return res.status(400).json({ error: "ID es requerido para eliminar" });
 
+      // Liberar puesto si está ocupado por este cliente
       await db.execute({ 
         sql: "UPDATE puestos SET cliente_id=NULL, estado='libre', hora_inicio=NULL, llave_caracteristicas=NULL, puesto_info=NULL WHERE cliente_id = ?", 
         args: [id] 

@@ -42,7 +42,6 @@
             </div>
             <div class="min-w-0">
                 <h1 class="text-lg font-bold text-slate-800 truncate">ELIMAR<span class="text-indigo-600">Sys</span></h1>
-                <!-- Aquí aparecerá el saludo dinámico -->
                 <p class="text-xs text-slate-500 font-medium truncate mt-1" id="sidebar-user-name">Cargando...</p>
             </div>
         </div>
@@ -91,7 +90,6 @@
                 </div>
             </div>
             <div class="flex items-center gap-3">
-                <!-- FECHA Y HORA ACTUALIZADA -->
                 <span id="fecha-actual" class="text-xs lg:text-sm font-medium text-slate-600 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm flex items-center gap-2">Cargando...</span>
                 
                 <button onclick="cargarDatosDashboard()" class="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-full transition-colors border border-transparent hover:border-indigo-200" title="Actualizar datos">
@@ -113,6 +111,7 @@
                 <button onclick="location.reload()" class="text-xs bg-white border border-red-200 text-red-600 px-3 py-1.5 rounded hover:bg-red-50 font-medium">Reintentar</button>
             </div>
 
+            <!-- KPI GRID -->
             <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-4 mb-8">
                 <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28">
                     <div class="flex justify-between items-start">
@@ -157,37 +156,47 @@
                 </div>
             </div>
             
-            <!-- CHARTS SECTION (Expandido para incluir la nueva gráfica) -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- CHARTS SECTION -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
                 
-                <!-- Chart Finanzas (Columna Izquierda Arriba) -->
-                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                <!-- Chart Finanzas (Bar Chart) -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col xl:col-span-2">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-chart-line text-indigo-500"></i> Flujo Financiero (7 Días)</h3>
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-chart-simple text-indigo-500"></i> Flujo Financiero (7 Días)</h3>
                     </div>
                     <div class="chart-wrapper" style="height: 300px;">
                         <canvas id="ingresosGastosChart"></canvas>
                     </div>
                 </div>
                 
-                <!-- Chart Métodos de Pago (Columna Derecha Arriba - NUEVO) -->
+                <!-- Chart Métodos de Pago -->
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-wallet text-emerald-500"></i> Ingresos por Método</h3>
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-wallet text-emerald-500"></i> Métodos de Pago</h3>
                     </div>
                     <div class="chart-wrapper flex items-center justify-center" style="height: 300px;">
                         <canvas id="metodosPagoChart"></canvas>
                     </div>
                 </div>
 
-                <!-- Sección Ocupación (Columna Izquierda Abajo) -->
-                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:col-span-2">
+                <!-- NUEVO: Chart Semanal -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-calendar-week text-sky-500"></i> Actividad Semanal</h3>
+                    </div>
+                    <div class="chart-wrapper" style="height: 250px;">
+                        <canvas id="semanalChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Sección Ocupación -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:col-span-2 xl:col-span-2">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-chart-pie text-indigo-500"></i> Análisis de Ocupación</h3>
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Ocupación Actual (Doughnut) -->
+                        <!-- Ocupación Actual -->
                         <div class="chart-wrapper h-64 flex flex-col items-center justify-center relative border border-slate-100 rounded-xl bg-slate-50/50">
                             <div class="text-center mb-2">
                                 <span class="text-3xl font-bold text-slate-800" id="ocupacion-porcentaje">0%</span>
@@ -198,7 +207,7 @@
                             </div>
                         </div>
 
-                        <!-- Actividad Mensual (Barra) -->
+                        <!-- Actividad Mensual -->
                         <div class="chart-wrapper h-64 relative p-2">
                             <h4 class="text-xs font-bold text-slate-400 uppercase mb-2 text-center">Actividad Mensal (Últimos 6 meses)</h4>
                             <canvas id="ocupacionMesChart"></canvas>
