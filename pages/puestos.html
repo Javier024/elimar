@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Puestos | PARQUEADERO ELIMAR</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -10,13 +10,17 @@
   <script src="../js/auth-manager.js"></script>
 
   <style>
-    body { font-family: 'Inter', sans-serif; }
+    body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-    .custom-input { background: #fff; border: 1px solid #cbd5e1; color: #334155; transition: all .3s ease; padding: 12px 12px 12px 40px; border-radius: 8px; width: 100%; font-size: 15px; }
+    .custom-input { 
+      background: #fff; border: 1px solid #cbd5e1; color: #334155; transition: all .3s ease; 
+      padding: 12px 12px 12px 40px; border-radius: 8px; width: 100%; font-size: 15px; 
+    }
     .custom-input:focus { outline: none; border-color: #6366f1; background-color: #fff; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
-    .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+    .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; }
+    .radio-switch label input:checked + span { background-color: white; color: #4f46e5; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
   </style>
 </head>
 <body class="text-slate-700 antialiased flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50 w-full">
@@ -26,7 +30,10 @@
   <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col lg:static lg:translate-x-0 lg:z-auto lg:flex lg:flex-col shadow-xl lg:shadow-none">
     <div class="h-16 flex items-center px-6 border-b border-slate-100 shrink-0">
       <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200 flex-shrink-0"><i class="fa-solid fa-square-parking text-white text-sm"></i></div>
-      <div class="min-w-0"><h1 class="text-lg font-bold text-slate-800 truncate">ELIMAR<span class="text-indigo-600">Sys</span></h1><p class="text-[10px] text-slate-400 font-medium truncate" id="sidebar-user-name">Sistema</p></div>
+      <div class="min-w-0">
+        <h1 class="text-lg font-bold text-slate-800 truncate">ELIMAR<span class="text-indigo-600">Sys</span></h1>
+        <p class="text-[10px] text-slate-400 font-medium truncate" id="sidebar-user-name">Sistema</p>
+      </div>
     </div>
     <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
       <a href="../dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard</a>
@@ -45,28 +52,33 @@
     <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20 shrink-0">
       <div class="flex items-center gap-4">
         <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button>
-        <div class="flex flex-col"><h2 class="text-lg lg:text-xl font-bold text-slate-800">Mapa de Puestos</h2><span class="text-xs text-slate-500 font-medium hidden sm:block">Control de ocupación y entradas</span></div>
+        <div class="flex flex-col min-w-0">
+          <h2 class="text-lg lg:text-xl font-bold text-slate-800 truncate">Mapa de Puestos</h2>
+          <span class="text-xs text-slate-500 font-medium hidden sm:block">Control de ocupación y entradas</span>
+        </div>
       </div>
-      <div class="text-right text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm" id="date-display">--:--</div>
+      <div class="text-right text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm whitespace-nowrap hidden md:block" id="date-display">--:--</div>
     </header>
 
     <div class="flex-1 overflow-y-auto p-4 lg:p-6">
       <div class="max-w-7xl mx-auto space-y-6">
         
-        <!-- TOOLBAR & STATS -->
+        <!-- TOOLBAR -->
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-            <!-- Filtros -->
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2 w-full xl:w-auto justify-center xl:justify-start">
                 <button onclick="window.filtrarMapa('todos')" class="filter-btn active-filter px-4 py-2 rounded-lg text-xs font-bold transition-colors bg-slate-800 text-white">Todos</button>
                 <button onclick="window.filtrarMapa('libre')" class="filter-btn px-4 py-2 rounded-lg text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">Libres</button>
                 <button onclick="window.filtrarMapa('ocupado')" class="filter-btn px-4 py-2 rounded-lg text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">Ocupados</button>
             </div>
-
-            <!-- Buscador y Acciones -->
             <div class="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
-                <div class="relative w-full sm:w-64"><i class="fa-solid fa-search absolute left-3 top-3 text-slate-400"></i><input type="text" id="searchInput" placeholder="Buscar placa o puesto..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 transition-colors"></div>
-                <button onclick="window.abrirModalCrearPuesto()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-plus"></i> Nuevo Puesto</button>
-                <button onclick="window.abrirModalNocturno()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-moon"></i> Ingreso Nocturno</button>
+                <div class="relative w-full sm:w-64">
+                    <i class="fa-solid fa-search absolute left-3 top-3 text-slate-400"></i>
+                    <input type="text" id="searchInput" placeholder="Buscar placa o puesto..." class="w-full pl-9 pr-4 py-2 border border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 transition-colors">
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="window.abrirModalCrearPuesto()" class="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-plus"></i> <span class="hidden sm:inline">Nuevo Puesto</span></button>
+                    <button onclick="window.abrirModalNocturno()" class="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-moon"></i> <span class="hidden sm:inline">Nocturno</span></button>
+                </div>
             </div>
         </div>
 
@@ -87,119 +99,128 @@
         </div>
 
         <!-- MAPA GRID -->
-        <div id="map-container" class="grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div id="map-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-20">
             <!-- Cards generadas por JS -->
         </div>
-
       </div>
     </div>
   </main>
 
   <!-- MODAL CREAR PUESTO -->
-  <div id="modalCrearPuesto" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[80] transition-opacity opacity-0">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 transform transition-all scale-95 opacity-0 duration-200" id="modalCrearPuestoContent">
-        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-2xl">
-            <h3 class="text-lg font-bold text-slate-800">Crear Nuevo Puesto</h3>
+  <div id="modalCrearPuesto" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[100] transition-opacity opacity-0">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 transform transition-all scale-95 opacity-0 duration-200 flex flex-col max-h-[90vh]" id="modalCrearPuestoContent">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-2xl shrink-0">
+            <h3 class="text-lg font-bold text-slate-800">Crear Puesto</h3>
             <button onclick="window.cerrarModalCrearPuesto()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <div class="p-6 space-y-4">
-            <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Número de Puesto</label><i class="fa-solid fa-hashtag absolute left-3 top-9 text-slate-400"></i><input type="text" id="inputNuevoNumero" class="custom-input pl-10 pt-6" placeholder="Ej: 15"></div>
+        <div class="p-6 space-y-4 overflow-y-auto flex-1">
+            <div class="relative group">
+                <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Número de Puesto</label>
+                <i class="fa-solid fa-hashtag input-icon group-focus-within:text-indigo-500 transition-colors"></i>
+                <input type="text" id="inputNuevoNumero" class="custom-input peer" placeholder="Ej: 15">
+            </div>
         </div>
-        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-3">
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-3 shrink-0">
             <button onclick="window.cerrarModalCrearPuesto()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200 transition-colors">Cancelar</button>
             <button onclick="window.confirmarCrearPuesto()" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-colors">Crear</button>
         </div>
     </div>
   </div>
 
-  <!-- MODAL NOCTURNO (ACTUALIZADO CON SELECTOR DE CLIENTE) -->
-  <div id="modalNocturno" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[70] transition-opacity opacity-0">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0 duration-200" id="modalNocturnoContent">
-        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-amber-50 rounded-t-2xl">
-            <h3 class="text-lg font-bold text-amber-800">Ingreso Nocturno</h3>
-            <button onclick="window.cerrarModalNocturno()" class="text-amber-900 hover:text-amber-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-amber-100 transition-colors"><i class="fa-solid fa-xmark"></i></button>
+  <!-- MODAL ASIGNAR -->
+  <div id="modalAsignar" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[100] transition-opacity opacity-0">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0 duration-200 flex flex-col max-h-[90vh]" id="modalAsignarContent">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-2xl shrink-0">
+            <h3 id="modalAsignarTitle" class="text-lg font-bold text-slate-800">Asignar Cliente</h3>
+            <button onclick="window.cerrarModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <div class="p-6 space-y-4">
-            <!-- Selector de Cliente -->
-            <div>
-                <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Seleccionar Cliente (Opcional)</label>
-                <div class="relative">
-                    <i class="fa-solid fa-users absolute left-3 top-9 text-slate-400"></i>
-                    <select id="nocturnoClientSelect" onchange="window.onNocturnoClientChange()" class="custom-input pl-10 pt-6 appearance-none cursor-pointer">
-                        <option value="">Seleccionar Cliente...</option>
-                    </select>
-                    <i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 pointer-events-none"></i>
-                </div>
+        
+        <div class="p-6 space-y-4 overflow-y-auto flex-1">
+            <p class="text-sm text-slate-500 mb-2">Seleccione un cliente registrado de la lista:</p>
+            
+            <div class="relative group">
+                <i class="fa-solid fa-users input-icon group-focus-within:text-indigo-500 transition-colors"></i>
+                <select id="modalClienteSelect" class="custom-input appearance-none cursor-pointer">
+                    <option value="">-- Seleccione Cliente --</option>
+                </select>
+                <i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 pointer-events-none"></i>
             </div>
+            
+            <div class="bg-blue-50 text-blue-700 text-xs p-3 rounded-lg border border-blue-100 flex gap-2">
+                <i class="fa-solid fa-info-circle mt-0.5"></i> <span>Esto asignará el puesto permanentemente al cliente seleccionado.</span>
+            </div>
+        </div>
 
-            <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Nombre</label><i class="fa-regular fa-user absolute left-3 top-9 text-slate-400"></i><input id="nocturnoNombre" class="custom-input pl-10 pt-6" placeholder="Nombre del visitante"></div>
-            <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Placa</label><i class="fa-solid fa-id-card absolute left-3 top-9 text-slate-400"></i><input id="nocturnoPlaca" class="custom-input pl-10 pt-6 uppercase" placeholder="Placa"></div>
-            <div>
-                <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Puesto a Asignar</label>
-                <div class="relative">
-                    <i class="fa-solid fa-square-parking absolute left-3 top-9 text-slate-400"></i>
-                    <select id="nocturnoSpotSelect" class="custom-input pl-10 pt-6 appearance-none cursor-pointer">
-                        <option value="">Seleccionar Puesto...</option>
-                    </select>
-                    <i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 pointer-events-none"></i>
-                </div>
-            </div>
-        </div>
-        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-3">
-            <button onclick="window.cerrarModalNocturno()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200 transition-colors">Cancelar</button>
-            <button onclick="window.confirmarNocturno()" class="px-4 py-2 rounded-lg text-sm font-medium bg-amber-500 text-white hover:bg-amber-600 shadow-md transition-colors">Ingresar</button>
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-3 shrink-0">
+            <button onclick="window.cerrarModal()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200 transition-colors">Cancelar</button>
+            <button onclick="window.confirmarAsignar()" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-colors">Asignar</button>
         </div>
     </div>
   </div>
 
-  <!-- MODAL ASIGNAR CLIENTE -->
-  <div id="modalAsignar" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[70] transition-opacity opacity-0">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0 duration-200" id="modalAsignarContent">
-        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-2xl">
-            <h3 id="modalAsignarTitle" class="text-lg font-bold text-slate-800">Asignar Cliente</h3>
-            <button onclick="window.cerrarModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors"><i class="fa-solid fa-xmark"></i></button>
+  <!-- MODAL NOCTURNO -->
+  <div id="modalNocturno" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[100] transition-opacity opacity-0">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 transform transition-all scale-95 opacity-0 duration-200 flex flex-col max-h-[90vh]" id="modalNocturnoContent">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-amber-50 rounded-t-2xl shrink-0">
+            <h3 class="text-lg font-bold text-amber-800">Ingreso Nocturno / Visitante</h3>
+            <button onclick="window.cerrarModalNocturno()" class="text-amber-900 hover:text-amber-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-amber-100 transition-colors"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <div class="p-6 space-y-4">
-            <input type="hidden" id="currentSpotId">
-            
-            <div class="flex bg-slate-100 p-1 rounded-lg mb-4">
+        
+        <div class="p-6 space-y-5 overflow-y-auto flex-1">
+            <div class="radio-switch flex bg-slate-100 p-1 rounded-lg">
                 <label class="flex-1 text-center cursor-pointer">
-                    <input type="radio" name="clientType" value="registered" checked class="peer sr-only" onchange="window.toggleModalInputs()">
-                    <span class="block py-1.5 text-xs font-bold text-slate-500 rounded-md peer-checked:bg-white peer-checked:text-indigo-600 peer-checked:shadow-sm transition-all">Registrado</span>
+                    <input type="radio" name="nocturnoType" value="registered" class="peer sr-only" onchange="window.onNocturnoTypeChange()">
+                    <span class="block py-2 text-xs font-bold text-slate-500 rounded-md peer-checked:bg-white peer-checked:text-amber-600 peer-checked:shadow-sm transition-all">Cliente Registrado (Visita)</span>
                 </label>
                 <label class="flex-1 text-center cursor-pointer">
-                    <input type="radio" name="clientType" value="manual" class="peer sr-only" onchange="window.toggleModalInputs()">
-                    <span class="block py-1.5 text-xs font-bold text-slate-500 rounded-md peer-checked:bg-white peer-checked:text-indigo-600 peer-checked:shadow-sm transition-all">Manual</span>
+                    <input type="radio" name="nocturnoType" value="manual" class="peer sr-only" checked onchange="window.onNocturnoTypeChange()">
+                    <span class="block py-2 text-xs font-bold text-slate-500 rounded-md peer-checked:bg-white peer-checked:text-slate-600 peer-checked:shadow-sm transition-all">Ingreso Manual</span>
                 </label>
             </div>
 
-            <div id="divRegistered">
-                <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Seleccionar Cliente</label>
-                <select id="modalClienteSelect" class="custom-input pl-10 pt-6 appearance-none cursor-pointer">
-                    <option value="">-- Seleccione Cliente --</option>
-                </select>
-            </div>
+            <div class="space-y-4">
+                <div id="divNocturnoCliente" class="hidden">
+                    <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Seleccionar Cliente</label>
+                    <div class="relative group">
+                        <i class="fa-solid fa-users input-icon group-focus-within:text-indigo-500 transition-colors"></i>
+                        <select id="nocturnoClientSelect" onchange="window.onNocturnoClientChange()" class="custom-input appearance-none cursor-pointer">
+                            <option value="">Seleccionar...</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 pointer-events-none"></i>
+                    </div>
+                </div>
 
-            <div id="divManual" class="hidden space-y-3">
-                <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Nombre</label><i class="fa-regular fa-user absolute left-3 top-9 text-slate-400"></i><input id="inputNombre" class="custom-input pl-10 pt-6" placeholder="Nombre"></div>
-                <div class="relative"><label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Placa</label><i class="fa-solid fa-id-card absolute left-3 top-9 text-slate-400"></i><input id="inputPlaca" class="custom-input pl-10 pt-6 uppercase" placeholder="Placa"></div>
-            </div>
+                <div id="divNocturnoManual" class="space-y-3">
+                    <div class="relative group">
+                        <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Nombre</label>
+                        <i class="fa-regular fa-user input-icon group-focus-within:text-indigo-500 transition-colors"></i>
+                        <input id="nocturnoNombre" class="custom-input peer" placeholder="Nombre del visitante">
+                    </div>
+                    <div class="relative group">
+                        <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Placa</label>
+                        <i class="fa-solid fa-id-card input-icon group-focus-within:text-indigo-500 transition-colors"></i>
+                        <input id="nocturnoPlaca" class="custom-input peer uppercase" placeholder="Placa">
+                    </div>
+                </div>
 
-            <div class="flex items-center gap-4 pt-2">
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" id="checkLlave" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 border-gray-300" onchange="window.toggleKeyInput()">
-                    <span class="text-sm text-slate-600 font-medium">Tiene Llave</span>
-                </label>
-                <div id="keyDescDiv" class="relative flex-1 hidden">
-                    <input type="text" id="inputKeyDesc" placeholder="Descripción llave..." class="w-full pl-3 pr-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:outline-none">
+                <div class="pt-2 border-t border-slate-100">
+                    <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Asignar a Puesto</label>
+                    <div class="relative group">
+                        <i class="fa-solid fa-square-parking input-icon group-focus-within:text-indigo-500 transition-colors"></i>
+                        <select id="nocturnoSpotSelect" class="custom-input appearance-none cursor-pointer">
+                            <option value="">Seleccionar Puesto...</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 pointer-events-none"></i>
+                    </div>
+                    <div class="text-[10px] text-slate-400 mt-2 text-center">Solo aparecen los puestos libres.</div>
                 </div>
             </div>
         </div>
-        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-3">
-            <button onclick="window.cerrarModal()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200 transition-colors">Cancelar</button>
-            <button onclick="window.confirmarAsignar()" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-colors">Guardar</button>
+
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-3 shrink-0">
+            <button onclick="window.cerrarModalNocturno()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200 transition-colors">Cancelar</button>
+            <button onclick="window.confirmarNocturno()" class="px-4 py-2 rounded-lg text-sm font-medium bg-amber-500 text-white hover:bg-amber-600 shadow-md transition-colors">Registrar</button>
         </div>
-    </div>
   </div>
 
   <!-- SCRIPTS AUXILIARES -->
@@ -217,12 +238,13 @@
     function updateDate() {
         const d = new Date();
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        const time = d.toLocaleTimeString('es-CO', {hour: '2-digit', minute:'2-digit'});
-        document.getElementById('date-display').innerText = d.toLocaleDateString('es-ES', options) + ' - ' + time;
+        const time = d.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
+        const el = document.getElementById('date-display');
+        if(el) el.innerText = d.toLocaleDateString('es-ES', options) + ' - ' + time;
     }
-    setInterval(updateDate, 1000);
-    updateDate();
+    setInterval(updateDate, 1000); updateDate();
   </script>
+  
   <!-- LOGICA PRINCIPAL -->
   <script src="../js/puestos.js"></script>
 </body>
