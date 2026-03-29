@@ -1,10 +1,9 @@
-// parqueo/api/auth.js
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' }); 
 
 import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
-import { db } from "./db.js"; // Asegúrate que esta ruta apunta correctamente a tu db.js
+import { db } from "./db.js"; 
 
 export default async function handler(req, res) {
     try {
@@ -21,7 +20,6 @@ export default async function handler(req, res) {
             // 1. Buscar usuario en BD
             const result = await db.execute("SELECT * FROM usuarios WHERE usuario = ?", [user]);
             
-            // Verificar si la base de datos devolvió algo
             if (!result.rows || result.rows.length === 0) {
                 console.log(`[DEBUG] Usuario '${user}' NO encontrado en BD.`);
                 return res.status(401).json({ success: false, message: "Credenciales incorrectas" });
@@ -31,22 +29,18 @@ export default async function handler(req, res) {
             console.log(`[DEBUG] Usuario encontrado:`, foundUser.usuario);
 
             // 2. Comparar contraseña (Hash vs Plano)
-            // Asegúrate que 'pass' es la contraseña que escribes en el formulario
-            // y 'foundUser.password' es el hash guardado en la BD
             const isMatch = await bcrypt.compare(pass, foundUser.password);
 
             if (isMatch) {
                 console.log(`[DEBUG] ¡Contraseña correcta! Login exitoso.`);
                 
-                // IMPORTANTE: CORRECCIÓN AQUÍ
-                // Tu tabla se llama 'rol', no 'role'.
                 return res.status(200).json({
                     success: true,
                     user: {
                         id: foundUser.id,
                         nombre: foundUser.nombre,
                         email: foundUser.email,
-                        rol: foundUser.rol // <--- CORREGIDO
+                        rol: foundUser.rol
                     }
                 });
             } else {
@@ -70,27 +64,8 @@ export default async function handler(req, res) {
                 return res.status(404).json({ success: false, message: "Usuario no encontrado" });
             }
 
-            // --- MÉTODO WHATSAPP ---
-            if (method === 'whatsapp') {
-                // Asumimos que existe una tabla configuración, si no, esto dará error
-                try {
-                    const configResult = await db.execute("SELECT telefono FROM configuracion WHERE id = 1");
-                    const config = configResult.rows[0];
-
-                    if (!config || !config.telefono) {
-                        return res.status(400).json({ success: false, message: "No hay teléfono de contacto en configuración." });
-                    }
-
-                    const mensaje = `Hola, soy el usuario *${user}* (${foundUser.nombre}). He olvidado mi contraseña del sistema PARQUEADERO ELIMAR. Por favor, ayúdenme a restablecerla.`;
-                    const cleanPhone = config.telefono.replace(/\D/g, '');
-                    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(mensaje)}`;
-
-                    return res.status(200).json({ success: true, whatsappUrl });
-                } catch (err) {
-                    console.error("Error configuración whatsapp:", err);
-                    return res.status(500).json({ success: false, message: "Error interno al recuperar por WhatsApp" });
-                }
-            }
+            // --- MÉTODO WHATSAPP (ELIMINADO) ---
+            // Ya no se soporta recuperación por WhatsApp
 
             // --- MÉTODO EMAIL ---
             if (method === 'email') {
@@ -134,6 +109,9 @@ export default async function handler(req, res) {
                     return res.status(500).json({ success: false, message: "Error al enviar el correo. Contacta al soporte." });
                 }
             }
+            
+            // Si el método no es email ni el eliminado, error
+            return res.status(400).json({ success: false, message: "Método de recuperación no válido" });
         }
 
         return res.status(405).json({ error: "Método no permitido" });

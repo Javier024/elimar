@@ -40,17 +40,26 @@ export default async function handler(req, res) {
     // --- GET: LEER CAJA NORMAL ---
     if (req.method === "GET") {
       if (req.query.id) {
-          const result = await db.execute({ sql: "SELECT * FROM caja WHERE id = ?", args: [req.query.id] });
+          // ACTUALIZACIÓN: Traemos el tipo de vehículo
+          const result = await db.execute({ 
+              sql: `SELECT ca.*, c.tipo_vehiculo as cliente_tipo_vehiculo 
+                     FROM caja ca 
+                     LEFT JOIN clientes c ON ca.plate = c.placa 
+                     WHERE ca.id = ?`, 
+              args: [req.query.id] 
+          });
           if (result.rows.length === 0) return res.status(404).json({ error: "Registro no encontrado" });
           return res.status(200).json(result.rows[0]);
       }
 
+      // ACTUALIZACIÓN: Traemos el tipo de vehículo en la lista general
       const result = await db.execute(`
         SELECT ca.*, 
                cli.medio_pago as cliente_medio_pago,
                cli.telefono as cliente_telefono,
                cli.nombre as cliente_nombre_completo,
                cli.cuota_mensual,
+               cli.tipo_vehiculo as cliente_tipo_vehiculo,
                (SELECT date FROM caja c2 WHERE c2.plate = ca.plate AND c2.date < ca.date ORDER BY c2.date DESC LIMIT 1) as last_payment_date
         FROM caja ca
         LEFT JOIN clientes cli ON ca.plate = cli.placa
@@ -61,7 +70,7 @@ export default async function handler(req, res) {
 
     // --- POST: REGISTRAR COBRO ---
     if (req.method === "POST") {
-      const { client, plate, spot, phone, amount, method, client_id, period_type, period_quantity, date } = req.body;
+      const { client, plate, spot, phone, amount, method, client_id, period_type, period_quantity, date, entrada_timestamp } = req.body;
 
       if (!amount) return res.status(400).json({ error: "Monto requerido" });
 
@@ -75,7 +84,7 @@ export default async function handler(req, res) {
       if (isNaN(numAmount) || numAmount <= 0) return res.status(400).json({ error: "Monto inválido" });
 
       const result = await db.execute({
-        sql: `INSERT INTO caja (client, plate, spot, phone, amount, method, time, date, paid, period_quantity, period_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        sql: `INSERT INTO caja (client, plate, spot, phone, amount, method, time, date, paid, period_quantity, period_type, entrada_timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           client || "Cliente General", 
           plate || "---", 
@@ -87,7 +96,8 @@ export default async function handler(req, res) {
           paymentDate,
           "0", 
           numQty,
-          period_type || "Noche"
+          period_type || "Noche",
+          entrada_timestamp || null
         ]
       });
 
@@ -100,7 +110,7 @@ export default async function handler(req, res) {
         message: "Cobro registrado",
         data: {
           id: newId,
-          client, plate, spot, phone, amount: numAmount, method, time, date: paymentDate, period_type, period_quantity: numQty
+          client, plate, spot, phone, amount: numAmount, method, time, date: paymentDate, period_type, period_quantity: numQty, entrada_timestamp
         }
       });
     }

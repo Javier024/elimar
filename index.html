@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Iniciar Sesión | PARQUEADERO ELIMAR</title>
     
-    <!-- Favicon SVG (Icono P) -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%231e293b' width='100' height='100' rx='20'/><text y='.9em' font-size='80' x='50%' text-anchor='middle' fill='%2334d399' font-family='Arial' font-weight='bold'>P</text></svg>">
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,7 +17,7 @@
         .split-image-panel {
             background-image: url('https://d2yoo3qu6vrk5d.cloudfront.net/pulzo-lite/images-resized/PP4603966-h-o.webp');
             background-size: cover;
-            background-position: center; /* Centrado perfecto */
+            background-position: center; 
             background-repeat: no-repeat;
             position: relative;
         }
@@ -37,7 +36,6 @@
 <body class="bg-white min-h-screen w-full flex flex-col md:flex-row">
 
     <!-- LADO IZQUIERDO: IMAGEN -->
-    <!-- En móvil: altura fija h-56. En escritorio: pantalla completa -->
     <div class="w-full h-56 md:h-full md:w-1/2 split-image-panel relative flex flex-col justify-end p-6 md:p-12 shrink-0">
         <div class="absolute inset-0 overlay-dark z-0"></div>
         <div class="relative z-10 text-white">
@@ -107,7 +105,7 @@
             <!-- SECCIÓN RECUPERAR -->
             <div id="recover-section" class="auth-content hidden-tab">
                 <h2 class="text-2xl font-bold text-slate-900 mb-2">Restablecer Acceso</h2>
-                <p class="text-slate-500 text-sm mb-6">Elige un método para recuperar tu cuenta.</p>
+                <p class="text-slate-500 text-sm mb-6">Te enviaremos una contraseña temporal a tu correo.</p>
 
                 <div class="space-y-5">
                     <div>
@@ -120,15 +118,10 @@
                         </div>
                     </div>
 
-                    <!-- Botones de Acción -->
-                    <button onclick="handleRecoverMethod('whatsapp')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 rounded-lg shadow-md transition-all flex items-center justify-center gap-2">
-                        <i class="fa-brands fa-whatsapp text-xl"></i>
-                        <span>Recuperar por WhatsApp</span>
-                    </button>
-                    
+                    <!-- Botón Email Único -->
                     <button onclick="handleRecoverMethod('email')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-lg shadow-md transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-envelope"></i>
-                        <span>Enviar Correo Electrónico</span>
+                        <span>Enviar Contraseña por Correo</span>
                     </button>
 
                     <div class="text-center mt-4">

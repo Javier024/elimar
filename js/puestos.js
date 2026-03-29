@@ -84,6 +84,15 @@ function getClientesDisponibles() {
     return clientesCache.filter(c => !placasOcupadas.includes(c.placa));
 }
 
+// AYUDANTE PARA ICONO DE VEHÍCULO
+function getIconForType(tipo) {
+    if (!tipo) return 'fa-car';
+    const t = tipo.toLowerCase();
+    if (t.includes('moto')) return 'fa-motorcycle';
+    if (t.includes('camioneta')) return 'fa-truck-pickup';
+    return 'fa-car';
+}
+
 window.filtrarMapa = (f) => {
   currentFilterStatus = f;
   document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -153,6 +162,13 @@ function renderMapa(busqueda = "") {
             <button onclick="eliminarPuesto(${spot.id})" class="text-[10px] text-red-400 hover:text-red-600 text-right font-bold underline truncate">Eliminar</button>
         </div>
     `;
+
+    // --- OBTENER ICONO DE VEHÍCULO (Solo si hay cliente registrado asociado) ---
+    // Para Nocturno manual, no tenemos esta info en la DB, así que omitimos el icono específico.
+    let vehicleIconHTML = '';
+    if (spot.cliente_tipo_vehiculo) {
+        vehicleIconHTML = `<span class="text-[10px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 ml-1"><i class="fa-solid ${getIconForType(spot.cliente_tipo_vehiculo)}"></i> ${spot.cliente_tipo_vehiculo}</span>`;
+    }
 
     // RESERVADO
     if (spot.estado === 'reservado') {
@@ -253,7 +269,7 @@ function renderMapa(busqueda = "") {
                 <div class="flex justify-between items-start mb-2">${badgeHTML}<span class="text-lg font-bold text-slate-700">${spot.numero}</span></div>
                 <div class="mb-2">
                     <div class="font-bold text-xs text-slate-800 truncate">${nombre}</div>
-                    <div class="font-mono text-[10px] bg-white px-1.5 inline-block rounded border border-slate-200 w-max mt-1">${placa}</div>
+                    <div class="font-mono text-[10px] bg-white px-1.5 inline-block rounded border border-slate-200 w-max mt-1">${placa} ${vehicleIconHTML}</div>
                     
                     <!-- BLOQUE DE TIEMPO ACTUALIZADO -->
                     <div class="mt-2 space-y-1">

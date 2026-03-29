@@ -25,12 +25,14 @@ async function isPlateAvailable(plate, currentSpotId = null) {
 export default async function handler(req, res) {
   try {
     if (req.method === "GET") {
+      // ACTUALIZACIÓN: Agregamos c.tipo_vehiculo
       const result = await db.execute(`
         SELECT p.*, 
                c.nombre as cliente_nombre, 
                c.placa as cliente_placa, 
                c.telefono as cliente_telefono,
-               c.cuota_mensual
+               c.cuota_mensual,
+               c.tipo_vehiculo as cliente_tipo_vehiculo
         FROM puestos p 
         LEFT JOIN clientes c ON p.cliente_id = c.id 
         ORDER BY CAST(p.numero AS INTEGER) ASC

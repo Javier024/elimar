@@ -55,29 +55,17 @@ async function loadData() {
   }
 }
 
-// --- NUEVA FUNCIÓN AYUDANTE: BUSCAR PUESTO ACTIVO (CON ARREGLO PARA puesto_info) ---
-// Esta función busca la placa tanto en el campo directo como dentro del JSON string "puesto_info"
+// --- FUNCIÓN AYUDANTE: BUSCAR PUESTO ACTIVO ---
 function findActiveSpot(plateToFind) {
     if (!plateToFind) return null;
     return spots.find(s => {
-        // 1. Si no está ocupado, ignorar
         if (s.estado !== 'ocupado') return false;
-
-        // 2. Revisar campo directo (por si acaso)
         if (s.cliente_placa === plateToFind) return true;
-
-        // 3. Revisar dentro del string JSON "puesto_info"
         if (s.puesto_info) {
             try {
                 const info = JSON.parse(s.puesto_info);
-                // info.placa suele venir de la BD, aseguramos comparación
-                if (info.placa && info.placa === plateToFind) {
-                    return true;
-                }
-            } catch (e) {
-                // Si falla el parseo del JSON, ignorar este error
-                console.error("Error parseando puesto_info:", e);
-            }
+                if (info.placa && info.placa === plateToFind) return true;
+            } catch (e) { console.error("Error parseando puesto_info:", e); }
         }
         return false;
     });
@@ -91,7 +79,7 @@ function checkUrlParamsAndFillData() {
     const spot = params.get('spot');
     let clientName = params.get('client');
     const phone = params.get('phone');
-    let entryTimestamp = params.get('entry'); // Viene de Puestos (segundos)
+    let entryTimestamp = params.get('entry'); 
     const amountParam = params.get('amount');
     const periodParam = params.get('period');
 
@@ -134,7 +122,6 @@ function checkUrlParamsAndFillData() {
 
     // Si el campo oculto sigue vacío, usamos la NUEVA FUNCIÓN DE BÚSQUEDA
     if (!hiddenEntry.value && plate) {
-        // --- CAMBIO AQUÍ: Usamos findActiveSpot ---
         const activeSpot = findActiveSpot(plate);
         
         if (activeSpot && activeSpot.hora_inicio) {
@@ -145,7 +132,6 @@ function checkUrlParamsAndFillData() {
             const hora = fechaObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
             entryDisplay.value = `Entró: ${dia} ${hora}`;
             
-            // Si el input de puesto no se llenó por URL, llenarlo ahora
             if(document.getElementById('cajaPuesto').value === "---") {
                 document.getElementById('cajaPuesto').value = activeSpot.numero;
             }
@@ -194,7 +180,6 @@ window.preFillFromDebtor = function(plate, nombre, telefono) {
     document.getElementById('cajaCliente').value = nombre;
     document.getElementById('cajaTelefono').value = telefono;
     
-    // --- CAMBIO AQUÍ: Usamos findActiveSpot ---
     const activeSpot = findActiveSpot(plate);
     const hiddenEntry = document.getElementById('cajaEntryTimestamp');
     
@@ -274,7 +259,8 @@ function handleClientSearch(query) {
         option.setAttribute('data-phone', client.telefono || '');
         option.setAttribute('data-plate', client.placa || ''); 
         option.setAttribute('data-medio', client.medio_pago || 'Noche');
-        option.setAttribute('data-vehiculo', client.vehiculo || 'No registrado');
+        // Usamos tipo_vehiculo aquí también
+        option.setAttribute('data-vehiculo', client.tipo_vehiculo || 'Carro'); 
         datalist.appendChild(option);
     });
 }
@@ -301,7 +287,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(phoneInput) phoneInput.value = phone;
                 if(plateInput) plateInput.value = plate;
                 
-                // --- CAMBIO AQUÍ: Usamos findActiveSpot ---
                 const activeSpot = findActiveSpot(plate);
                 
                 if (activeSpot) {
@@ -332,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// --- RENDERIZADO TABLA (ACTUALIZADO CON LÓGICA DE RESPALDO) ---
+// --- RENDERIZADO TABLA ---
 function renderTable(filterText = '') {
     const tbody = document.getElementById('listaCajaBody');
     if(!tbody) return;
@@ -346,7 +331,7 @@ function renderTable(filterText = '') {
     const start = (currentPage - 1) * itemsPerPage;
     const pageData = filtered.slice(start, start + itemsPerPage);
     
-    if (pageData.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-slate-400">No hay transacciones</td></tr>'; return; }
+    if (pageData.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-slate-400">No hay transacciones</td></tr>'; return; }
 
     pageData.forEach(tx => {
         const tr = document.createElement('tr');
@@ -358,19 +343,15 @@ function renderTable(filterText = '') {
         let entradaStr = "No disponible";
         let tsToUse = null;
 
-        // 1. Intentar usar lo que viene de la BD
         if (tx.entrada_timestamp) {
             tsToUse = Number(tx.entrada_timestamp);
-        } 
-        // 2. Si la BD falló (null), intentar buscar en el puesto activo actual
-        else {
+        } else {
             const activeSpot = findActiveSpot(tx.plate);
             if (activeSpot && activeSpot.hora_inicio) {
                 tsToUse = Number(activeSpot.hora_inicio);
             }
         }
 
-        // 3. Formatear la fecha si encontramos un timestamp válido
         if (tsToUse && !isNaN(tsToUse)) {
             try {
                 const dateObj = new Date(tsToUse * 1000);
@@ -381,6 +362,15 @@ function renderTable(filterText = '') {
                 console.error("Error fecha entrada:", e);
                 entradaStr = "Error formato";
             }
+        }
+        
+        // --- OBTENER TIPO DE VEHÍCULO ---
+        // 1. Prioridad: Lo que vino en la query JOIN (cliente_tipo_vehiculo)
+        // 2. Si es null, buscar en el cache local de clientes (por si acaso)
+        let vehicleType = tx.cliente_tipo_vehiculo || '---';
+        if (vehicleType === '---') {
+             const localClient = clients.find(c => c.placa === tx.plate);
+             if (localClient) vehicleType = localClient.tipo_vehiculo || '---';
         }
 
         tr.innerHTML = `
@@ -397,9 +387,14 @@ function renderTable(filterText = '') {
                 <div class="text-[10px] text-slate-500 flex items-center gap-1"><i class="fa-solid fa-phone text-[10px]"></i> ${tx.phone || '---'}</div>
             </td>
             <td class="px-6 py-4">
-                <div class="flex items-center gap-2">
-                    <span class="bg-slate-100 text-slate-700 text-xs font-bold px-2 py-1 rounded uppercase">${tx.plate.toUpperCase()}</span>
-                    <span class="text-[10px] text-slate-400">Puesto: ${tx.spot}</span>
+                <div class="flex flex-col gap-1">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-slate-100 text-slate-700 text-xs font-bold px-2 py-1 rounded uppercase">${tx.plate.toUpperCase()}</span>
+                        <span class="text-[10px] text-slate-400">Puesto: ${tx.spot}</span>
+                    </div>
+                    <span class="inline-flex items-center gap-1 text-[10px] text-slate-500 font-medium bg-slate-50 w-fit px-2 py-0.5 rounded border border-slate-100">
+                        <i class="fa-solid fa-car-side"></i> ${vehicleType}
+                    </span>
                 </div>
             </td>
             <td class="px-6 py-4">
@@ -439,16 +434,17 @@ function changePage(direction) {
     renderTable(document.getElementById('searchInput')?.value || '');
 }
 
-// --- FACTURACIÓN (CORREGIDA EN printReceipt Y generarFacturaDesdeFormulario) ---
+// --- FACTURACIÓN ---
 
 async function printReceipt(id) {
     const tx = transactions.find(t => t.id === id);
     if(!tx) return;
 
+    // CORRECCIÓN: Usar tx.cliente_tipo_vehiculo o buscar en cache
     const clientData = clients.find(c => c.placa === tx.plate);
-    const vehicleType = clientData ? (clientData.vehiculo || 'Carro') : 'Carro'; 
+    // Prioridad a lo que vino del backend (tx.cliente_tipo_vehiculo), si no, usar cache
+    const vehicleType = tx.cliente_tipo_vehiculo || (clientData ? clientData.tipo_vehiculo : 'Carro'); 
 
-    // --- CORRECCIÓN AQUÍ: MISMA LÓGICA QUE LA TABLA ---
     let entryDate = null;
     let tsToUse = null;
 
@@ -464,7 +460,6 @@ async function printReceipt(id) {
     if (tsToUse && !isNaN(tsToUse)) {
         entryDate = new Date(tsToUse * 1000);
     }
-    // ------------------------------------------------
 
     const exitDate = new Date(); 
     const dueDate = new Date(tx.date || exitDate);
@@ -503,7 +498,8 @@ async function generarFacturaDesdeFormulario() {
     if (!client || !amount) { alert("Complete los datos básicos para generar la factura."); return false; }
     
     const clientData = clients.find(c => c.placa === plate);
-    const vehicleType = clientData ? (clientData.vehiculo || 'Carro') : 'Carro';
+    // CORRECCIÓN: Usar clientData.tipo_vehiculo
+    const vehicleType = clientData ? (clientData.tipo_vehiculo || 'Carro') : 'Carro';
     
     let entryDate = null;
     if (entryTimestampVal) {
@@ -517,7 +513,6 @@ async function generarFacturaDesdeFormulario() {
             }
         }
     } else {
-        // --- CORRECCIÓN EXTRA: Si el input está vacío, buscar en puesto activo ---
         const activeSpot = findActiveSpot(plate);
         if (activeSpot && activeSpot.hora_inicio) {
             entryDate = new Date(Number(activeSpot.hora_inicio) * 1000);
@@ -550,7 +545,7 @@ async function generarFacturaDesdeFormulario() {
     return true; 
 }
 
-// --- FUNCIÓN PRINCIPAL DE PDF ---
+// --- FUNCIÓN PRINCIPAL DE PDF (DISEÑO ORIGINAL CORREGIDO) ---
 async function createPDF(data) {
     const { jsPDF } = window.jspdf; 
     const doc = new jsPDF({ unit: 'mm', format: 'letter' }); 
@@ -558,10 +553,13 @@ async function createPDF(data) {
     const pageWidth = doc.internal.pageSize.getWidth(); 
     let y = 0; 
 
+    // --- 1. HEADER (LOGO) ---
     try {
+        // Diseño original: Logo a ancho completo
         doc.addImage('/img/logo.jpg', 'JPEG', 0, 0, pageWidth, 45); 
     } catch (err) {
         console.error("Error cargando imagen banner:", err);
+        // Fallback
         doc.setFillColor(20, 50, 80); 
         doc.rect(0, 0, pageWidth, 45, 'F');
         doc.setTextColor(255, 255, 255);
@@ -642,6 +640,7 @@ async function createPDF(data) {
     doc.setFont("helvetica", "bold");
     doc.text("VEHÍCULO:", label2X, y);
     doc.setFont("helvetica", "normal");
+    // CORRECCIÓN: Ahora data.vehicleType tiene el valor correcto
     doc.text(`${data.vehicleType || '---'}`, value2X, y);
     y += 8;
 
@@ -790,7 +789,6 @@ async function registrarCobro(e) {
     
     let entrada_timestamp = document.getElementById('cajaEntryTimestamp').value;
     
-    // --- CAMBIO AQUÍ: Usamos findActiveSpot ---
     if (!entrada_timestamp && plate) {
         const activeSpot = findActiveSpot(plate);
         if (activeSpot && activeSpot.hora_inicio) {
