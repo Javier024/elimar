@@ -200,11 +200,11 @@ function changePage(direction) {
 }
 
 async function deleteClient(id) {
-    if(!confirm("¿Eliminar este cliente? Esto liberará su puesto automáticamente.")) return;
+    if(!confirm("¿Desea eliminar el siguiente cliente?.")) return;
     try {
         const res = await fetch('/api/clientes', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
         if (!res.ok) throw new Error((await res.json()).error);
-        alert("Eliminado y puesto liberado");
+        alert("Eliminado");
         loadClients();
     } catch (error) { alert("Error: " + error.message); }
 }

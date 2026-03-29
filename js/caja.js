@@ -82,6 +82,7 @@ function checkUrlParamsAndFillData() {
     let entryTimestamp = params.get('entry'); 
     const amountParam = params.get('amount');
     const periodParam = params.get('period');
+    const renewParam = params.get('renew');
 
     if (!plate) return;
 
@@ -91,11 +92,25 @@ function checkUrlParamsAndFillData() {
     if (clientName) document.getElementById('cajaCliente').value = decodeURIComponent(clientName);
     if (phone) document.getElementById('cajaTelefono').value = phone;
 
-    // 2. FECHA DE ENTRADA / DETALLE (VISUAL)
+    // 2. MANEJO INTELIGENTE DE LA FECHA DE ENTRADA
     const entryDisplay = document.getElementById('cajaFechaEntradaDisplay');
     const hiddenEntry = document.getElementById('cajaEntryTimestamp');
     
-    let finalTimestamp = entryTimestamp || hiddenEntry.value || null;
+    let finalTimestamp = null;
+
+    // CORRECCIÓN CRÍTICA: Priorizar el parámetro URL
+    if (entryTimestamp) {
+        finalTimestamp = entryTimestamp;
+    } else if (hiddenEntry.value) {
+        finalTimestamp = hiddenEntry.value;
+    }
+
+    if (!finalTimestamp && plate) {
+        const activeSpot = findActiveSpot(plate);
+        if (activeSpot && activeSpot.hora_inicio) {
+            finalTimestamp = activeSpot.hora_inicio;
+        }
+    }
 
     if (entryDisplay && finalTimestamp) {
         try {
@@ -106,6 +121,7 @@ function checkUrlParamsAndFillData() {
                     const dia = fechaObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
                     const hora = fechaObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
                     entryDisplay.value = `Entró: ${dia} ${hora}`;
+                    hiddenEntry.value = finalTimestamp;
                 } else {
                     entryDisplay.value = "Fecha inválida";
                 }
@@ -118,24 +134,6 @@ function checkUrlParamsAndFillData() {
         }
     } else if (entryDisplay) {
         entryDisplay.value = "Sin registro";
-    }
-
-    // Si el campo oculto sigue vacío, usamos la NUEVA FUNCIÓN DE BÚSQUEDA
-    if (!hiddenEntry.value && plate) {
-        const activeSpot = findActiveSpot(plate);
-        
-        if (activeSpot && activeSpot.hora_inicio) {
-            hiddenEntry.value = activeSpot.hora_inicio;
-            const ts = Number(activeSpot.hora_inicio);
-            const fechaObj = new Date(ts * 1000);
-            const dia = fechaObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
-            const hora = fechaObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-            entryDisplay.value = `Entró: ${dia} ${hora}`;
-            
-            if(document.getElementById('cajaPuesto').value === "---") {
-                document.getElementById('cajaPuesto').value = activeSpot.numero;
-            }
-        }
     }
 
     // 3. MONTO A COBRAR
@@ -153,7 +151,7 @@ function checkUrlParamsAndFillData() {
     }
     montoInput.value = montoFinal;
 
-    // 4. PERIODO
+    // 4. PERIODO (Lógica anterior, NO bloqueada)
     if (periodSelect) {
         if (periodParam) {
             periodSelect.value = periodParam;
@@ -170,6 +168,31 @@ function checkUrlParamsAndFillData() {
         }
     }
 
+    // 5. MANEJO DE RENOVACIÓN (ACTUALIZADO: NO BLOQUEAR PERIODO)
+    const submitBtn = document.querySelector('form button[type="submit"]');
+    
+    if (renewParam === 'false') {
+        // Es una salida final: Cambiamos el botón a rojo como aviso visual,
+        // pero NO tocamos periodSelect.disabled ni forzamos el valor.
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fa-solid fa-money-bill-wave mr-2"></i> Registrar Pago Final (Salida)';
+            submitBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+            submitBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+        }
+        // ELIMINADO: periodSelect.disabled = true;
+        // ELIMINADO: periodSelect.value = 'Cierre';
+    } else {
+        // Es renovación o ingreso normal
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fa-solid fa-money-bill-wave mr-2"></i> Registrar Pago (Renovación)';
+            submitBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+            submitBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+        }
+        if (periodSelect) {
+            periodSelect.disabled = false;
+        }
+    }
+
     window.history.replaceState({}, document.title, "caja.html");
     setTimeout(() => montoInput.focus(), 300);
 }
@@ -180,6 +203,16 @@ window.preFillFromDebtor = function(plate, nombre, telefono) {
     document.getElementById('cajaCliente').value = nombre;
     document.getElementById('cajaTelefono').value = telefono;
     
+    // Resetear estado visual
+    const submitBtn = document.querySelector('form button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fa-solid fa-money-bill-wave mr-2"></i> Registrar Cobro';
+        submitBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+        submitBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+    }
+    const periodSelect = document.getElementById('cajaPeriodType');
+    if (periodSelect) periodSelect.disabled = false;
+
     const activeSpot = findActiveSpot(plate);
     const hiddenEntry = document.getElementById('cajaEntryTimestamp');
     
@@ -259,7 +292,6 @@ function handleClientSearch(query) {
         option.setAttribute('data-phone', client.telefono || '');
         option.setAttribute('data-plate', client.placa || ''); 
         option.setAttribute('data-medio', client.medio_pago || 'Noche');
-        // Usamos tipo_vehiculo aquí también
         option.setAttribute('data-vehiculo', client.tipo_vehiculo || 'Carro'); 
         datalist.appendChild(option);
     });
@@ -339,7 +371,6 @@ function renderTable(filterText = '') {
         const fechaPago = tx.date || '---';
         const horaPago = tx.time || '';
         
-        // --- LÓGICA MEJORADA PARA FECHA DE ENTRADA ---
         let entradaStr = "No disponible";
         let tsToUse = null;
 
@@ -364,9 +395,6 @@ function renderTable(filterText = '') {
             }
         }
         
-        // --- OBTENER TIPO DE VEHÍCULO ---
-        // 1. Prioridad: Lo que vino en la query JOIN (cliente_tipo_vehiculo)
-        // 2. Si es null, buscar en el cache local de clientes (por si acaso)
         let vehicleType = tx.cliente_tipo_vehiculo || '---';
         if (vehicleType === '---') {
              const localClient = clients.find(c => c.placa === tx.plate);
@@ -440,9 +468,7 @@ async function printReceipt(id) {
     const tx = transactions.find(t => t.id === id);
     if(!tx) return;
 
-    // CORRECCIÓN: Usar tx.cliente_tipo_vehiculo o buscar en cache
     const clientData = clients.find(c => c.placa === tx.plate);
-    // Prioridad a lo que vino del backend (tx.cliente_tipo_vehiculo), si no, usar cache
     const vehicleType = tx.cliente_tipo_vehiculo || (clientData ? clientData.tipo_vehiculo : 'Carro'); 
 
     let entryDate = null;
@@ -498,7 +524,6 @@ async function generarFacturaDesdeFormulario() {
     if (!client || !amount) { alert("Complete los datos básicos para generar la factura."); return false; }
     
     const clientData = clients.find(c => c.placa === plate);
-    // CORRECCIÓN: Usar clientData.tipo_vehiculo
     const vehicleType = clientData ? (clientData.tipo_vehiculo || 'Carro') : 'Carro';
     
     let entryDate = null;
@@ -524,6 +549,10 @@ async function generarFacturaDesdeFormulario() {
     if (periodType === 'Noche' || periodType === 'Dias') dueDate.setDate(dueDate.getDate() + parseInt(periodQty));
     else if (periodType === 'Semana') dueDate.setDate(dueDate.getDate() + (parseInt(periodQty) * 7));
     else if (periodType === 'Mes') dueDate.setMonth(dueDate.getMonth() + parseInt(periodQty));
+    
+    let finalPeriodType = periodType;
+    // Solo cambiamos a "Cierre" visualmente si es necesario, pero permitimos que el usuario lo haya cambiado antes
+    if(periodType === 'Cierre') finalPeriodType = 'Cierre de Cuenta';
 
     createPDF({ 
         id: Date.now(), 
@@ -533,7 +562,7 @@ async function generarFacturaDesdeFormulario() {
         spot, 
         amount, 
         method, 
-        period_type: periodType, 
+        period_type: finalPeriodType, 
         period_quantity: periodQty, 
         date, 
         vehicleType,
@@ -545,7 +574,7 @@ async function generarFacturaDesdeFormulario() {
     return true; 
 }
 
-// --- FUNCIÓN PRINCIPAL DE PDF (DISEÑO ORIGINAL CORREGIDO) ---
+// --- FUNCIÓN PRINCIPAL DE PDF ---
 async function createPDF(data) {
     const { jsPDF } = window.jspdf; 
     const doc = new jsPDF({ unit: 'mm', format: 'letter' }); 
@@ -553,13 +582,10 @@ async function createPDF(data) {
     const pageWidth = doc.internal.pageSize.getWidth(); 
     let y = 0; 
 
-    // --- 1. HEADER (LOGO) ---
     try {
-        // Diseño original: Logo a ancho completo
         doc.addImage('/img/logo.jpg', 'JPEG', 0, 0, pageWidth, 45); 
     } catch (err) {
         console.error("Error cargando imagen banner:", err);
-        // Fallback
         doc.setFillColor(20, 50, 80); 
         doc.rect(0, 0, pageWidth, 45, 'F');
         doc.setTextColor(255, 255, 255);
@@ -640,7 +666,6 @@ async function createPDF(data) {
     doc.setFont("helvetica", "bold");
     doc.text("VEHÍCULO:", label2X, y);
     doc.setFont("helvetica", "normal");
-    // CORRECCIÓN: Ahora data.vehicleType tiene el valor correcto
     doc.text(`${data.vehicleType || '---'}`, value2X, y);
     y += 8;
 
@@ -735,7 +760,7 @@ async function createPDF(data) {
     doc.setTextColor(100);
     doc.setFont("helvetica", "normal");
     
-    const msg = "Gracias por confiar en PARQUEADERO ELIMAR. Para validar la información puede comunicarse con los números registrados en este recibo.";
+    const msg = "Gracias por confiar en PARQUEADERO ELIMAR. Para validar la información puede comunicarse con los números de contacto registrados en este recibo.";
     const splitMsg = doc.splitTextToSize(msg, pageWidth - 40);
     doc.text(splitMsg, pageWidth / 2, y, { align: 'center' });
 
@@ -770,6 +795,7 @@ async function handleCustomPeriod(e) {
     registrarCobro(e);
 }
 
+// --- REGISTRAR COBRO ---
 async function registrarCobro(e) {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]'); 
@@ -797,11 +823,28 @@ async function registrarCobro(e) {
         }
     }
 
+    let isRenewal = true;
+    if (periodType === 'Cierre') {
+        isRenewal = false;
+    }
+
     try {
         const res = await fetch('/api/caja', { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ client, plate, spot, phone, amount, method, period_type: periodType, period_quantity: periodQty, date, entrada_timestamp }) 
+            body: JSON.stringify({ 
+                client, 
+                plate, 
+                spot, 
+                phone, 
+                amount, 
+                method, 
+                period_type: periodType, 
+                period_quantity: periodQty, 
+                date, 
+                entrada_timestamp,
+                renew: isRenewal 
+            }) 
         }); 
         const result = await res.json(); 
         if (!res.ok) throw new Error(result.error || 'Error al registrar');

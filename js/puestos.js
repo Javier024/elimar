@@ -31,17 +31,11 @@ function calcularTiempo(horaInicioUnix) {
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-// ACTUALIZADO: Ahora SIEMPRE muestra Fecha (DD/MM/YY) y Hora (HH:MM)
 function formatHoraEntrada(timestamp) {
     if (!timestamp) return "---";
     const date = new Date(Number(timestamp) * 1000);
-    
-    // Formato de fecha: 21/10/23
-    const dateStr = date.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' });
-    
-    // Formato de hora: 14:30
+    const dateStr = date.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' });
     const timeStr = date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-    
     return `${dateStr} ${timeStr}`;
 }
 
@@ -84,7 +78,6 @@ function getClientesDisponibles() {
     return clientesCache.filter(c => !placasOcupadas.includes(c.placa));
 }
 
-// AYUDANTE PARA ICONO DE VEHÍCULO
 function getIconForType(tipo) {
     if (!tipo) return 'fa-car';
     const t = tipo.toLowerCase();
@@ -109,7 +102,7 @@ window.filtrarMapa = (f) => {
   renderMapa(searchInput ? searchInput.value.toLowerCase() : "");
 };
 
-// --- RENDERIZADO MEJORADO ---
+// --- RENDERIZADO ---
 function renderMapa(busqueda = "") {
   const container = document.getElementById("map-container");
   if (!container) return;
@@ -130,6 +123,10 @@ function renderMapa(busqueda = "") {
                   if (meta.temp_user.nombre && meta.temp_user.nombre.toLowerCase().includes(term)) return true;
                   if (meta.temp_user.placa && meta.temp_user.placa.toLowerCase().includes(term)) return true;
               }
+              if (meta.reservation) {
+                  if (meta.reservation.nombre && meta.reservation.nombre.toLowerCase().includes(term)) return true;
+                  if (meta.reservation.placa && meta.reservation.placa.toLowerCase().includes(term)) return true;
+              }
           } catch(e) {}
           try {
               const owner = JSON.parse(s.puesto_info || '{}');
@@ -145,157 +142,203 @@ function renderMapa(busqueda = "") {
       return;
   }
 
-  const btnClass = "whitespace-normal break-words leading-tight text-[10px] font-bold py-1.5 rounded transition-colors shadow-sm w-full";
+  // Clases base
+  const cardBase = "bg-white rounded-xl border shadow-sm flex flex-col h-full transition-all duration-200 hover:shadow-md";
+  const headerBase = "flex justify-between items-center mb-4";
+  const badgeBase = "text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider";
+  const numberBase = "text-2xl font-bold text-slate-800";
+  const bodyBase = "flex-1 flex flex-col justify-center items-center text-center space-y-1";
+  const footerBase = "mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 gap-2";
+  const btnClass = "w-full py-2 text-xs font-bold rounded-lg transition-colors shadow-sm";
 
   datos.forEach(spot => {
     let meta = {}, ownerInfo = null;
     try { meta = JSON.parse(spot.llave_caracteristicas || '{}'); } catch(e){}
     try { ownerInfo = JSON.parse(spot.puesto_info || '{}'); } catch(e){}
     const isTempUser = !spot.cliente_id && meta.temp_user;
+    
     let cardHTML = '';
     let borderClass = "border-slate-200";
-    let bgClass = "bg-white";
     let badgeHTML = "";
-    let footerActions = `
-        <div class="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-100">
-            <button onclick="editarNumeroPuesto(${spot.id}, '${spot.numero}')" class="text-[10px] text-slate-500 hover:text-slate-800 text-left truncate">Editar N°</button>
-            <button onclick="eliminarPuesto(${spot.id})" class="text-[10px] text-red-400 hover:text-red-600 text-right font-bold underline truncate">Eliminar</button>
+    let badgeColor = "";
+    let contentHTML = "";
+    let buttonsHTML = "";
+
+    // --- Footer de administración ---
+    const adminFooter = `
+        <div class="mt-2 pt-2 border-t border-slate-50 grid grid-cols-3 gap-1">
+            <button onclick="limpiarPuesto(${spot.id})" class="text-[9px] text-slate-400 hover:text-red-600 py-1 flex flex-col items-center justify-center gap-0.5 rounded hover:bg-slate-50 transition-colors">
+                <i class="fa-solid fa-broom"></i> Limpiar
+            </button>
+            <button onclick="editarNumeroPuesto(${spot.id}, '${spot.numero}')" class="text-[9px] text-slate-400 hover:text-indigo-600 py-1 flex flex-col items-center justify-center gap-0.5 rounded hover:bg-slate-50 transition-colors">
+                <i class="fa-solid fa-pen"></i> Editar
+            </button>
+            <button onclick="eliminarPuesto(${spot.id})" class="text-[9px] text-red-300 hover:text-red-600 py-1 flex flex-col items-center justify-center gap-0.5 rounded hover:bg-red-50 transition-colors">
+                <i class="fa-solid fa-trash"></i> Eliminar
+            </button>
         </div>
     `;
 
-    // --- OBTENER ICONO DE VEHÍCULO (Solo si hay cliente registrado asociado) ---
-    // Para Nocturno manual, no tenemos esta info en la DB, así que omitimos el icono específico.
-    let vehicleIconHTML = '';
-    if (spot.cliente_tipo_vehiculo) {
-        vehicleIconHTML = `<span class="text-[10px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 ml-1"><i class="fa-solid ${getIconForType(spot.cliente_tipo_vehiculo)}"></i> ${spot.cliente_tipo_vehiculo}</span>`;
-    }
-
-    // RESERVADO
+    // --- 1. RESERVADO ---
     if (spot.estado === 'reservado') {
-        borderClass = "border-purple-200"; bgClass = "bg-purple-50";
-        badgeHTML = `<span class="bg-purple-200 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase">RESERVADO</span>`;
-        cardHTML = `
-            <div class="${borderClass} ${bgClass} rounded-xl p-3 flex flex-col justify-between relative min-h-[150px] shadow-sm hover:shadow-md transition-shadow">
-                <div class="flex justify-between items-start mb-2">${badgeHTML}<span class="text-lg font-bold text-slate-700">${spot.numero}</span></div>
-                <div class="mb-2"><div class="text-xs font-bold text-slate-800 truncate">${spot.cliente_nombre || 'Reserva'}</div></div>
-                <div class="grid grid-cols-2 gap-2 mt-auto">
-                    <button onclick="ocuparReserva(${spot.id})" class="${btnClass} bg-purple-600 hover:bg-purple-700 text-white">Ocupar</button>
-                    <button onclick="liberar(${spot.id})" class="${btnClass} bg-white hover:bg-red-50 text-red-600 border border-red-200">Cancelar</button>
-                </div>
-                ${footerActions}
-            </div>`;
-    } else if (spot.estado === 'libre' && ownerInfo.nombre) {
-        borderClass = "border-amber-200"; bgClass = "bg-amber-50";
-        badgeHTML = `<span class="bg-amber-200 text-slate-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase">DUEÑO FUERA</span>`;
-        cardHTML = `
-            <div class="${borderClass} ${bgClass} rounded-xl p-3 flex flex-col justify-between relative min-h-[150px] shadow-sm hover:shadow-md transition-shadow">
-                <div class="flex justify-between items-start mb-2">${badgeHTML}<span class="text-lg font-bold text-slate-700">${spot.numero}</span></div>
-                <div class="mb-2 flex-1 flex flex-col justify-center"><div class="text-[10px] text-amber-700 font-medium text-center">Propietario:</div><div class="text-sm font-bold text-slate-800 truncate text-center">${ownerInfo.nombre}</div></div>
-                <div class="grid grid-cols-2 gap-2 mt-2">
-                    <button onclick="abrirModalNocturno()" class="${btnClass} bg-amber-500 hover:bg-amber-600 text-white">Nocturno</button>
-                    <button onclick="restaurarDueno(${spot.id})" class="${btnClass} bg-indigo-600 hover:bg-indigo-700 text-white">Restaurar</button>
-                </div>
-                ${footerActions}
-            </div>`;
-    } else if (spot.estado === 'libre') {
-        cardHTML = `
-            <div class="${borderClass} ${bgClass} hover:border-emerald-400 rounded-xl p-3 flex flex-col items-center justify-between relative min-h-[150px] transition-all group">
-                <div class="text-2xl font-bold mb-2 text-slate-600 group-hover:text-emerald-600 transition-colors">${spot.numero}</div>
-                <div class="text-[11px] mb-3 text-slate-400">Disponible</div>
-                <div class="grid grid-cols-1 gap-2 w-full">
-                    <button onclick="abrirModalAsignar(${spot.id}, '${spot.numero}')" class="${btnClass} bg-indigo-600 hover:bg-indigo-700 text-white shadow">Asignar Oficial</button>
-                    <button onclick="abrirModalNocturno()" class="${btnClass} bg-amber-500 hover:bg-amber-600 text-white shadow">Ingreso Nocturno</button>
-                </div>
-                ${footerActions}
-            </div>`;
-    } else if (spot.estado === 'ocupado' && isTempUser) {
-        // --- NOCTURNO ---
-        borderClass = "border-amber-300"; bgClass = "bg-amber-100";
-        badgeHTML = `<span class="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase">NOCTURNO</span>`;
+        borderClass = "border-purple-200 ring-1 ring-purple-100";
+        badgeColor = "bg-purple-100 text-purple-700";
+        badgeHTML = `<span class="${badgeBase} ${badgeColor}">Reservado</span>`;
         
-        const hasOwner = ownerInfo && ownerInfo.nombre;
-        const gridClass = hasOwner ? "grid grid-cols-3 gap-1" : "grid grid-cols-2 gap-2";
+        let resNombre = meta.reservation?.nombre || "Reserva";
+        let resPlaca = meta.reservation?.placa || "---";
 
-        let buttonsHTML = `
-            <button onclick="cobrarNocturno(${spot.id})" class="${btnClass} bg-amber-600 hover:bg-amber-700 text-white">Cobrar</button>
-            <button onclick="salirNocturno(${spot.id})" class="${btnClass} bg-white hover:bg-red-50 text-red-600 border border-red-200">Salir</button>
+        contentHTML = `
+            <div class="${bodyBase}">
+                <div class="font-bold text-sm text-slate-800 max-w-[90%] truncate">${resNombre}</div>
+                <div class="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600 border border-slate-200">${resPlaca}</div>
+                <div class="text-[10px] text-slate-400 mt-1">Esperando llegada</div>
+            </div>
         `;
 
-        if (hasOwner) {
-            buttonsHTML += `<button onclick="restaurarDueno(${spot.id})" class="${btnClass} bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">Restaurar</button>`;
-        }
+        buttonsHTML = `
+            <button onclick="ocuparReserva(${spot.id})" class="${btnClass} bg-purple-600 hover:bg-purple-700 text-white">Ocupar</button>
+            <button onclick="liberar(${spot.id})" class="${btnClass} bg-white text-red-600 border border-red-200 hover:bg-red-50">Cancelar</button>
+        `;
+    }
+    // --- 2. DUEÑO FUERA ---
+    else if (spot.estado === 'libre' && ownerInfo.nombre) {
+        borderClass = "border-amber-200 bg-amber-50/30";
+        badgeColor = "bg-amber-100 text-amber-700";
+        badgeHTML = `<span class="${badgeBase} ${badgeColor}">Dueño Fuera</span>`;
 
+        contentHTML = `
+            <div class="${bodyBase}">
+                <div class="text-xs text-slate-500 uppercase tracking-wide font-semibold">Propietario</div>
+                <div class="font-bold text-sm text-slate-800">${ownerInfo.nombre}</div>
+            </div>
+        `;
+
+        buttonsHTML = `
+            <button onclick="abrirModalVisitante()" class="${btnClass} bg-amber-500 hover:bg-amber-600 text-white">Visitante</button>
+            <button onclick="restaurarDueno(${spot.id})" class="${btnClass} bg-indigo-600 hover:bg-indigo-700 text-white">Restaurar</button>
+        `;
+    }
+    // --- 3. LIBRE ---
+    else if (spot.estado === 'libre') {
+        borderClass = "border-slate-200";
+        badgeHTML = `<span class="${badgeBase} bg-emerald-100 text-emerald-700">Disponible</span>`;
+
+        contentHTML = `
+            <div class="${bodyBase}">
+                <div class="text-3xl font-light text-slate-300 mb-2">${spot.numero}</div>
+            </div>
+        `;
+
+        buttonsHTML = `
+            <button onclick="abrirModalAsignar(${spot.id}, '${spot.numero}')" class="${btnClass} bg-indigo-600 hover:bg-indigo-700 text-white">Asignar Cliente</button>
+            <button onclick="abrirModalVisitante()" class="${btnClass} bg-amber-500 hover:bg-amber-600 text-white">Visitante</button>
+            <div class="col-span-2">
+                <button onclick="abrirModalReservar(${spot.id}, '${spot.numero}')" class="${btnClass} w-full bg-white text-purple-600 border border-purple-200 hover:bg-purple-50">Reservar Puesto</button>
+            </div>
+        `;
+    }
+    // --- 4. VISITANTE ---
+    else if (spot.estado === 'ocupado' && isTempUser) {
+        borderClass = "border-amber-300 bg-amber-50";
+        badgeColor = "bg-amber-500 text-white";
+        badgeHTML = `<span class="${badgeBase} ${badgeColor}">Visitante</span>`;
+
+        const hasOwner = ownerInfo && ownerInfo.nombre;
         const entryTime = formatHoraEntrada(spot.hora_inicio);
 
-        cardHTML = `
-            <div class="${borderClass} ${bgClass} rounded-xl p-3 flex flex-col justify-between relative min-h-[150px] shadow-sm border-2">
-                <div class="flex justify-between items-start mb-2">${badgeHTML}<span class="text-lg font-bold text-slate-700">${spot.numero}</span></div>
-                <div class="mb-2">
-                    <div class="font-bold text-xs text-slate-800 truncate">${meta.temp_user.nombre}</div>
-                    <div class="font-mono text-[10px] bg-white px-1.5 inline-block rounded border border-slate-200 w-max mt-1">${meta.temp_user.placa}</div>
-                    
-                    <!-- BLOQUE DE TIEMPO ACTUALIZADO -->
-                    <div class="mt-2 space-y-1">
-                        <div class="flex justify-between items-center text-[10px]">
-                            <div class="text-slate-500"><i class="fa-regular fa-clock"></i> ${calcularTiempo(spot.hora_inicio)}</div>
-                        </div>
-                        <div class="font-bold text-slate-700 bg-white px-1.5 rounded border border-slate-200 text-center">
-                            Entró: ${entryTime}
-                        </div>
-                    </div>
+        contentHTML = `
+            <div class="${bodyBase}">
+                <div class="font-bold text-sm text-slate-800 max-w-[90%] truncate">${meta.temp_user.nombre}</div>
+                <div class="flex items-center gap-1">
+                    <span class="font-mono text-xs bg-white px-2 py-0.5 rounded border border-amber-200 text-amber-700">${meta.temp_user.placa}</span>
+                </div>
+                <div class="text-[10px] text-slate-500 font-medium mt-1">
+                    <i class="fa-regular fa-clock mr-1"></i>${calcularTiempo(spot.hora_inicio)}
+                </div>
+                <div class="text-[10px] text-slate-400">${entryTime}</div>
+                ${hasOwner ? `<div class="text-[9px] text-indigo-600 bg-indigo-50 px-1.5 rounded mt-1 border border-indigo-100">Dueño: ${ownerInfo.nombre}</div>` : ''}
+            </div>
+        `;
 
-                    ${hasOwner ? `<div class="text-[9px] text-indigo-700 mt-1 font-semibold bg-indigo-100 inline-block px-1 rounded truncate w-full">Dueño: ${ownerInfo.nombre}</div>` : ''}
-                </div>
-                <div class="${gridClass} mt-2">
-                    ${buttonsHTML}
-                </div>
-                <button onclick="limpiarPuesto(${spot.id})" class="mt-1 text-[10px] text-slate-400 hover:text-red-600 underline w-full">Limpiar Datos</button>
-                ${footerActions}
-            </div>`;
-    } else if (spot.estado === 'ocupado') {
-        // OFICIAL O DUEÑO RESTITUIDO
-        borderClass = "border-indigo-200"; bgClass = "bg-indigo-50";
+        let btnGrid = hasOwner ? "grid-cols-3 gap-1" : "grid-cols-2 gap-2";
+        buttonsHTML = `
+            <div class="${footerBase} ${btnGrid}">
+                <button onclick="cobrarVisitante(${spot.id})" class="${btnClass} bg-amber-600 hover:bg-amber-700 text-white">Cobrar</button>
+                <button onclick="salirVisitante(${spot.id})" class="${btnClass} bg-white hover:bg-red-50 text-red-600 border border-red-200">Salir</button>
+                ${hasOwner ? `<button onclick="restaurarDueno(${spot.id})" class="${btnClass} bg-indigo-600 hover:bg-indigo-700 text-white">Restaurar</button>` : ''}
+            </div>
+        `;
+    }
+    // --- 5. OCUPADO (Cliente/Dueño) ---
+    else if (spot.estado === 'ocupado') {
+        borderClass = "border-indigo-200 bg-indigo-50/50";
+        const isClient = !!spot.cliente_id;
+        badgeColor = isClient ? "bg-indigo-600 text-white" : "bg-slate-700 text-white";
+        const badgeText = isClient ? "Cliente" : "Dueño";
+        
+        badgeHTML = `<span class="${badgeBase} ${badgeColor}">${badgeText}</span>`;
+
         const nombre = spot.cliente_nombre || ownerInfo.nombre || 'Desconocido';
         const placa = spot.cliente_placa || ownerInfo.placa || '---';
-        const badgeColor = spot.cliente_id ? "bg-indigo-600" : "bg-indigo-800";
-        const badgeText = spot.cliente_id ? "OFICIAL" : "DUEÑO";
-        
-        badgeHTML = `<span class="${badgeColor} text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase">${badgeText}</span>`;
-
         const entryTime = formatHoraEntrada(spot.hora_inicio);
 
-        cardHTML = `
-            <div class="${borderClass} ${bgClass} rounded-xl p-3 flex flex-col justify-between relative min-h-[150px] shadow-sm">
-                <div class="flex justify-between items-start mb-2">${badgeHTML}<span class="text-lg font-bold text-slate-700">${spot.numero}</span></div>
-                <div class="mb-2">
-                    <div class="font-bold text-xs text-slate-800 truncate">${nombre}</div>
-                    <div class="font-mono text-[10px] bg-white px-1.5 inline-block rounded border border-slate-200 w-max mt-1">${placa} ${vehicleIconHTML}</div>
-                    
-                    <!-- BLOQUE DE TIEMPO ACTUALIZADO -->
-                    <div class="mt-2 space-y-1">
-                        <div class="flex justify-between items-center text-[10px]">
-                            <div class="text-slate-500"><i class="fa-regular fa-clock"></i> ${calcularTiempo(spot.hora_inicio)}</div>
-                        </div>
-                        <div class="font-bold text-indigo-700 bg-white px-1.5 rounded border border-indigo-200 text-center">
-                            Entró: ${entryTime}
-                        </div>
-                    </div>
+        contentHTML = `
+            <div class="${bodyBase}">
+                <div class="font-bold text-sm text-slate-800 max-w-[90%] truncate">${nombre}</div>
+                <div class="flex items-center gap-1 mb-1">
+                    <span class="font-mono text-xs bg-white px-2 py-0.5 rounded border border-indigo-200 text-indigo-700">${placa}</span>
+                    ${spot.cliente_tipo_vehiculo ? `<i class="fa-solid ${getIconForType(spot.cliente_tipo_vehiculo)} text-xs text-indigo-400"></i>` : ''}
                 </div>
-                <div class="grid grid-cols-2 gap-2 mt-2">
-                    <button onclick="cobrar(${spot.id})" class="${btnClass} bg-indigo-600 hover:bg-indigo-700 text-white">Cobrar</button>
-                    <button onclick="salir(${spot.id})" class="${btnClass} bg-white hover:bg-red-50 text-red-600 border border-red-200">Salir</button>
+                <div class="text-[10px] text-slate-500 font-medium">
+                    <i class="fa-regular fa-clock mr-1"></i>${calcularTiempo(spot.hora_inicio)}
                 </div>
-                <button onclick="limpiarPuesto(${spot.id})" class="mt-1 text-[10px] text-slate-400 hover:text-red-600 underline w-full">Limpiar</button>
-                ${footerActions}
-            </div>`;
+                <div class="text-[10px] text-slate-400">${entryTime}</div>
+            </div>
+        `;
+
+        buttonsHTML = `
+            <div class="${footerBase}">
+                <button onclick="cobrar(${spot.id})" class="${btnClass} bg-indigo-600 hover:bg-indigo-700 text-white">Cobrar</button>
+                <button onclick="salir(${spot.id})" class="${btnClass} bg-white hover:bg-red-50 text-red-600 border border-red-200">Salir</button>
+            </div>
+        `;
     }
+
+    cardHTML = `
+        <div class="${cardBase} ${borderClass}">
+            <div class="p-4 h-full flex flex-col">
+                <div class="${headerBase}">
+                    ${badgeHTML}
+                    <span class="${numberBase}">${spot.numero}</span>
+                </div>
+                ${contentHTML}
+                ${buttonsHTML}
+                ${adminFooter}
+            </div>
+        </div>
+    `;
+
     container.insertAdjacentHTML('beforeend', cardHTML);
   });
 }
 
-// --- MODALES ---
+// --- MODALES Y ANIMACIONES ---
+function cerrarTodosLosModales() {
+    const modals = ['modalCrearPuesto', 'modalAsignar', 'modalVisitante', 'modalReservar'];
+    modals.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) {
+            el.classList.add('hidden');
+            el.classList.add('opacity-0');
+        }
+    });
+}
+
 function animarModalEntrada(modalId, contentId) {
     if (typeof document === 'undefined') return;
+    cerrarTodosLosModales();
+
     const modal = document.getElementById(modalId);
     const content = document.getElementById(contentId);
     if(!modal || !content) return;
@@ -317,6 +360,7 @@ function animarModalSalida(modalId, contentId, callback) {
     setTimeout(() => { modal.classList.add('hidden'); if(callback) callback(); }, 200);
 }
 
+// Crear Puesto
 window.abrirModalCrearPuesto = function() {
     const input = document.getElementById('inputNuevoNumero');
     if(input) input.value = '';
@@ -336,10 +380,33 @@ window.confirmarCrearPuesto = async function() {
     } catch (e) { mostrarToast("Error de conexión", "error"); }
 };
 
-// --- NOCTURNO ---
-window.abrirModalNocturno = function() {
-    const spotSelect = document.getElementById('nocturnoSpotSelect');
-    const clientSelect = document.getElementById('nocturnoClientSelect');
+// --- RESERVAR ---
+window.abrirModalReservar = function(id, numero) {
+    currentSpotId = id;
+    const title = document.getElementById('modalReservarTitle');
+    if(title) title.innerText = `Reservar Puesto #${numero}`;
+    document.getElementById('reservaNombre').value = '';
+    document.getElementById('reservaPlaca').value = '';
+    animarModalEntrada('modalReservar', 'modalReservarContent');
+};
+window.cerrarModalReservar = function() { animarModalSalida('modalReservar', 'modalReservarContent'); };
+window.confirmarReservar = async function() {
+    const nombre = document.getElementById('reservaNombre').value.trim();
+    const placa = document.getElementById('reservaPlaca').value.trim();
+    if (!nombre) return mostrarToast("El nombre es obligatorio", "error");
+    try {
+        const bodyData = { id: currentSpotId, accion: "reservar", nombre, placa };
+        const res = await fetch("/api/puestos", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(bodyData) });
+        const data = await res.json();
+        if (data.success) { cerrarModalReservar(); mostrarToast("Reserva creada"); cargarPuestos(); }
+        else { mostrarToast(data.error || "Error", "error"); }
+    } catch (e) { mostrarToast("Error de conexión", "error"); }
+};
+
+// --- VISITANTE ---
+window.abrirModalVisitante = function() {
+    const spotSelect = document.getElementById('visitanteSpotSelect');
+    const clientSelect = document.getElementById('visitanteClientSelect');
     
     if(spotSelect) {
         spotSelect.innerHTML = '<option value="">Seleccionar Puesto...</option>';
@@ -363,16 +430,16 @@ window.abrirModalNocturno = function() {
             clientSelect.add(opt);
         });
     }
-    const manualRadio = document.querySelector('input[name="nocturnoType"][value="manual"]');
+    const manualRadio = document.querySelector('input[name="visitanteType"][value="manual"]');
     if(manualRadio) manualRadio.checked = true;
-    window.onNocturnoTypeChange();
-    animarModalEntrada('modalNocturno', 'modalNocturnoContent');
+    window.onVisitanteTypeChange();
+    animarModalEntrada('modalVisitante', 'modalVisitanteContent');
 };
-window.cerrarModalNocturno = function() { animarModalSalida('modalNocturno', 'modalNocturnoContent'); };
-window.onNocturnoTypeChange = function() {
-    const type = document.querySelector('input[name="nocturnoType"]:checked')?.value;
-    const clientSection = document.getElementById('divNocturnoCliente');
-    const manualSection = document.getElementById('divNocturnoManual');
+window.cerrarModalVisitante = function() { animarModalSalida('modalVisitante', 'modalVisitanteContent'); };
+window.onVisitanteTypeChange = function() {
+    const type = document.querySelector('input[name="visitanteType"]:checked')?.value;
+    const clientSection = document.getElementById('divVisitanteCliente');
+    const manualSection = document.getElementById('divVisitanteManual');
     if(!type) return;
     if (type === 'registered') {
         clientSection?.classList.remove('hidden');
@@ -382,11 +449,11 @@ window.onNocturnoTypeChange = function() {
         manualSection?.classList.remove('hidden');
     }
 };
-window.onNocturnoClientChange = function() {
-    const select = document.getElementById('nocturnoClientSelect');
+window.onVisitanteClientChange = function() {
+    const select = document.getElementById('visitanteClientSelect');
     const clientId = select.value;
-    const nameInput = document.getElementById('nocturnoNombre');
-    const plateInput = document.getElementById('nocturnoPlaca');
+    const nameInput = document.getElementById('visitanteNombre');
+    const plateInput = document.getElementById('visitantePlaca');
     if (clientId) {
         const client = clientesCache.find(c => c.id == clientId);
         if (client) {
@@ -399,34 +466,34 @@ window.onNocturnoClientChange = function() {
         nameInput.readOnly = false; plateInput.readOnly = false;
     }
 };
-window.confirmarNocturno = async function() {
-    const tipo = document.querySelector('input[name="nocturnoType"]:checked')?.value;
-    const spotId = document.getElementById('nocturnoSpotSelect').value;
+window.confirmarVisitante = async function() {
+    const tipo = document.querySelector('input[name="visitanteType"]:checked')?.value;
+    const spotId = document.getElementById('visitanteSpotSelect').value;
     let nombre, placa, clientId = null;
 
     if (!spotId) return mostrarToast("Seleccione un puesto", "error");
     if (tipo === 'registered') {
-        clientId = document.getElementById('nocturnoClientSelect').value;
+        clientId = document.getElementById('visitanteClientSelect').value;
         if (!clientId) return mostrarToast("Seleccione un cliente", "error");
     } else {
-        nombre = document.getElementById('nocturnoNombre').value;
-        placa = document.getElementById('nocturnoPlaca').value;
+        nombre = document.getElementById('visitanteNombre').value;
+        placa = document.getElementById('visitantePlaca').value;
         if (!nombre || !placa) return mostrarToast("Complete nombre y placa", "error");
     }
     try {
-        const bodyData = { id: spotId, accion: "asignar_nocturno", temp_name: nombre, temp_plate: placa, cliente_id: clientId };
+        const bodyData = { id: spotId, accion: "asignar_visitante", temp_name: nombre, temp_plate: placa, cliente_id: clientId };
         const res = await fetch("/api/puestos", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(bodyData) });
         const data = await res.json();
-        if (data.success) { cerrarModalNocturno(); mostrarToast("Ingreso registrado"); cargarPuestos(); }
+        if (data.success) { cerrarModalVisitante(); mostrarToast("Ingreso registrado"); cargarPuestos(); }
         else { mostrarToast(data.error || "Error", "error"); }
     } catch (e) { mostrarToast("Error de conexión", "error"); }
 };
 
-// --- ASIGNAR ---
+// --- ASIGNAR CLIENTE ---
 window.abrirModalAsignar = async function(id, numero) {
     currentSpotId = id;
     await cargarPuestos(); await cargarClientesCache();
-    document.getElementById('modalAsignarTitle').innerText = `Asignar #${numero} (Oficial)`;
+    document.getElementById('modalAsignarTitle').innerText = `Asignar #${numero} (Cliente)`;
     
     const select = document.getElementById("modalClienteSelect");
     if(select) {
@@ -469,9 +536,16 @@ window.confirmarAsignar = async function() {
 
 // --- ACCIONES ---
 window.ocuparReserva = async function(id) {
-    if(!confirm("¿Confirmar llegada y ocupar?")) return;
+    if(!confirm("¿Confirmar llegada y ocupar el puesto reservado?")) return;
     const res = await fetch("/api/puestos", { method: "PUT", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ id, accion: "ocupar_reserva" }) });
     if(res.ok) { mostrarToast("Ocupado"); cargarPuestos(); }
+};
+window.liberar = async function(id) {
+    if(!confirm("¿Cancelar reserva y liberar puesto?")) return;
+    try {
+        const res = await fetch("/api/puestos", { method: "PUT", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ id, accion: "salir_visitante" }) });
+        if(res.ok) { mostrarToast("Liberado"); cargarPuestos(); }
+    } catch(e) { mostrarToast("Error", "error"); }
 };
 window.eliminarPuesto = async function(id) {
     if(!confirm("¿ESTÁ SEGURO DE ELIMINAR ESTE PUESTO?")) return;
@@ -481,6 +555,8 @@ window.eliminarPuesto = async function(id) {
         else { const d = await res.json(); mostrarToast(d.error || "Error", "error"); }
     } catch (e) { mostrarToast("Error de conexión", "error"); }
 };
+
+// --- COBRAR (LOGICA ACTUALIZADA FORZANDO SALIDA) ---
 window.cobrar = async function(id) {
     const spot = allSpots.find(s => s.id === id);
     if(!spot) return;
@@ -499,10 +575,48 @@ window.cobrar = async function(id) {
     const nombre = spot.cliente_nombre || owner.nombre || 'Cliente';
     const telefono = spot.cliente_telefono || owner.telefono || '';
     const plate = spot.cliente_placa || owner.placa;
-    const url = `caja.html?plate=${plate}&spot=${spot.numero}&client=${encodeURIComponent(nombre)}&phone=${telefono}&entry=${spot.hora_inicio || Math.floor(Date.now()/1000)}&amount=${monto}&period=Mes`;
+
+    // 1. Preguntar si renueva
+    const renueva = confirm(
+        "¿El cliente RENUEVA el servicio por el próximo mes?\n\n" +
+        "ACEPTAR (Sí): Se cobra y el cliente SE QUEDA en el puesto.\n" +
+        "CANCELAR (No): Se cobra y el cliente LIBERA el puesto (se borran datos)."
+    );
+
+    // 2. Si NO renueva, forzamos la liberación del puesto AQUÍ MISMO antes de ir a caja
+    if (!renueva) {
+        try {
+            // Llamamos a la API de salida oficial
+            const res = await fetch("/api/puestos", { 
+                method: "PUT", 
+                headers: {"Content-Type": "application/json"}, 
+                body: JSON.stringify({ id, accion: "salida_oficial" }) 
+            });
+            
+            if (res.ok) {
+                mostrarToast("Salida registrada. Procediendo al cobro.");
+                // Recargamos los puestos para asegurar que la vista esté actualizada si el usuario regresa
+                await cargarPuestos();
+            } else {
+                // Si falla la liberación, no dejamos ir a caja para evitar inconsistencias
+                const errorData = await res.json();
+                alert("Error al liberar el puesto: " + (errorData.error || "Desconocido"));
+                return; 
+            }
+        } catch(e) {
+            mostrarToast("Error de conexión al liberar puesto", "error");
+            return;
+        }
+    }
+
+    // 3. Redirigir a Caja
+    // Si renueva=true, caja simplemente cobra.
+    // Si renueva=false, el puesto ya está libre gracias al paso anterior, caja solo sirve de recibo.
+    const url = `caja.html?plate=${plate}&spot=${spot.numero}&client=${encodeURIComponent(nombre)}&phone=${telefono}&entry=${spot.hora_inicio || Math.floor(Date.now()/1000)}&amount=${monto}&period=Mes&renew=${renueva}`;
     window.location.href = url;
 };
-window.cobrarNocturno = async function(id) {
+
+window.cobrarVisitante = async function(id) {
     const spot = allSpots.find(s => s.id === id);
     if(!spot) return;
     const meta = JSON.parse(spot.llave_caracteristicas || '{}');
@@ -512,7 +626,7 @@ window.cobrarNocturno = async function(id) {
     if(!monto || monto <= 0) return;
     if(!confirm(`¿Cobrar $${monto} a ${meta.temp_user.nombre}?`)) return;
 
-    const url = `caja.html?plate=${meta.temp_user.placa}&spot=${spot.numero}&client=${encodeURIComponent(meta.temp_user.nombre)}&phone=&entry=${spot.hora_inicio || Math.floor(Date.now()/1000)}&amount=${monto}&period=Noche`;
+    const url = `caja.html?plate=${meta.temp_user.placa}&spot=${spot.numero}&client=${encodeURIComponent(meta.temp_user.nombre)}&phone=&entry=${spot.hora_inicio || Math.floor(Date.now()/1000)}&amount=${monto}&period=Visita`;
     window.location.href = url;
 };
 window.salir = async function(id) {
@@ -527,19 +641,19 @@ window.salir = async function(id) {
         else { mostrarToast("Error", "error"); }
     } catch(e) { mostrarToast("Error", "error"); }
 };
-window.salirNocturno = async function(id) {
+window.salirVisitante = async function(id) {
     const spot = allSpots.find(s => s.id === id);
     if(!spot) return;
     
     const meta = JSON.parse(spot.llave_caracteristicas || '{}');
     const owner = JSON.parse(spot.puesto_info || '{}');
     
-    let mensaje = `¿El cliente nocturno ${meta.temp_user.nombre} se va?`;
+    let mensaje = `¿El visitante ${meta.temp_user.nombre} se va?`;
     
     if (owner.nombre) {
         mensaje += `\n\n⚠️ ATENCIÓN: Este puesto tiene un dueño original.\n`;
         mensaje += `👤 Dueño: ${owner.nombre} (${owner.placa}).\n\n`;
-        mensaje += `Si confirma "Salir", el puesto quedará LIBRE (el dueño no regresa automáticamente).`;
+        mensaje += `Si confirma "Salir", el puesto quedará LIBRE.`;
     } else {
         mensaje += `\n\nEl puesto quedará libre.`;
     }
@@ -547,7 +661,7 @@ window.salirNocturno = async function(id) {
     if(!confirm(mensaje)) return;
 
     try {
-        const res = await fetch("/api/puestos", { method: "PUT", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ id, accion: "salir_nocturno" }) });
+        const res = await fetch("/api/puestos", { method: "PUT", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ id, accion: "salir_visitante" }) });
         if (res.ok) { mostrarToast("Liberado"); cargarPuestos(); }
     } catch(e) { mostrarToast("Error", "error"); }
 };
