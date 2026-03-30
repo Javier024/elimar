@@ -51,7 +51,7 @@ async function handleLogin(e) {
     }
 
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verificando...';
+    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verificando espere un momento...';
 
     try {
         const res = await fetch('/api/auth', {

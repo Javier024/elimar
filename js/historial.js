@@ -1,7 +1,7 @@
 // parqueo/js/historial.js
 
 document.addEventListener("DOMContentLoaded", function () {
-  let allHistory = [], filteredHistory = [], currentPage = 1, itemsPerPage = 8;
+  let allHistory = [], filteredHistory = [], currentPage = 1, itemsPerPage = 10; 
 
   async function loadHistory() {
     try {
@@ -23,10 +23,24 @@ document.addEventListener("DOMContentLoaded", function () {
           typeVal = document.getElementById("filterType").value;
 
     filteredHistory = allHistory.filter(item => {
+      // Filtro de fechas (comparando strings YYYY-MM-DD funciona directamente)
       if (startStr && item.date < startStr) return false;
       if (endStr && item.date > endStr) return false;
-      if (typeVal !== "all" && item.type !== typeVal) return false;
       
+      // Filtro de tipo
+      if (typeVal !== "all") {
+          // Búsqueda parcial o exacta dependiendo del valor
+          if(typeVal === 'CAJA' && item.type !== 'caja') return false;
+          else if(typeVal === 'GASTO' && item.type !== 'gasto') return false;
+          else if(typeVal === 'CLIENTE' && item.type !== 'cliente') return false;
+          else if(typeVal === 'PUESTO' && item.type !== 'puesto') return false;
+          // Para vehículos buscamos si la palabra clave está en el tipo
+          else if (['Carro', 'Moto', 'Camioneta'].includes(typeVal)) {
+              if (!item.type.toLowerCase().includes(typeVal.toLowerCase())) return false;
+          }
+      }
+      
+      // Buscador general (placa o puesto/descripción)
       const text = (item.plate || "") + " " + (item.spot || "");
       if (searchStr && !text.toLowerCase().includes(searchStr)) return false;
       
@@ -38,12 +52,12 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   window.deleteItem = async function(id) {
-      if(!confirm("¿Eliminar este registro?")) return;
+      if(!confirm("¿Eliminar este registro permanentemente?")) return;
       try {
           await fetch(`/api/historial?id=${id}`, { method: "DELETE" });
-          mostrarToast("Eliminado");
+          mostrarToast("Registro eliminado correctamente");
           loadHistory();
-      } catch (e) { mostrarToast("Error", "error"); }
+      } catch (e) { mostrarToast("Error al eliminar", "error"); }
   }
 
   function mostrarToast(msg, type='success') {
@@ -55,18 +69,13 @@ document.addEventListener("DOMContentLoaded", function () {
     setTimeout(()=>{ toast.classList.add('translate-y-10','opacity-0'); setTimeout(()=>toast.remove(),300); }, 3000);
   }
 
-  function formatMoney(amount) {
-      if(!amount) return "-";
-      const val = parseFloat(amount);
-      return (val < 0 ? "-$" : "$") + Math.abs(val).toLocaleString('es-CO');
-  }
-
   function renderFeed() {
-    const container = document.getElementById("historyFeed"); 
+    const container = document.getElementById("historyFeedBody"); 
     if(!container) return; 
     
     if (filteredHistory.length === 0) {
-         container.innerHTML = `<div class="flex flex-col items-center justify-center py-20 text-slate-400"><i class="fa-solid fa-folder-open text-5xl mb-4 opacity-20"></i><p class="text-sm font-medium">No hay movimientos registrados</p></div>`;
+         container.innerHTML = `<tr><td colspan="5" class="p-10 text-center text-slate-400"><div class="flex flex-col items-center justify-center gap-3"><i class="fa-solid fa-inbox text-4xl opacity-20"></i><p class="text-sm font-medium">No hay registros coincidentes</p></div></td></tr>`;
+         updatePagination();
          return;
     }
 
@@ -75,22 +84,24 @@ document.addEventListener("DOMContentLoaded", function () {
     container.innerHTML = "";
 
     pageData.forEach(item => {
-        const el = document.createElement("div");
+        const tr = document.createElement("tr");
         
-        let cardStyle = "border-slate-200 bg-white";
+        // Clases base
+        let rowClass = "hover:bg-slate-50 transition-colors group border-b border-slate-100 last:border-0";
+        let borderLeftClass = "";
         let iconBg = "bg-slate-100 text-slate-500";
         let iconClass = "fa-circle-info";
         let title = item.type;
-        let subhead = item.spot || "Sistema";
-        let detailRight = "";
-        let borderLeft = "border-l-4 border-l-slate-300";
+        let subhead = item.spot || "General";
+        let statusCell = "";
 
         const typeStr = (item.type || "").toLowerCase();
 
-        // Lógica Vehículos
+        // --- Lógica de Visualización según Tipo ---
+
+        // 1. Vehículos (Carro, Moto, etc.)
         if (typeStr.includes('carro') || typeStr.includes('particular') || typeStr.includes('moto') || typeStr.includes('camioneta') || typeStr.includes('suv') || typeStr.includes('cobrador')) {
-            borderLeft = item.exit ? "border-l-4 border-l-emerald-500" : "border-l-4 border-l-amber-500"; 
-            cardStyle = item.exit ? "bg-white" : "bg-amber-50/30"; 
+            borderLeftClass = item.exit ? "border-l-4 border-l-emerald-500" : "border-l-4 border-l-amber-500"; 
             
             if (typeStr.includes('moto')) iconClass = "fa-motorcycle";
             else if (typeStr.includes('camioneta') || typeStr.includes('suv')) iconClass = "fa-truck-pickup";
@@ -98,91 +109,118 @@ document.addEventListener("DOMContentLoaded", function () {
             
             iconBg = item.exit ? "bg-emerald-100 text-emerald-600" : "bg-amber-100 text-amber-600";
             
-            title = item.plate || "Sin Placa";
+            title = item.plate || "SIN PLACA";
             subhead = item.type; 
-            const timeBadge = item.exit 
-                ? `<span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-100">Salida: ${item.exit}</span>`
-                : `<span class="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-100 flex items-center gap-1 animate-pulse"><i class="fa-solid fa-circle text-[8px]"></i> En curso</span>`;
             
-            detailRight = `
-                <div class="flex flex-col items-end gap-1">
-                    ${timeBadge}
-                    <span class="text-xs text-slate-400">Entrada: ${item.entry}</span>
-                    ${item.paid > 0 ? `<span class="text-[10px] font-bold text-emerald-600">Pagó: $${item.paid}</span>` : ''}
-                </div>
-            `;
+            // Estado (Salida o En Curso)
+            if (item.exit) {
+                statusCell = `
+                    <div class="flex flex-col items-end gap-1">
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700">
+                            <i class="fa-solid fa-check"></i> ${item.exit}
+                        </span>
+                        <span class="text-[10px] text-slate-400">Ent: ${item.entry}</span>
+                    </div>
+                `;
+            } else {
+                statusCell = `
+                    <div class="flex flex-col items-end gap-1">
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-100 text-amber-700 animate-pulse">
+                            <i class="fa-solid fa-circle text-[6px]"></i> EN CURSO
+                        </span>
+                        <span class="text-[10px] text-slate-400">Ent: ${item.entry}</span>
+                    </div>
+                `;
+            }
         }
-        // Lógica Caja
+        // 2. Caja / Ingresos
         else if (typeStr === 'caja') {
-            borderLeft = "border-l-4 border-l-indigo-500";
+            borderLeftClass = "border-l-4 border-l-indigo-500";
             iconBg = "bg-indigo-100 text-indigo-600";
-            iconClass = "fa-money-bill-trend-up";
+            iconClass = "fa-money-bill-wave";
             title = "Ingreso de Caja";
             subhead = item.spot; 
-            detailRight = `<span class="font-mono font-bold text-indigo-600 text-lg">+ $${item.paid || 0}</span>`;
+            statusCell = `
+                <div class="text-right">
+                    <span class="block font-mono font-bold text-indigo-600 text-sm">+ $${Number(item.paid || 0).toLocaleString('es-CO')}</span>
+                    <span class="text-[10px] text-slate-400">${item.entry}</span>
+                </div>`;
         }
-        // Lógica Gastos
+        // 3. Gastos
         else if (typeStr === 'gasto') {
-            borderLeft = "border-l-4 border-l-rose-500";
+            borderLeftClass = "border-l-4 border-l-rose-500";
             iconBg = "bg-rose-100 text-rose-600";
             iconClass = "fa-receipt";
             title = "Gasto Registrado";
             subhead = item.spot; 
-            detailRight = `<span class="font-mono font-bold text-rose-600 text-lg">- $${Math.abs(item.paid || 0)}</span>`;
+            statusCell = `
+                <div class="text-right">
+                    <span class="block font-mono font-bold text-rose-600 text-sm">- $${Math.abs(Number(item.paid || 0)).toLocaleString('es-CO')}</span>
+                    <span class="text-[10px] text-slate-400">${item.entry}</span>
+                </div>`;
         }
-        // Lógica Cliente
+        // 4. Cliente
         else if (typeStr === 'cliente') {
-            borderLeft = "border-l-4 border-l-cyan-500";
+            borderLeftClass = "border-l-4 border-l-cyan-500";
             iconBg = "bg-cyan-100 text-cyan-600";
             iconClass = "fa-user-plus";
             title = "Nuevo Cliente";
             subhead = item.spot;
-            detailRight = `<span class="text-xs text-slate-400">Registro</span>`;
+            statusCell = `<span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">REGISTRO</span>`;
         }
-        // Lógica Puesto
+        // 5. Puesto
         else if (typeStr === 'puesto') {
-            borderLeft = "border-l-4 border-l-purple-500";
+            borderLeftClass = "border-l-4 border-l-purple-500";
             iconBg = "bg-purple-100 text-purple-600";
-            iconClass = "fa-map-location-dot";
+            iconClass = "fa-map-pin";
             title = "Gestión Puesto";
             subhead = item.spot;
-            detailRight = `<span class="text-xs text-slate-400">Admin</span>`;
+            statusCell = `<span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">ADMIN</span>`;
         }
 
-        el.className = `group relative p-4 rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 ${cardStyle} ${borderLeft} flex flex items-center justify-between gap-4`;
+        tr.className = `${rowClass} ${borderLeftClass}`;
         
-        el.innerHTML = `
-            <div class="flex items-center gap-4 flex-1 min-w-0">
-                <div class="shrink-0 w-12 h-12 rounded-lg flex items-center justify-center shadow-sm ${iconBg}">
-                    <i class="fa-solid ${iconClass} text-lg"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 mb-1">
-                        <h4 class="font-bold text-slate-800 truncate">${title}</h4>
-                    </div>
-                    <div class="flex items-center gap-2 text-xs text-slate-500 truncate">
-                        <span class="font-medium text-slate-400">${item.date}</span>
-                        <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
-                        <span>${subhead}</span>
-                    </div>
-                </div>
-            </div>
-            <div class="flex flex-col items-end justify-between gap-1 shrink-0">
-                ${detailRight}
-                <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 mt-2">
-                    <button onclick="deleteItem(${item.id})" class="text-slate-300 hover:text-red-500 transition-colors p-1" title="Eliminar">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                </div>
-            </div>
+        // Botón de eliminar (Hover)
+        const deleteBtn = `
+            <button onclick="deleteItem(${item.id})" class="opacity-0 group-hover:opacity-100 transition-all p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg" title="Eliminar registro">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
         `;
-        container.appendChild(el);
+
+        // Renderizado de Fila
+        tr.innerHTML = `
+            <td class="p-3 align-middle">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${iconBg}">
+                        <i class="fa-solid ${iconClass} text-xs"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="font-bold text-slate-800 text-sm truncate">${title}</div>
+                        <div class="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">${item.type}</div>
+                    </div>
+                </div>
+            </td>
+            <td class="p-3 align-middle whitespace-nowrap">
+                <div class="text-xs text-slate-500 font-medium">${item.date}</div>
+            </td>
+            <td class="p-3 align-middle">
+                <div class="text-xs font-medium text-slate-700 truncate max-w-[150px]" title="${subhead}">${subhead}</div>
+            </td>
+            <td class="p-3 align-middle">
+                ${statusCell}
+            </td>
+            <td class="p-3 align-middle text-center">
+                ${deleteBtn}
+            </td>
+        `;
+        container.appendChild(tr);
     });
     updatePagination();
   }
 
   function updatePagination() {
     const totalPages = Math.ceil(filteredHistory.length / itemsPerPage);
+    // Calcular rango visible
     const start = filteredHistory.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
     const end = Math.min(currentPage * itemsPerPage, filteredHistory.length);
     
@@ -190,19 +228,41 @@ document.addEventListener("DOMContentLoaded", function () {
     const controls = document.getElementById("pageControls");
     
     if(info) info.innerText = `${start}-${end} de ${filteredHistory.length}`;
+    
     if(controls) {
+        const isPrevDisabled = currentPage === 1 || totalPages === 0;
+        const isNextDisabled = currentPage >= totalPages || totalPages === 0;
+
+        // ESTILO SEPARADO (Justify-between)
         controls.innerHTML = `
-            <button onclick="changePage(-1)" class="p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 ${currentPage===1?'opacity-50 cursor-not-allowed':''}" ${currentPage===1?'disabled':''}><i class="fa-solid fa-chevron-left"></i></button>
-            <button onclick="changePage(1)" class="p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 ${currentPage>=totalPages?'opacity-50 cursor-not-allowed':''}" ${currentPage>=totalPages?'disabled':''}><i class="fa-solid fa-chevron-right"></i></button>
+            <div class="flex justify-between w-full items-center">
+                <button onclick="changePage(-1)" class="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm ${isPrevDisabled ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}" ${isPrevDisabled ? 'disabled' : ''}>
+                    <i class="fa-solid fa-chevron-left text-xs"></i> Anterior
+                </button>
+                
+                <div class="text-xs font-medium text-slate-400">
+                    Página ${currentPage} de ${totalPages || 1}
+                </div>
+
+                <button onclick="changePage(1)" class="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm ${isNextDisabled ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}" ${isNextDisabled ? 'disabled' : ''}>
+                    Siguiente <i class="fa-solid fa-chevron-right text-xs"></i>
+                </button>
+            </div>
         `;
     }
   }
 
   window.changePage = function(dir) {
     const totalPages = Math.ceil(filteredHistory.length / itemsPerPage);
-    if ((dir === -1 && currentPage > 1) || (dir === 1 && currentPage < totalPages)) {
-        currentPage += dir;
+    if (totalPages === 0) return;
+
+    const newPage = currentPage + dir;
+    if (newPage >= 1 && newPage <= totalPages) {
+        currentPage = newPage;
         renderFeed();
+        // Scroll al inicio de la tabla
+        const scrollContainer = document.getElementById("historyFeedScrollContainer");
+        if(scrollContainer) scrollContainer.scrollTop = 0;
     }
   }
 
