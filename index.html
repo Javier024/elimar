@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Iniciar Sesión | PARQUEADERO ELIMAR</title>
-    
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%231e293b' width='100' height='100' rx='20'/><text y='.9em' font-size='80' x='50%' text-anchor='middle' fill='%2334d399' font-family='Arial' font-weight='bold'>P</text></svg>">
-
+    <title>Iniciar Sesión | PARQUEADERO ELIMAR</title> 
+    <link rel="icon" type="image/jpeg" href="/img/LOGO1.jpg">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -14,41 +12,31 @@
     <style>
         body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
 
-        .split-image-panel {
-            background-image: url('https://d2yoo3qu6vrk5d.cloudfront.net/pulzo-lite/images-resized/PP4603966-h-o.webp');
-            background-size: cover;
-            background-position: center; 
-            background-repeat: no-repeat;
-            position: relative;
-        }
-
-        .overlay-dark {
-            background: linear-gradient(to bottom, rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.9));
-        }
-
         .hidden-tab { display: none; animation: fadeIn 0.4s ease-in-out; }
-        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .custom-input:focus { border-color: #0f172a; box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1); }
+
+        .img-container {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .img-container::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            box-shadow: inset 0 0 30px 15px white;
+            filter: blur(10px);
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="bg-white min-h-screen w-full flex flex-col md:flex-row">
 
-    <!-- LADO IZQUIERDO: IMAGEN -->
-    <div class="w-full h-56 md:h-full md:w-1/2 split-image-panel relative flex flex-col justify-end p-6 md:p-12 shrink-0">
-        <div class="absolute inset-0 overlay-dark z-0"></div>
-        <div class="relative z-10 text-white">
-            <div class="flex items-center gap-3 mb-3">
-                <div class="w-12 h-12 bg-emerald-500 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-500/40">
-                    <i class="fa-solid fa-square-parking text-white text-2xl"></i>
-                </div>
-                <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight leading-tight">Parqueadero<br><span class="text-emerald-400 font-light">ELIMAR</span></h1>
-            </div>
-            <p class="text-slate-300 text-sm md:text-base max-w-md leading-relaxed hidden md:block">
-                Sistema de gestión vehicular moderno y seguro.
-            </p>
-        </div>
+    <!-- LADO IZQUIERDO: IMAGEN CON ORILLAS DIFUMINADAS -->
+    <div class="img-container w-full h-64 md:h-full md:w-1/2 shrink-0">
+        <img src="/img/LOGO1.jpg" alt="Parqueadero Elimar" class="w-full h-full object-cover">
     </div>
 
     <!-- LADO DERECHO: FORMULARIO -->
@@ -99,6 +87,7 @@
                         <span>Ingresar</span>
                         <i class="fa-solid fa-arrow-right text-xs"></i>
                     </button>
+                    <div id="loginError" class="text-red-500 text-xs text-center mt-3 hidden"></div>
                 </form>
             </div>
 
@@ -118,7 +107,6 @@
                         </div>
                     </div>
 
-                    <!-- Botón Email Único -->
                     <button onclick="handleRecoverMethod('email')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-lg shadow-md transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-envelope"></i>
                         <span>Enviar Contraseña por Correo</span>
@@ -140,4 +128,4 @@
 
     <script src="js/login.js"></script>
 </body>
-</html> 
+</html>

@@ -42,7 +42,7 @@ async function loadData() {
         renderDeudoresList(deudoresData.rows);
     } else {
         const container = document.getElementById('deudoresList');
-        if(container) container.innerHTML = '<div class="text-center text-slate-400 text-xs">Error cargando deudores</div>';
+        if(container) container.innerHTML = '<div class="text-center text-slate-400 text-xs py-2 font-medium">Error cargando deudores</div>';
     }
 
     renderTable();
@@ -86,19 +86,16 @@ function checkUrlParamsAndFillData() {
 
     if (!plate) return;
 
-    // 1. Datos básicos
     document.getElementById('cajaPlaca').value = plate;
     document.getElementById('cajaPuesto').value = spot || "---";
     if (clientName) document.getElementById('cajaCliente').value = decodeURIComponent(clientName);
     if (phone) document.getElementById('cajaTelefono').value = phone;
 
-    // 2. MANEJO INTELIGENTE DE LA FECHA DE ENTRADA
     const entryDisplay = document.getElementById('cajaFechaEntradaDisplay');
     const hiddenEntry = document.getElementById('cajaEntryTimestamp');
     
     let finalTimestamp = null;
 
-    // CORRECCIÓN CRÍTICA: Priorizar el parámetro URL
     if (entryTimestamp) {
         finalTimestamp = entryTimestamp;
     } else if (hiddenEntry.value) {
@@ -136,7 +133,6 @@ function checkUrlParamsAndFillData() {
         entryDisplay.value = "Sin registro";
     }
 
-    // 3. MONTO A COBRAR
     const montoInput = document.getElementById('cajaMonto');
     const periodSelect = document.getElementById('cajaPeriodType');
     let montoFinal = 0;
@@ -151,7 +147,6 @@ function checkUrlParamsAndFillData() {
     }
     montoInput.value = montoFinal;
 
-    // 4. PERIODO (Lógica anterior, NO bloqueada)
     if (periodSelect) {
         if (periodParam) {
             periodSelect.value = periodParam;
@@ -168,21 +163,15 @@ function checkUrlParamsAndFillData() {
         }
     }
 
-    // 5. MANEJO DE RENOVACIÓN (ACTUALIZADO: NO BLOQUEAR PERIODO)
     const submitBtn = document.querySelector('form button[type="submit"]');
     
     if (renewParam === 'false') {
-        // Es una salida final: Cambiamos el botón a rojo como aviso visual,
-        // pero NO tocamos periodSelect.disabled ni forzamos el valor.
         if (submitBtn) {
             submitBtn.innerHTML = '<i class="fa-solid fa-money-bill-wave mr-2"></i> Registrar Pago Final (Salida)';
             submitBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
             submitBtn.classList.add('bg-red-600', 'hover:bg-red-700');
         }
-        // ELIMINADO: periodSelect.disabled = true;
-        // ELIMINADO: periodSelect.value = 'Cierre';
     } else {
-        // Es renovación o ingreso normal
         if (submitBtn) {
             submitBtn.innerHTML = '<i class="fa-solid fa-money-bill-wave mr-2"></i> Registrar Pago (Renovación)';
             submitBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
@@ -203,7 +192,6 @@ window.preFillFromDebtor = function(plate, nombre, telefono) {
     document.getElementById('cajaCliente').value = nombre;
     document.getElementById('cajaTelefono').value = telefono;
     
-    // Resetear estado visual
     const submitBtn = document.querySelector('form button[type="submit"]');
     if (submitBtn) {
         submitBtn.innerHTML = '<i class="fa-solid fa-money-bill-wave mr-2"></i> Registrar Cobro';
@@ -387,7 +375,7 @@ function renderTable(filterText = '') {
             try {
                 const dateObj = new Date(tsToUse * 1000);
                 if (!isNaN(dateObj.getTime())) {
-                    entradaStr = `${dateObj.toLocaleDateString('es-CO', {day:'2-digit', month:'2-digit', year:'2-digit'})} ${dateObj.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+                    entradaStr = `${dateObj.toLocaleDateString('es-CO', {day:'2-digit', month:'2-digit', year:'2-digit'})} ${dateObj.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'})}`;
                 }
             } catch(e) {
                 console.error("Error fecha entrada:", e);
@@ -551,7 +539,6 @@ async function generarFacturaDesdeFormulario() {
     else if (periodType === 'Mes') dueDate.setMonth(dueDate.getMonth() + parseInt(periodQty));
     
     let finalPeriodType = periodType;
-    // Solo cambiamos a "Cierre" visualmente si es necesario, pero permitimos que el usuario lo haya cambiado antes
     if(periodType === 'Cierre') finalPeriodType = 'Cierre de Cuenta';
 
     createPDF({ 
@@ -567,8 +554,8 @@ async function generarFacturaDesdeFormulario() {
         date, 
         vehicleType,
         entryDate: entryDate,
-        exitDate,
-        dueDate,
+        exitDate: exitDate,
+        dueDate: dueDate,
         validatedPhone: clientData ? clientData.telefono : phone
     });
     return true; 
@@ -580,195 +567,307 @@ async function createPDF(data) {
     const doc = new jsPDF({ unit: 'mm', format: 'letter' }); 
     
     const pageWidth = doc.internal.pageSize.getWidth(); 
-    let y = 0; 
+    const margin = 15;
+    const contentWidth = pageWidth - (margin * 2);
+    let y = margin; 
 
+    // === LOGO MÁS ANCHO CON BORDES DIFUMINADOS ===
+    const logoW = 80;
+    const logoH = 32;
+    const logoX = margin;
+    const logoY = margin;
+    const maxFade = 8; 
+
+    // Dibujar imagen
     try {
-        doc.addImage('/img/logo.jpg', 'JPEG', 0, 0, pageWidth, 45); 
+        doc.addImage('/img/logo.jpg', 'JPEG', logoX, logoY, logoW, logoH); 
     } catch (err) {
         console.error("Error cargando imagen banner:", err);
-        doc.setFillColor(20, 50, 80); 
-        doc.rect(0, 0, pageWidth, 45, 'F');
+        doc.setFillColor(20, 50, 80);
+        doc.roundedRect(logoX, logoY, logoW, logoH, 4, 4, 'F');
         doc.setTextColor(255, 255, 255);
-        doc.setFontSize(24);
+        doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
-        doc.text("PARQUEADERO ELIMAR", pageWidth / 2, 25, { align: 'center' });
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "normal");
-        doc.text("IMAGEN DEL PARQUEADERO", pageWidth / 2, 32, { align: 'center' });
+        doc.text("ELIMAR", logoX + logoW / 2, logoY + logoH / 2 + 5, { align: 'center' });
     }
 
-    y = 55; 
-    doc.setTextColor(0, 0, 0);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(22);
-    doc.text("PARQUEADERO ELIMAR", pageWidth / 2, y, { align: 'center' });
+    // Difuminado en orillas
+    const fadeSteps = 18;
+    for (let i = 0; i < fadeSteps; i++) {
+        const progress = (i + 1) / fadeSteps;
+        const inset = progress * maxFade;
+        const alpha = 0.2 * (1 - progress);
+        
+        try {
+            const gs = new doc.GState({ opacity: alpha });
+            doc.setGState(gs);
+            doc.setFillColor(255, 255, 255);
+            
+            doc.rect(logoX, logoY, logoW, inset, 'F');
+            doc.rect(logoX, logoY + logoH - inset, logoW, inset, 'F');
+            doc.rect(logoX, logoY, inset, logoH, 'F');
+            doc.rect(logoX + logoW - inset, logoY, inset, logoH, 'F');
+        } catch(e) {
+            console.error("Error con GState:", e);
+        }
+    }
+    
+    try {
+        doc.setGState(new doc.GState({ opacity: 1 }));
+    } catch(e) {}
 
-    y += 8;
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
-    doc.text("NIT: 1044212776", pageWidth / 2, y, { align: 'center' });
+    // === INFORMACIÓN DEL NEGOCIO (A LA DERECHA DEL LOGO) ===
+    const textBlockX = logoX + logoW + 12;
+    const textBlockTopY = logoY + 5;
 
-    y += 6;
-    doc.setFontSize(10);
-    doc.text("Cll 20 N° 4-81 BARRIO SAN JOSE, Sahagún, Córdoba", pageWidth / 2, y, { align: 'center' });
-
-    y += 6;
-    doc.setTextColor(100, 100, 100);
-    doc.text("Tel: 3206753900 - 3206641353", pageWidth / 2, y, { align: 'center' });
-
-    y += 10;
-    doc.setDrawColor(0);
-    doc.setLineWidth(0.5);
-    doc.line(20, y, pageWidth - 20, y);
-    y += 10;
-
-    doc.setTextColor(0, 0, 0);
+    doc.setTextColor(20, 50, 80);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
-    doc.text("RECIBO DE PAGO", pageWidth / 2, y, { align: 'center' });
+    doc.text("PARQUEADERO ELIMAR", textBlockX, textBlockTopY);
 
-    y += 12;
-    const labelX = 25;
-    const valueX = 60;
-    const label2X = 130;
-    const value2X = 160;
-
-    doc.setFontSize(11);
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 80);
     doc.setFont("helvetica", "normal");
-
+    doc.text("NIT: 1044212776", textBlockX, textBlockTopY + 7);
+    doc.text("Cll 20 N° 4-81 Barrio San José", textBlockX, textBlockTopY + 12);
+    doc.text("Sahagún, Córdoba", textBlockX, textBlockTopY + 17);
+    doc.text("Tel: 3206753900 - 3206641353", textBlockX, textBlockTopY + 22);
+    doc.setTextColor(30, 120, 30);
     doc.setFont("helvetica", "bold");
-    doc.text("FECHA PAGO:", labelX, y);
-    doc.setFont("helvetica", "normal");
-    const dateStr = data.date ? new Date(data.date + 'T00:00:00').toLocaleDateString('es-CO') : new Date().toLocaleDateString('es-CO');
-    doc.text(dateStr, valueX, y);
+    doc.setFontSize(10);
+    doc.text("Abierto 24/7", textBlockX, textBlockTopY + 28);
 
-    doc.setFont("helvetica", "bold");
-    doc.text("# RECIBO:", label2X, y);
-    doc.setFont("helvetica", "normal");
-    doc.text(`${data.id || '---'}`, value2X, y);
+    // === LÍNEA SEPARADORA ===
+    y = logoY + logoH + 8;
+    doc.setDrawColor(20, 50, 80);
+    doc.setLineWidth(0.8);
+    doc.line(margin, y, pageWidth - margin, y);
     y += 8;
 
-    doc.setFont("helvetica", "bold");
-    doc.text("CLIENTE:", labelX, y);
-    doc.setFont("helvetica", "normal");
-    let clientName = data.client || '---';
-    if(clientName.length > 35) clientName = clientName.substring(0, 32) + '...';
-    doc.text(clientName, valueX, y);
-    y += 8;
-
-    doc.setFont("helvetica", "bold");
-    doc.text("PLACA:", labelX, y);
+    // === TÍTULO RECIBO ===
+    doc.setFillColor(245, 247, 250);
+    doc.roundedRect(margin, y, contentWidth, 12, 2, 2, 'F');
+    doc.setTextColor(20, 50, 80);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
-    doc.text(`${data.plate.toUpperCase() || '---'}`, valueX, y);
-    
-    doc.setFontSize(11);
+    doc.text("RECIBO DE PAGO", pageWidth / 2, y + 8, { align: 'center' });
+    y += 18;
+
+    // === HORA ACTUAL ===
+    const now = new Date();
+
+    // === DATOS DEL RECIBO (2 columnas) ===
+    const col1X = margin;
+    const col2X = pageWidth / 2 + 5;
+    const valOffset = 42;
+
+    doc.setFontSize(10);
+
+    // Columna 1
     doc.setFont("helvetica", "bold");
-    doc.text("VEHÍCULO:", label2X, y);
+    doc.setTextColor(120, 120, 120);
+    doc.text("FECHA PAGO", col1X, y);
     doc.setFont("helvetica", "normal");
-    doc.text(`${data.vehicleType || '---'}`, value2X, y);
-    y += 8;
+    doc.setTextColor(30, 30, 30);
+    const dateObj = data.date ? new Date(data.date + 'T12:00:00') : now;
+    const dateStr = dateObj.toLocaleDateString('es-CO', {day:'2-digit', month:'2-digit', year:'numeric'});
+    const timeStr = now.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    doc.text(`${dateStr}  ${timeStr}`, col1X + valOffset, y);
+    y += 7;
 
     doc.setFont("helvetica", "bold");
-    doc.text("PUESTO:", labelX, y);
+    doc.setTextColor(120, 120, 120);
+    doc.text("# RECIBO", col1X, y);
     doc.setFont("helvetica", "normal");
-    doc.text(`${data.spot || '---'}`, valueX, y);
+    doc.setTextColor(30, 30, 30);
+    doc.text(`${data.id || '---'}`, col1X + valOffset, y);
+    y += 7;
 
     doc.setFont("helvetica", "bold");
-    doc.text("PERIODO:", label2X, y);
+    doc.setTextColor(120, 120, 120);
+    doc.text("CLIENTE", col1X, y);
     doc.setFont("helvetica", "normal");
-    const periodInfo = `${data.period_type || 'Noche'} x ${data.period_quantity || 1}`;
-    doc.text(periodInfo, value2X, y);
-    
-    y += 8;
+    doc.setTextColor(30, 30, 30);
+    let clientName = data.client || '---';
+    if(clientName.length > 30) clientName = clientName.substring(0, 27) + '...';
+    doc.text(clientName, col1X + valOffset, y);
+    y += 7;
+
     doc.setFont("helvetica", "bold");
-    doc.text("ENTRADA:", labelX, y);
+    doc.setTextColor(120, 120, 120);
+    doc.text("TELÉFONO", col1X, y);
     doc.setFont("helvetica", "normal");
-    
+    doc.setTextColor(30, 30, 30);
+    doc.text(data.validatedPhone || data.phone || '---', col1X + valOffset, y);
+    y += 7;
+
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(120, 120, 120);
+    doc.text("ENTRADA", col1X, y);
+    doc.setFont("helvetica", "normal");
     let entryDateText = "No disponible";
     if (data.entryDate) {
         const d = data.entryDate;
-        entryDateText = `${d.toLocaleDateString('es-CO', {day:'2-digit', month:'2-digit', year:'2-digit'})} ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+        entryDateText = `${d.toLocaleDateString('es-CO', {day:'2-digit', month:'2-digit', year:'numeric'})}  ${d.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'})}`;
     }
-    doc.setTextColor(data.entryDate ? 0 : 150);
-    doc.text(entryDateText, valueX, y);
-    doc.setTextColor(0); 
+    doc.setTextColor(data.entryDate ? 30 : 160);
+    doc.text(entryDateText, col1X + valOffset, y);
+
+    // Columna 2
+    let col2Y = y - 28;
 
     doc.setFont("helvetica", "bold");
-    doc.text("SALIDA/PAGO:", label2X, y);
+    doc.setTextColor(120, 120, 120);
+    doc.text("PLACA", col2X, col2Y);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(20, 50, 80);
+    doc.setFontSize(14);
+    doc.text(`${(data.plate || '---').toUpperCase()}`, col2X + valOffset, col2Y);
+    doc.setFontSize(10);
+
+    col2Y += 7;
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(120, 120, 120);
+    doc.text("VEHÍCULO", col2X, col2Y);
     doc.setFont("helvetica", "normal");
-    const exitDateObj = data.date ? new Date(data.date + 'T00:00:00') : new Date();
-    const exitDateText = `${exitDateObj.toLocaleDateString('es-CO', {day:'2-digit', month:'2-digit', year:'2-digit'})}`;
-    doc.text(exitDateText, value2X, y);
-    
+    doc.setTextColor(30, 30, 30);
+    doc.text(`${data.vehicleType || '---'}`, col2X + valOffset, col2Y);
+
+    col2Y += 7;
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(120, 120, 120);
+    doc.text("PUESTO", col2X, col2Y);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(30, 30, 30);
+    doc.text(`${data.spot || '---'}`, col2X + valOffset, col2Y);
+
+    col2Y += 7;
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(120, 120, 120);
+    doc.text("PERIODO", col2X, col2Y);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(30, 30, 30);
+    doc.text(`${data.period_type || 'Noche'} x ${data.period_quantity || 1}`, col2X + valOffset, col2Y);
+
+    col2Y += 7;
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(120, 120, 120);
+    doc.text("SALIDA/PAGO", col2X, col2Y);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(30, 30, 30);
+    const exitDateStr = `${now.toLocaleDateString('es-CO', {day:'2-digit', month:'2-digit', year:'numeric'})}  ${now.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit', second:'2-digit'})}`;
+    doc.text(exitDateStr, col2X + valOffset, col2Y);
+
     y += 12;
-    doc.setDrawColor(150);
-    doc.line(20, y, pageWidth - 20, y);
+
+    // === LÍNEA SEPARADORA ===
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.line(margin, y, pageWidth - margin, y);
     y += 8;
 
+    // === DETALLE DEL SERVICIO ===
+    doc.setTextColor(20, 50, 80);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.text("DETALLE DEL SERVICIO", 20, y);
-    y += 10;
-
-    doc.setFontSize(9);
-    doc.setTextColor(80);
-    doc.text("DESCRIPCIÓN", 22, y);
-    doc.text("TIEMPO", 120, y);
-    doc.text("VALOR", 170, y, { align: 'right' });
-    
-    y += 5;
-    doc.line(20, y, pageWidth - 20, y); 
-    y += 2;
-
-    doc.setTextColor(0);
     doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
-    
-    const desc = `Servicio de Parqueadero (${data.spot || 'General'}) - ${data.period_type || 'Noche'}`;
-    const splitDesc = doc.splitTextToSize(desc, 90); 
-    doc.text(splitDesc, 22, y);
+    doc.text("DETALLE DEL SERVICIO", margin, y);
+    y += 8;
 
-    const periodQty = `${data.period_quantity || 1} ${data.period_type || 'Noche'}`;
-    doc.text(periodQty, 120, y + ((splitDesc.length - 1) * 4));
+    doc.setFillColor(245, 247, 250);
+    doc.rect(margin, y - 3, contentWidth, 7, 'F');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont("helvetica", "bold");
+    doc.text("DESCRIPCIÓN", margin + 3, y + 1);
+    doc.text("TIEMPO", margin + contentWidth - 60, y + 1);
+    doc.text("VALOR", margin + contentWidth - 5, y + 1, { align: 'right' });
+    y += 6;
+
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.2);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 5;
+
+    doc.setTextColor(30, 30, 30);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+
+    const desc = `Servicio de Parqueadero (${data.spot || 'General'}) - ${data.period_type || 'Noche'}`;
+    const splitDesc = doc.splitTextToSize(desc, contentWidth - 65); 
+    doc.text(splitDesc, margin + 3, y);
+
+    const periodQtyText = `${data.period_quantity || 1} ${data.period_type || 'Noche'}`;
+    doc.text(periodQtyText, margin + contentWidth - 58, y + ((splitDesc.length - 1) * 4));
     
     const amountStr = `$${Number(data.amount).toLocaleString('es-CO')}`;
-    doc.text(amountStr, pageWidth - 20, y + ((splitDesc.length - 1) * 4), { align: 'right' });
+    doc.setFont("helvetica", "bold");
+    doc.text(amountStr, margin + contentWidth - 5, y + ((splitDesc.length - 1) * 4), { align: 'right' });
 
-    y += (splitDesc.length * 5) + 12; 
+    y += (splitDesc.length * 4.5) + 15;
 
-    const totalBoxWidth = 90;
-    const totalBoxHeight = 35;
-    const totalBoxX = pageWidth - 20 - totalBoxWidth;
+    // === CAJA DEL TOTAL ===
+    const totalBoxWidth = contentWidth;
+    const totalBoxHeight = 22;
+    const totalBoxX = margin;
 
-    doc.setDrawColor(0);
-    doc.setLineWidth(1);
-    doc.rect(totalBoxX, y, totalBoxWidth, totalBoxHeight);
+    doc.setFillColor(20, 50, 80);
+    doc.roundedRect(totalBoxX, y, totalBoxWidth, totalBoxHeight, 3, 3, 'F');
 
-    doc.setFontSize(10);
-    doc.setTextColor(50);
-    doc.text("TOTAL A PAGAR:", totalBoxX + 5, y + 12);
-    doc.text(`MÉTODO: ${data.method || 'Efectivo'}`, totalBoxX + 5, y + 24);
+    doc.setFontSize(9);
+    doc.setTextColor(200, 220, 240);
+    doc.setFont("helvetica", "normal");
+    doc.text("TOTAL A PAGAR", totalBoxX + 8, y + 9);
+    doc.text(`MÉTODO: ${data.method || 'Efectivo'}`, totalBoxX + 8, y + 16);
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(20);
-    doc.setTextColor(0);
-    doc.text(amountStr, totalBoxX + totalBoxWidth - 5, y + 22, { align: 'right' });
+    doc.setFontSize(18);
+    doc.setTextColor(255, 255, 255);
+    doc.text(amountStr, totalBoxX + totalBoxWidth - 8, y + 15, { align: 'right' });
 
     y += totalBoxHeight + 15;
-    doc.setFontSize(9);
-    doc.setTextColor(100);
-    doc.setFont("helvetica", "normal");
-    
-    const msg = "Gracias por confiar en PARQUEADERO ELIMAR. Para validar la información puede comunicarse con los números de contacto registrados en este recibo.";
-    const splitMsg = doc.splitTextToSize(msg, pageWidth - 40);
-    doc.text(splitMsg, pageWidth / 2, y, { align: 'center' });
 
-    y += (splitMsg.length * 5) + 10;
-    doc.setDrawColor(0);
-    doc.setLineDash([2, 2], 0); 
-    doc.line(10, y, pageWidth - 10, y);
-    doc.setLineDash([], 0); 
+    // === LÍNEA DE CORTE ===
+    doc.setDrawColor(150, 150, 150);
+    doc.setLineDash([3, 3], 0); 
+    doc.line(margin + 10, y, pageWidth - margin - 10, y);
+    doc.setLineDash([], 0);
+    y += 8;
+
+    // === PIE DE PÁGINA ===
+    const centerX = pageWidth / 2;
+    doc.setFontSize(7);
+    doc.setTextColor(180, 180, 180);
+    doc.setFont("helvetica", "normal");
+
+    const footerLines = [
+        "Parqueadero EliMar · NIT: 1044212776 · Sahagún, Córdoba",
+        "Cll 20 N° 4-81 Barrio San José · Tel: 3206753900 - 3206641353",
+        "Este documento certifica el pago realizado, cualquier inquietud no dude en comunicarse con nosotros."
+    ];
+
+    footerLines.forEach(line => {
+        doc.text(line, centerX, y, { align: 'center' });
+        y += 4;
+    });
+
+    y += 5;
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.2);
+    doc.line(margin + 20, y, pageWidth - margin - 20, y);
+    y += 5;
+
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont("helvetica", "italic");
+    const msg = "¡Gracias por preferirnos! Su satisfacción es nuestra prioridad.";
+    const splitMsg = doc.splitTextToSize(msg, contentWidth - 20);
+    doc.text(splitMsg, centerX, y, { align: 'center' });
+
+    y += (splitMsg.length * 4) + 8;
+
+    doc.setFontSize(6);
+    doc.setTextColor(200, 200, 200);
+    doc.text("© " + new Date().getFullYear() + " Parqueadero EliMar. Todos los derechos reservados.", centerX, doc.internal.pageSize.getHeight() - 8, { align: 'center' });
 
     doc.autoPrint();
     window.open(doc.output('bloburl'), '_blank');
