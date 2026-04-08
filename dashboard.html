@@ -19,8 +19,16 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        .stat-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        /* Tarjetas clickeables */
+        .stat-card { 
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; 
+            cursor: pointer; 
+        }
+        .stat-card:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
+            background-color: #f8fafc; /* Un tono más oscuro al pasar el mouse */
+        }
         
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid #4f46e5; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: none; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -114,38 +122,54 @@
 
             <!-- KPI GRID -->
             <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-4 mb-8">
-                <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28">
+                
+                <!-- 1. Dentro (Ocupados) -> Va a Puestos -->
+                <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28" onclick="location.href='./pages/puestos.html'">
                     <div class="flex justify-between items-start">
                         <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shadow-sm"><i class="fa-solid fa-car"></i></div>
                         <div class="p-1 bg-blue-50 rounded text-blue-600 text-xs font-bold animate-pulse">LIVE</div>
                     </div>
                     <div class="mt-2"><h3 class="text-2xl font-bold text-slate-800" data-kpi="vehiculos">0</h3><p class="text-xs text-slate-500">Dentro</p></div>
                 </div>
-                <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28">
+
+                <!-- 2. Libres -> Va a Puestos -->
+                <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28" onclick="location.href='./pages/puestos.html'">
                     <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-sm"><i class="fa-solid fa-square-parking"></i></div>
                     <div class="mt-2"><h3 class="text-2xl font-bold text-slate-800" data-kpi="libres">0</h3><p class="text-xs text-slate-500">Libres</p></div>
                 </div>
-                <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28">
+
+                <!-- 3. Reservados -> Va a Puestos -->
+                <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28" onclick="location.href='./pages/puestos.html'">
                     <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shadow-sm"><i class="fa-solid fa-clock"></i></div>
                     <div class="mt-2"><h3 class="text-2xl font-bold text-slate-800" data-kpi="reservados">0</h3><p class="text-xs text-slate-500">Reservados</p></div>
                 </div>
-                <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28">
+
+                <!-- 4. Ingresos Total -> Va a Caja -->
+                <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28" onclick="location.href='./pages/caja.html'">
                     <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-sm"><i class="fa-solid fa-wallet"></i></div>
                     <div class="mt-2"><h3 class="text-xl font-bold text-slate-800 leading-tight" data-kpi="ingresosTotal">$0</h3><p class="text-xs text-slate-500">Ingresos Total</p></div>
                 </div>
-                <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28">
+
+                <!-- 5. Gastos Total -> Va a Gastos -->
+                <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28" onclick="location.href='./pages/gastos.html'">
                     <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shadow-sm"><i class="fa-solid fa-arrow-trend-down"></i></div>
                     <div class="mt-2"><h3 class="text-xl font-bold text-slate-800 leading-tight" data-kpi="gastosTotal">$0</h3><p class="text-xs text-slate-500">Gastos Total</p></div>
                 </div>
-                <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28">
+
+                <!-- 6. Ingresos Hoy -> Va a Caja -->
+                <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28" onclick="location.href='./pages/caja.html'">
                     <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shadow-sm"><i class="fa-solid fa-dollar-sign"></i></div>
                     <div class="mt-2"><h3 class="text-xl font-bold text-slate-800 leading-tight" data-kpi="ingresos">$0</h3><p class="text-xs text-slate-500">Ingresos Hoy</p></div>
                 </div>
-                <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28">
+
+                <!-- 7. Gastos Hoy -> Va a Gastos -->
+                <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28" onclick="location.href='./pages/gastos.html'">
                     <div class="w-10 h-10 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center shadow-sm"><i class="fa-solid fa-file-invoice-dollar"></i></div>
                     <div class="mt-2"><h3 class="text-xl font-bold text-slate-800 leading-tight" data-kpi="gastos">$0</h3><p class="text-xs text-slate-500">Gastos Hoy</p></div>
                 </div>
-                <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28 cursor-pointer hover:bg-red-50 group" onclick="location.href='./pages/caja.html'">
+
+                <!-- 8. Deudores Mes -> Va a Caja -->
+                <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28 group" onclick="location.href='./pages/caja.html'">
                     <div class="w-full flex justify-between items-center">
                         <div class="w-10 h-10 rounded-lg bg-red-100 text-red-600 flex items-center justify-center shadow-sm"><i class="fa-solid fa-user-clock"></i></div>
                         <div class="text-right">
@@ -210,7 +234,7 @@
 
                         <!-- Actividad Mensual -->
                         <div class="chart-wrapper h-64 relative p-2">
-                            <h4 class="text-xs font-bold text-slate-400 uppercase mb-2 text-center">Actividad Mensal (Últimos 6 meses)</h4>
+                            <h4 class="text-xs font-bold text-slate-400 uppercase mb-2 text-center">Actividad Mensual (Últimos 6 meses)</h4>
                             <canvas id="ocupacionMesChart"></canvas>
                         </div>
                     </div>
