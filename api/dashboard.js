@@ -1,5 +1,6 @@
 // parqueo/api/dashboard.js
 import { db } from "./db.js";
+import { authGuard } from "./_lib/auth.js"; // <-- NUEVO
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -10,7 +11,11 @@ export default async function handler(req, res) {
   }
 
   try {
+    const user = authGuard(req, res); // <-- NUEVO
+    if (!user) return; // <-- NUEVO
+
     const hoy = new Date().toISOString().split("T")[0];
+    const mesActual = new Date().toISOString().slice(0, 7);
     
     let kpi = {
       vehiculos: 0,
@@ -29,80 +34,74 @@ export default async function handler(req, res) {
     let chartFinanzasData = [];
     let chartOcupacionMesData = []; 
     let chartMetodosPagoData = [];
-    let chartSemanalData = []; // NUEVO: Datos para gráfica semanal
+    let chartSemanalData = []; 
     let movimientosRecientes = [];
 
-    // --- 1. PUESTOS ---
-    try {
-      const puestosResult = await db.execute(`
-        SELECT COUNT(*) as total,
-        SUM(CASE WHEN estado = 'ocupado' THEN 1 ELSE 0 END) as ocupados,
-        SUM(CASE WHEN estado = 'libre' THEN 1 ELSE 0 END) as libres,
-        SUM(CASE WHEN estado = 'reservado' THEN 1 ELSE 0 END) as reservados
-        FROM puestos
-      `);
-      const data = puestosResult.rows[0];
+    // --- OPTIMIZACIÓN MAESTRA: PROMISE.ALLSETTLED ---
+    // En lugar de hacer 14 'await' uno tras otro (lento), se lanzan todos al mismo tiempo (rápido).
+    const results = await Promise.allSettled([
+      // 0. Puestos
+      db.execute(`SELECT COUNT(*) as total, SUM(CASE WHEN estado = 'ocupado' THEN 1 ELSE 0 END) as ocupados, SUM(CASE WHEN estado = 'libre' THEN 1 ELSE 0 END) as libres, SUM(CASE WHEN estado = 'reservado' THEN 1 ELSE 0 END) as reservados FROM puestos`),
+      // 1. Ingresos Hoy
+      db.execute(`SELECT COALESCE(SUM(amount), 0) as total FROM caja WHERE date = ?`, [hoy]),
+      // 2. Gastos Hoy
+      db.execute(`SELECT COALESCE(SUM(amount), 0) as total FROM gastos WHERE date = ?`, [hoy]),
+      // 3. Ingresos Total
+      db.execute(`SELECT COALESCE(SUM(amount), 0) as total FROM caja`),
+      // 4. Gastos Total
+      db.execute(`SELECT COALESCE(SUM(amount), 0) as total FROM gastos`),
+      // 5. Clientes
+      db.execute("SELECT COUNT(*) as total FROM clientes"),
+      // 6. Alertas
+      db.execute(`SELECT COUNT(*) as total FROM clientes WHERE fecha_registro < date('now', '-24 hours')`),
+      // 7. Deudores
+      db.execute(`SELECT COUNT(*) as total FROM clientes c WHERE c.placa NOT IN (SELECT plate FROM caja ca WHERE ca.date LIKE ? AND ca.plate != '---')`, [`${mesActual}%`]),
+      // 8. Gráfica Finanzas (Ingresos 7 días)
+      db.execute(`SELECT date, SUM(amount) as monto FROM caja WHERE date >= date('now', '-7 days') GROUP BY date`),
+      // 9. Gráfica Finanzas (Gastos 7 días)
+      db.execute(`SELECT date, SUM(amount) as monto FROM gastos WHERE date >= date('now', '-7 days') GROUP BY date`),
+      // 10. Gráfica Métodos de Pago
+      db.execute(`SELECT method, COALESCE(SUM(amount), 0) as total FROM caja GROUP BY method`),
+      // 11. Gráfica Actividad Mensual
+      db.execute(`SELECT strftime('%Y-%m', date) as mes, COUNT(*) as total_movimientos FROM historial WHERE date >= date('now', '-6 months') GROUP BY mes ORDER BY mes ASC`),
+      // 12. Historial Reciente
+      db.execute(`SELECT * FROM historial ORDER BY id DESC LIMIT 5`),
+      // 13. Gráfica Semanal
+      db.execute(`SELECT date, COUNT(*) as total_vehiculos FROM historial WHERE date >= date('now', '-7 days') GROUP BY date ORDER BY date ASC`)
+    ]);
+
+    // --- ASIGNACIÓN SEGURA DE RESULTADOS ---
+    
+    // 0. Puestos
+    if (results[0].status === 'fulfilled') {
+      const data = results[0].value.rows[0];
       if (data) {
         kpi.vehiculos = data.ocupados || 0;
         kpi.libres = data.libres || 0;
         kpi.reservados = data.reservados || 0;
         kpi.ocupacionPorcentaje = data.total > 0 ? Math.round((data.ocupados / data.total) * 100) : 0;
       }
-    } catch (e) { console.error("Error puestos:", e); }
+    }
 
-    // --- 2. CAJA Y GASTOS ---
-    try {
-      const ingresosHoyResult = await db.execute(`SELECT COALESCE(SUM(amount), 0) as total FROM caja WHERE date = ?`, [hoy]);
-      kpi.ingresos = ingresosHoyResult.rows[0]?.total || 0;
+    // 1 a 7. KPIs numéricos simples
+    if (results[1].status === 'fulfilled') kpi.ingresos = results[1].value.rows[0]?.total || 0;
+    if (results[2].status === 'fulfilled') kpi.gastos = results[2].value.rows[0]?.total || 0;
+    if (results[3].status === 'fulfilled') kpi.ingresosTotal = results[3].value.rows[0]?.total || 0;
+    if (results[4].status === 'fulfilled') kpi.gastosTotal = results[4].value.rows[0]?.total || 0;
+    if (results[5].status === 'fulfilled') kpi.clientes = results[5].value.rows[0]?.total || 0;
+    if (results[6].status === 'fulfilled') kpi.alertas = results[6].value.rows[0]?.total || 0;
+    if (results[7].status === 'fulfilled') kpi.deudores = results[7].value.rows[0]?.total || 0;
 
-      const gastosHoyResult = await db.execute(`SELECT COALESCE(SUM(amount), 0) as total FROM gastos WHERE date = ?`, [hoy]);
-      kpi.gastos = gastosHoyResult.rows[0]?.total || 0;
-
-      const ingresosTotalResult = await db.execute(`SELECT COALESCE(SUM(amount), 0) as total FROM caja`);
-      kpi.ingresosTotal = ingresosTotalResult.rows[0]?.total || 0;
-
-      const gastosTotalResult = await db.execute(`SELECT COALESCE(SUM(amount), 0) as total FROM gastos`);
-      kpi.gastosTotal = gastosTotalResult.rows[0]?.total || 0;
-
-    } catch (e) { console.error("Error finanzas:", e); }
-
-    // --- 3. CLIENTES ---
-    try {
-      const cRes = await db.execute("SELECT COUNT(*) as total FROM clientes");
-      kpi.clientes = cRes.rows[0]?.total || 0;
-    } catch (e) { console.error("Error clientes:", e); }
-
-    // --- 4. ALERTAS ---
-    try {
-      const aRes = await db.execute(`SELECT COUNT(*) as total FROM clientes WHERE fecha_registro < date('now', '-24 hours')`);
-      kpi.alertas = aRes.rows[0]?.total || 0;
-    } catch (e) { console.error("Error alertas:", e); }
-
-    // --- 5. DEUDORES ---
-    try {
-      const mesActual = new Date().toISOString().slice(0, 7);
-      const dRes = await db.execute(`
-        SELECT COUNT(*) as total
-        FROM clientes c
-        WHERE c.placa NOT IN (
-          SELECT plate FROM caja ca 
-          WHERE ca.date LIKE ? AND ca.plate != '---'
-        )
-      `, [`${mesActual}%`]);
-      kpi.deudores = dRes.rows[0]?.total || 0;
-    } catch (e) { console.error("Error deudores:", e); }
-
-    // --- 6. GRÁFICA FINANCIERA (7 Días) ---
-    try {
-      const ingresosChart = await db.execute(`SELECT date, SUM(amount) as monto FROM caja WHERE date >= date('now', '-7 days') GROUP BY date`);
-      const gastosChart = await db.execute(`SELECT date, SUM(amount) as monto FROM gastos WHERE date >= date('now', '-7 days') GROUP BY date`);
-
+    // 8 y 9. Gráfica Finanzas (Merge de Ingresos y Gastos)
+    if (results[8].status === 'fulfilled' && results[9].status === 'fulfilled') {
       const mapaFechas = {};
-      ingresosChart.rows.forEach(r => {
+      
+      results[8].value.rows.forEach(r => {
         if(!mapaFechas[r.date]) mapaFechas[r.date] = { ingresos: 0, gastos: 0 };
         mapaFechas[r.date].ingresos += r.monto;
       });
-      gastosChart.rows.forEach(r => {
+      
+      results[9].value.rows.forEach(r => {
         if(!mapaFechas[r.date]) mapaFechas[r.date] = { ingresos: 0, gastos: 0 };
         mapaFechas[r.date].gastos += r.monto;
       });
@@ -111,66 +110,35 @@ export default async function handler(req, res) {
         chartFinanzasData.push({ date: fecha, type: 'ingreso', amount: mapaFechas[fecha].ingresos });
         chartFinanzasData.push({ date: fecha, type: 'gasto', amount: mapaFechas[fecha].gastos });
       });
-    } catch (e) { console.error("Error gráfica finanzas:", e); }
+    }
 
-    // --- 7. GRÁFICA MÉTODOS DE PAGO ---
-    try {
-      const metodosResult = await db.execute(`
-        SELECT method, COALESCE(SUM(amount), 0) as total 
-        FROM caja 
-        GROUP BY method
-      `);
-      chartMetodosPagoData = metodosResult.rows.map(r => ({
+    // 10. Métodos de Pago
+    if (results[10].status === 'fulfilled') {
+      chartMetodosPagoData = results[10].value.rows.map(r => ({
         metodo: r.method || 'Sin definir',
         total: r.total
       }));
-    } catch (e) { console.error("Error gráfica métodos:", e); }
-
-    // --- 8. GRÁFICA ACTIVIDAD MENSUAL ---
-    try {
-        const actividadMesResult = await db.execute(`
-            SELECT 
-                strftime('%Y-%m', date) as mes, 
-                COUNT(*) as total_movimientos
-            FROM historial 
-            WHERE date >= date('now', '-6 months')
-            GROUP BY mes
-            ORDER BY mes ASC
-        `);
-
-        chartOcupacionMesData = actividadMesResult.rows.map(r => ({
-            mes: r.mes, 
-            total: r.total_movimientos 
-        }));
-
-    } catch (e) { 
-        console.error("Error gráfica actividad mensual:", e); 
     }
 
-    // --- 9. HISTORIAL RECIENTE ---
-    try {
-      const hRes = await db.execute(`SELECT * FROM historial ORDER BY id DESC LIMIT 5`);
-      movimientosRecientes = hRes.rows;
-    } catch (e) { console.error("Error historial:", e); }
+    // 11. Actividad Mensual
+    if (results[11].status === 'fulfilled') {
+      chartOcupacionMesData = results[11].value.rows.map(r => ({
+        mes: r.mes, 
+        total: r.total_movimientos 
+      }));
+    }
 
-    // --- 10. GRÁFICA SEMANAL (NUEVO: Ingresos de vehículos últimos 7 días) ---
-    try {
-        const semanalResult = await db.execute(`
-            SELECT 
-                date, 
-                COUNT(*) as total_vehiculos
-            FROM historial 
-            WHERE date >= date('now', '-7 days')
-            GROUP BY date
-            ORDER BY date ASC
-        `);
-        
-        chartSemanalData = semanalResult.rows.map(r => ({
-            fecha: r.date,
-            total: r.total_vehiculos
-        }));
-    } catch (e) {
-        console.error("Error gráfica semanal:", e);
+    // 12. Movimientos Recientes
+    if (results[12].status === 'fulfilled') {
+      movimientosRecientes = results[12].value.rows;
+    }
+
+    // 13. Gráfica Semanal
+    if (results[13].status === 'fulfilled') {
+      chartSemanalData = results[13].value.rows.map(r => ({
+        fecha: r.date,
+        total: r.total_vehiculos
+      }));
     }
 
     return res.status(200).json({
@@ -178,7 +146,7 @@ export default async function handler(req, res) {
       chartFinanzas: chartFinanzasData,
       chartOcupacionMes: chartOcupacionMesData, 
       chartMetodosPago: chartMetodosPagoData,
-      chartSemanal: chartSemanalData, // Enviando nuevo dato
+      chartSemanal: chartSemanalData,
       movimientosRecientes: movimientosRecientes
     });
 

@@ -63,7 +63,12 @@ async function handleLogin(e) {
         const data = await res.json();
 
         if (data.success) {
+            // 1. Guardar datos de usuario (Para la interfaz)
             sessionStorage.setItem('parkingUser', JSON.stringify(data.user));
+            
+            // 2. GUARDAR EL TOKEN NUEVO (Para las peticiones fetch del main.js)
+            sessionStorage.setItem('parkingToken', data.token);
+            
             prepararSaludo(data.user);
             showToast('¡Bienvenido!', 'success');
             setTimeout(() => {
@@ -109,8 +114,6 @@ async function handleRecoverMethod(method) {
         const data = await res.json();
 
         if (data.success) {
-            // LÓGICA DE WHATSAPP ELIMINADA
-            
             // LÓGICA DE EMAIL MANTENIDA
             if (method === 'email') {
                 showToast('Revisa tu correo electrónico', 'success');

@@ -1,5 +1,6 @@
 // parqueo/api/clientes.js
 import { db } from "./db.js";
+import { authGuard } from "./_lib/auth.js"; // <-- NUEVO
 
 // Helper para formatear fechas consistentemente
 const formatDate = (dateInput) => {
@@ -9,6 +10,8 @@ const formatDate = (dateInput) => {
 
 export default async function handler(req, res) {
     try {
+        const user = authGuard(req, res); if (!user) return; // <-- NUEVO
+
         if (req.method === "GET") {
             // OPTIMIZACIÓN: Usamos LEFT JOIN en lugar de subconsulta por cada fila.
             // Esto mejora drásticamente el rendimiento con muchos clientes.

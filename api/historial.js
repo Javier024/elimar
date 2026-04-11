@@ -1,7 +1,12 @@
+// parqueo/api/historial.js
 import { db } from "./db.js";
+import { authGuard } from "./_lib/auth.js"; // <-- NUEVO
 
 export default async function handler(req, res) {
   try {
+    const user = authGuard(req, res); // <-- NUEVO
+    if (!user) return; // <-- NUEVO (Si no hay token válido, corta la ejecución)
+
     if (req.method === "GET") {
       // JOIN usando c.placa (nombre correcto de la columna en clientes)
       const result = await db.execute(`
@@ -83,6 +88,8 @@ export default async function handler(req, res) {
 }
 
 // Función Helper Global
+// NOTA: Esta función NO lleva authGuard porque es llamada internamente 
+// por otras APIs (como gastos.js) que YA pasaron por el filtro de autenticación.
 export async function logToHistory(action_type, description, amount = 0, plate = "---", ref_date = null) {
   try {
     const logDate = ref_date || new Date().toISOString().split("T")[0];

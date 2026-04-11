@@ -8,9 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- 1. Script de Seguridad -->
-    <script src="../js/auth-manager.js"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -235,11 +232,15 @@
             const dateInput = document.getElementById('gastoFecha');
             if(dateInput) dateInput.valueAsDate = new Date();
 
-            const fechaDisplay = document.getElementById('fecha-actual');
+            const fechaDisplay = document.getElementById("fecha-actual");
             if(fechaDisplay) fechaDisplay.textContent = new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
         });
     </script>
     
+    <!-- SEGURIDAD: Siempre justo antes del script lógico de la página -->
+    <script src="../js/auth-manager.js"></script>
+    <script src="../js/main.js"></script>
+    <!-- Tu lógica JS -->
     <script src="../js/gastos.js"></script>
 </body>
 </html>

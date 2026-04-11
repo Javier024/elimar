@@ -48,6 +48,7 @@ function initInactivityTimer() {
 // 5. FUNCIÓN DE CIERRE DE SESIÓN
 function logout() {
     sessionStorage.removeItem('parkingUser');
+    sessionStorage.removeItem('parkingToken'); // <-- NUEVO: Limpiar token de seguridad
     window.location.replace('../index.html');
 }
 window.logout = logout;

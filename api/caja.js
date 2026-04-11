@@ -1,7 +1,12 @@
+//parqueo/api/caja.js
 import { db } from "./db.js"
+import { authGuard } from "./_lib/auth.js" 
 
 export default async function handler(req, res) {
   try {
+    const user = authGuard(req, res); 
+    if (!user) return; 
+
     // --- GET: LISTA DE DEUDORES ---
     if (req.method === "GET" && req.query.deudores === "true") {
       const page = parseInt(req.query.page) || 1;
@@ -40,7 +45,6 @@ export default async function handler(req, res) {
     // --- GET: LEER CAJA NORMAL ---
     if (req.method === "GET") {
       if (req.query.id) {
-          // ACTUALIZACIÓN: Traemos el tipo de vehículo
           const result = await db.execute({ 
               sql: `SELECT ca.*, c.tipo_vehiculo as cliente_tipo_vehiculo 
                      FROM caja ca 
@@ -52,7 +56,6 @@ export default async function handler(req, res) {
           return res.status(200).json(result.rows[0]);
       }
 
-      // ACTUALIZACIÓN: Traemos el tipo de vehículo en la lista general
       const result = await db.execute(`
         SELECT ca.*, 
                cli.medio_pago as cliente_medio_pago,

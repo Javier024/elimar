@@ -1,1 +1,15 @@
-.vercel
+# Dependencias
+node_modules/
+.vercel/
+
+# Variables de entorno (CRÍTICO)
+.env.local
+.env*.local
+.env
+
+# Archivos locales de desarrollo
+crear-admin.js
+
+# Archivos basura vacíos que ya no usaremos
+components/navbar.js
+components/sidebar.js

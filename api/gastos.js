@@ -1,8 +1,13 @@
+// parqueo/api/gastos.js
 import { db } from "./db.js"
 import { logToHistory } from "./historial.js" // Importamos el logger
+import { authGuard } from "./_lib/auth.js" // <-- NUEVO
 
 export default async function handler(req, res){
   try{
+    const user = authGuard(req, res); // <-- NUEVO
+    if (!user) return; // <-- NUEVO (Si no hay token válido, corta la ejecución)
+
     if(req.method === "GET"){
       const result = await db.execute("SELECT * FROM gastos ORDER BY id DESC")
       return res.status(200).json(result.rows)
@@ -17,7 +22,7 @@ export default async function handler(req, res){
         args:[concept, category || "General", amount, date || new Date().toISOString().split("T")[0]]
       })
 
-      // --- NUEVO: REGISTRAR EN HISTORIAL GLOBAL ---
+      // --- REGISTRAR EN HISTORIAL GLOBAL ---
       await logToHistory(
           'GASTO', 
           concept, 

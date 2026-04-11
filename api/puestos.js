@@ -1,7 +1,11 @@
+// parqueo/api/puestos.js
 import { db } from "./db.js";
+import { authGuard } from "./_lib/auth.js"; // <-- NUEVO
 
 async function isPlateAvailable(plate, currentSpotId = null) {
-    const plateSafe = `"${plate}"`; 
+    // FIX SEGURIDAD: Escapar comillas dobles para evitar inyección en el LIKE JSON
+    const safePlate = plate.replace(/"/g, '""'); 
+    
     const officialCheck = await db.execute({
         sql: `SELECT p.id FROM puestos p 
                JOIN clientes c ON p.cliente_id = c.id 
@@ -15,13 +19,16 @@ async function isPlateAvailable(plate, currentSpotId = null) {
                WHERE estado = 'ocupado' 
                AND llave_caracteristicas LIKE ? 
                AND id != ?`,
-        args: [`%"placa":"${plate}"%`, currentSpotId || -1]
+        args: [`%"placa":"${safePlate}"%`, currentSpotId || -1]
     });
     return visitorCheck.rows.length === 0;
 }
 
 export default async function handler(req, res) {
   try {
+    const user = authGuard(req, res); // <-- NUEVO
+    if (!user) return; // <-- NUEVO (Si no hay token válido, corta la ejecución)
+
     if (req.method === "GET") {
       const result = await db.execute(`
         SELECT p.*, 
