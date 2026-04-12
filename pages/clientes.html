@@ -185,7 +185,7 @@
                 <div class="text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 whitespace-nowrap">
                   Total: <span id="totalCount" class="font-bold">0</span>
                 </div>
-                <!-- ✅ BOTÓN EXCEL AGREGADO -->
+                <!-- BOTÓN EXCEL -->
                 <div class="relative">
                   <button onclick="toggleExportMenu()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
                     <i class="fa-solid fa-file-excel"></i> Excel
@@ -193,7 +193,7 @@
                   </button>
                   <div id="exportDropdown" class="export-dropdown">
                     <button onclick="exportClientesExcel(false)">
-                        <i class="fa-solid fa-file-excel text-emerald-600 dark:text-emerald-400"></i>
+                        <i class="fa-solid fa-filter text-emerald-600 dark:text-emerald-400"></i>
                         <div>
                             <div class="font-semibold text-slate-700 dark:text-slate-200">Filtrados</div>
                             <div class="text-[10px] text-slate-400 dark:text-slate-500">Solo los que se ven</div>
@@ -264,6 +264,9 @@
     </div>
   </div>
 
+  <!-- ✅ SHEETJS PRIMERO (debe cargarse antes que el script de exportación) -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
   <script>
     function toggleMenu() {
         const sidebar = document.getElementById('sidebar');
@@ -301,29 +304,41 @@
         document.getElementById('exportDropdown').classList.toggle('show');
     }
 
+    // ✅ CORREGIDO: Verificar XLSX en lugar de HistorialModule
     function exportClientesExcel(useAll) {
-        if (!window.HistorialModule) {
-            mostrarToast("Módulo no cargado", "error");
+        // Verificar que la librería XLSX esté cargada
+        if (typeof XLSX === 'undefined') {
+            mostrarToast("Librería Excel no cargada. Recargue la página.", "error");
             return;
         }
 
-        // Usar allClients de clientes.js en lugar de HistorialModule
-        var data = useAll ? allClients : getFilteredClients();
-
-        if (data.length === 0) {
+        // Verificar que haya datos
+        if (!allClients || allClients.length === 0) {
             mostrarToast("No hay clientes para exportar", "error");
             document.getElementById('exportDropdown').classList.remove('show');
             return;
         }
 
+        // Obtener datos según opción seleccionada
+        var data = useAll ? allClients : getFilteredClients();
+
+        if (data.length === 0) {
+            mostrarToast("No hay clientes que coincidan con el filtro", "error");
+            document.getElementById('exportDropdown').classList.remove('show');
+            return;
+        }
+
+        // Cerrar dropdown
         document.getElementById('exportDropdown').classList.remove('show');
 
+        // Ordenar alfabéticamente por nombre
         data = data.slice().sort(function(a, b) {
             var nameA = (a.nombre || '').toLowerCase();
             var nameB = (b.nombre || '').toLowerCase();
             return nameA.localeCompare(nameB);
         });
 
+        // Crear filas del Excel
         var rows = [['Nombre', 'Teléfono', 'Placa', 'Vehículo', 'Periodicidad', 'Cuota ($)', 'Fecha Registro', 'Estado Pago']];
 
         data.forEach(function(item) {
@@ -351,47 +366,63 @@
             ]);
         });
 
+        // Crear libro Excel
         var wb = XLSX.utils.book_new();
         var ws = XLSX.utils.aoa_to_sheet(rows);
 
+        // Ajustar anchos de columnas
         ws['!cols'] = [
-            { wch: 25 }, { wch: 18 }, { wch: 12 }, { wch: 14 }, { wch: 16 }, { wch: 14 }, { wch: 22 }
+            { wch: 30 }, // Nombre
+            { wch: 18 }, // Teléfono
+            { wch: 12 }, // Placa
+            { wch: 14 }, // Vehículo
+            { wch: 16 }, // Periodicidad
+            { wch: 14 }, // Cuota
+            { wch: 16 }, // Fecha
+            { wch: 18 }  // Estado
         ];
 
         XLSX.utils.book_append_sheet(wb, ws, 'Clientes');
 
+        // Generar nombre de archivo con fecha
         var now = new Date();
-        var dateFile = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+        var dateFile = now.getFullYear() + '-' + 
+                       String(now.getMonth()+1).padStart(2,'0') + '-' + 
+                       String(now.getDate()).padStart(2,'0');
         var fileName = 'Clientes_Elimar_' + dateFile;
         if (!useAll) fileName += '_filtrado';
 
+        // Descargar archivo
         XLSX.writeFile(wb, fileName + '.xlsx');
-        mostrarToast('Archivo Excel descargado (' + data.length + ' clientes)');
+        mostrarToast('Excel descargado: ' + data.length + ' clientes', 'success');
     }
 
+    // Obtener clientes filtrados según búsqueda actual
     function getFilteredClients() {
         var searchInput = document.getElementById("searchInput");
-        var filterText = searchInput ? searchInput.value : '';
+        var filterText = searchInput ? searchInput.value.trim().toLowerCase() : '';
         if (!filterText) return allClients;
         return allClients.filter(function(c) {
-            return c.nombre.toLowerCase().includes(filterText.toLowerCase()) || 
-                   c.placa.toLowerCase().includes(filterText.toLowerCase());
+            return (c.nombre || '').toLowerCase().includes(filterText) || 
+                   (c.placa || '').toLowerCase().includes(filterText);
         });
     }
 
+    // Toast de notificación
     function mostrarToast(msg, type) {
         type = type || 'success';
         var toast = document.createElement('div');
-        if (type === 'error') {
-            toast.className = 'fixed bottom-5 right-5 z-50 px-6 py-3 rounded-lg shadow-xl text-sm font-bold transition-all transform translate-y-10 opacity-0 bg-red-600 text-white';
-        } else {
-            toast.className = 'fixed bottom-5 right-5 z-50 px-6 py-3 rounded-lg shadow-xl text-sm font-bold transition-all transform translate-y-10 opacity-0 bg-slate-800 dark:bg-slate-700 dark:text-white text-white';
-        }
-        toast.innerHTML = '<span class="flex items-center gap-2"><i class="fa-solid ' + (type === 'error' ? 'fa-circle-xmark' : 'fa-circle-check') + '"></i> ' + msg + '</span>';
+        var bgColor = type === 'error' ? 'bg-red-600' : 'bg-slate-800 dark:bg-slate-700';
+        var icon = type === 'error' ? 'fa-circle-xmark' : 'fa-circle-check';
+        
+        toast.className = 'fixed bottom-5 right-5 z-[100] px-6 py-3 rounded-lg shadow-xl text-sm font-bold transition-all transform translate-y-10 opacity-0 ' + bgColor + ' text-white';
+        toast.innerHTML = '<span class="flex items-center gap-2"><i class="fa-solid ' + icon + '"></i> ' + msg + '</span>';
         document.body.appendChild(toast);
+        
         requestAnimationFrame(function() {
             toast.classList.remove('translate-y-10', 'opacity-0');
         });
+        
         setTimeout(function() {
             toast.classList.add('translate-y-10', 'opacity-0');
             setTimeout(function() { toast.remove(); }, 300);
@@ -399,88 +430,86 @@
     }
   </script>
 
-  <!-- ═══════════════════════════════════════════════════════════════ -->
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script src="../js/auth-manager.js"></script>
   <script src="../js/main.js"></script>
   <script src="../js/timeline-panel.js"></script>
 
-  <!-- INYECTOR CORREGIDO para clientes.html -->
-<script>
-(function() {
-    function esPlacaValida(texto) {
-        if (!texto || texto.length < 5 || texto.length > 8) return null;
-        var regexCarro = /^[A-Za-z]{3}[-]?\d{2,4}$/;
-        var regexMoto = /^[A-Za-z]{3}\d{2,4}[A-Za-z]{1,2}$/;
-        var limpio = texto.replace(/[^A-Za-z0-9]/g, '');
-        if (regexCarro.test(limpio) || regexMoto.test(limpio)) {
-            var categorias = ['carro', 'moto', 'camioneta', 'visitante', 'diario', 'semanal', 'mensual'];
-            var textoLower = texto.toLowerCase();
-            if (!categorias.some(function(c) { return textoLower.includes(c); })) {
-                return limpio.toUpperCase();
-            }
-        }
-        return null;
-    }
+  <!-- INYECTOR para Timeline -->
+  <script>
+  (function() {
+      function esPlacaValida(texto) {
+          if (!texto || texto.length < 5 || texto.length > 8) return null;
+          var regexCarro = /^[A-Za-z]{3}[-]?\d{2,4}$/;
+          var regexMoto = /^[A-Za-z]{3}\d{2,4}[A-Za-z]{1,2}$/;
+          var limpio = texto.replace(/[^A-Za-z0-9]/g, '');
+          if (regexCarro.test(limpio) || regexMoto.test(limpio)) {
+              var categorias = ['carro', 'moto', 'camioneta', 'visitante', 'diario', 'semanal', 'mensual'];
+              var textoLower = texto.toLowerCase();
+              if (!categorias.some(function(c) { return textoLower.includes(c); })) {
+                  return limpio.toUpperCase();
+              }
+          }
+          return null;
+      }
 
-    function buscarPlacaEnFila(row) {
-        var cells = row.querySelectorAll('td');
-        if (cells.length >= 3) {
-            var textoPlaca = (cells[2].textContent || '').trim();
-            return esPlacaValida(textoPlaca);
-        }
-        return null;
-    }
+      function buscarPlacaEnFila(row) {
+          var cells = row.querySelectorAll('td');
+          if (cells.length >= 3) {
+              var textoPlaca = (cells[2].textContent || '').trim();
+              return esPlacaValida(textoPlaca);
+          }
+          return null;
+      }
 
-    function inyectarBotonesTimeline() {
-        var tbody = document.getElementById('listaClientesBody');
-        if (!tbody) return;
-        var rows = tbody.querySelectorAll('tr');
-        rows.forEach(function(row) {
-            var placa = buscarPlacaEnFila(row);
-            if (placa && !row.querySelector('.btn-timeline-global')) {
-                var btn = document.createElement('button');
-                btn.className = 'btn-timeline-global text-indigo-500 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 px-2 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1';
-                btn.innerHTML = '<i class="fa-solid fa-timeline text-[10px]"></i>';
-                btn.title = 'Ver Historial de ' + placa;
-                btn.onclick = function(e) {
-                    e.stopPropagation();
-                    window.abrirTimeline(placa);
-                };
-                var actionsDiv = row.querySelector('td:last-child > div');
-                if (actionsDiv) {
-                    actionsDiv.prepend(btn);
-                } else {
-                    row.querySelector('td:last-child').prepend(btn);
-                }
-            }
-        });
-    }
+      function inyectarBotonesTimeline() {
+          var tbody = document.getElementById('listaClientesBody');
+          if (!tbody) return;
+          var rows = tbody.querySelectorAll('tr');
+          rows.forEach(function(row) {
+              var placa = buscarPlacaEnFila(row);
+              if (placa && !row.querySelector('.btn-timeline-global')) {
+                  var btn = document.createElement('button');
+                  btn.className = 'btn-timeline-global text-indigo-500 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 px-2 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1';
+                  btn.innerHTML = '<i class="fa-solid fa-timeline text-[10px]"></i>';
+                  btn.title = 'Ver Historial de ' + placa;
+                  btn.onclick = function(e) {
+                      e.stopPropagation();
+                      window.abrirTimeline(placa);
+                  };
+                  var actionsDiv = row.querySelector('td:last-child > div');
+                  if (actionsDiv) {
+                      actionsDiv.prepend(btn);
+                  } else {
+                      row.querySelector('td:last-child').prepend(btn);
+                  }
+              }
+          });
+      }
 
-    function setupObserver() {
-        var tbody = document.getElementById('listaClientesBody');
-        if (!tbody) return;
-        var observer = new MutationObserver(function() {
-            inyectarBotonesTimeline();
-        });
-        observer.observe(tbody, { childList: true });
-        inyectarBotonesTimeline();
-    }
+      function setupObserver() {
+          var tbody = document.getElementById('listaClientesBody');
+          if (!tbody) return;
+          var observer = new MutationObserver(function() {
+              inyectarBotonesTimeline();
+          });
+          observer.observe(tbody, { childList: true });
+          inyectarBotonesTimeline();
+      }
 
-    function init() {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-                setTimeout(setupObserver, 500);
-            });
-        } else {
-            setTimeout(setupObserver, 500);
-        }
-    }
+      function init() {
+          if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', function() {
+                  setTimeout(setupObserver, 500);
+              });
+          } else {
+              setTimeout(setupObserver, 500);
+          }
+      }
 
-    init();
-})();
-</script>
+      init();
+  })();
+  </script>
 
   <script src="../js/clientes.js"></script>
 </body>
-</html>
+</html> 

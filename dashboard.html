@@ -51,6 +51,12 @@
         #auth-loader.fade-out { opacity: 0; pointer-events: none; }
         #auth-loader p { color: #64748b; }
         .dark #auth-loader p { color: #94a3b8; }
+
+        .pago-card, .deudor-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+        .pago-card:hover, .deudor-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .dark .pago-card:hover, .dark .deudor-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+
+        .scroll-pagos::-webkit-scrollbar { height: 4px; }
     </style>
 </head>
 
@@ -85,7 +91,7 @@
             <button onclick="toggleTheme()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 transition-colors">
                 <i class="fa-solid fa-sun theme-toggle-icon text-amber-500"></i> <span class="theme-toggle-text">Modo Claro</span>
             </button>
-            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-100 dark:border-red-900/50 transition-colors">
+            <button onclick="cerrarSesion()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-100 dark:border-red-900/50 transition-colors">
                 <i class="fa-solid fa-power-off"></i> Cerrar Sesión
             </button>
         </div>
@@ -112,6 +118,7 @@
 
         <div class="flex-1 overflow-y-auto p-4 lg:p-8">
             
+            <!-- ERROR BANNER -->
             <div id="error-banner" class="hidden mb-6 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 rounded-md shadow-sm flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <i class="fa-solid fa-circle-exclamation text-red-500"></i>
@@ -123,10 +130,9 @@
                 <button onclick="location.reload()" class="text-xs bg-white dark:bg-slate-800 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-3 py-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 font-medium">Reintentar</button>
             </div>
 
-            <!-- ═══ KPI GRID: 8 tarjetas en 2 filas ═══ -->
-            <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-4 mb-8">
+            <!-- KPI GRID -->
+            <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-4 mb-6">
                 
-                <!-- 1. Carros / Motos / Camionetas (LIVE) -->
                 <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28" onclick="location.href='./pages/puestos.html'">
                     <div class="flex justify-between items-start">
                         <div class="w-10 h-10 rounded-lg bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-car-side"></i></div>
@@ -134,37 +140,25 @@
                     </div>
                     <div class="mt-2">
                         <div class="flex items-center gap-2.5 flex-wrap">
-                            <span class="flex items-center gap-1 text-base font-bold text-slate-800 dark:text-white">
-                                <i class="fa-solid fa-car text-blue-500 text-[10px]"></i>
-                                <span data-kpi="carrosDentro">0</span>
-                            </span>
-                            <span class="flex items-center gap-1 text-base font-bold text-slate-800 dark:text-white">
-                                <i class="fa-solid fa-motorcycle text-amber-500 text-[10px]"></i>
-                                <span data-kpi="motosDentro">0</span>
-                            </span>
-                            <span class="flex items-center gap-1 text-base font-bold text-slate-800 dark:text-white">
-                                <i class="fa-solid fa-truck text-purple-500 text-[10px]"></i>
-                                <span data-kpi="camionetasDentro">0</span>
-                            </span>
+                            <span class="flex items-center gap-1 text-base font-bold text-slate-800 dark:text-white"><i class="fa-solid fa-car text-blue-500 text-[10px]"></i><span data-kpi="carrosDentro">0</span></span>
+                            <span class="flex items-center gap-1 text-base font-bold text-slate-800 dark:text-white"><i class="fa-solid fa-motorcycle text-amber-500 text-[10px]"></i><span data-kpi="motosDentro">0</span></span>
+                            <span class="flex items-center gap-1 text-base font-bold text-slate-800 dark:text-white"><i class="fa-solid fa-truck text-purple-500 text-[10px]"></i><span data-kpi="camionetasDentro">0</span></span>
                         </div>
                         <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Dentro</p>
                     </div>
                 </div>
 
-                <!-- 2. Libres -->
                 <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28" onclick="location.href='./pages/puestos.html'">
                     <div class="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-square-parking"></i></div>
                     <div class="mt-2"><h3 class="text-2xl font-bold text-slate-800 dark:text-white" data-kpi="libres">0</h3><p class="text-xs text-slate-500 dark:text-slate-400">Libres</p></div>
                 </div>
 
-                <!-- 3. Reservados -->
                 <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28" onclick="location.href='./pages/puestos.html'">
                     <div class="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-clock"></i></div>
                     <div class="mt-2"><h3 class="text-2xl font-bold text-slate-800 dark:text-white" data-kpi="reservados">0</h3><p class="text-xs text-slate-500 dark:text-slate-400">Reservados</p></div>
                 </div>
 
-                <!-- 4. Deudores -->
-                <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28 group" onclick="location.href='./pages/caja.html'">
+                <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28 group" onclick="document.getElementById('deudores-section').scrollIntoView({behavior:'smooth'})">
                     <div class="w-full flex justify-between items-center">
                         <div class="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-user-clock"></i></div>
                         <div class="text-right">
@@ -175,34 +169,60 @@
                     <p class="text-xs text-slate-500 dark:text-slate-400">Deudores Mes</p>
                 </div>
 
-                <!-- 5. Balance Hoy -->
                 <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28" onclick="location.href='./pages/caja.html'">
                     <div class="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-scale-balanced"></i></div>
-                    <div class="mt-2">
-                        <h3 class="text-lg font-bold leading-tight text-emerald-600 dark:text-emerald-400" data-kpi="balanceHoy">$0</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Balance Hoy</p>
-                    </div>
+                    <div class="mt-2"><h3 class="text-lg font-bold leading-tight text-emerald-600 dark:text-emerald-400" data-kpi="balanceHoy">$0</h3><p class="text-xs text-slate-500 dark:text-slate-400">Balance Hoy</p></div>
                 </div>
 
-                <!-- 6. Ingresos Hoy -->
                 <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28" onclick="location.href='./pages/caja.html'">
                     <div class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-dollar-sign"></i></div>
                     <div class="mt-2"><h3 class="text-xl font-bold text-slate-800 dark:text-white leading-tight" data-kpi="ingresos">$0</h3><p class="text-xs text-slate-500 dark:text-slate-400">Ingresos Hoy</p></div>
                 </div>
 
-                <!-- 7. Gastos Hoy -->
                 <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28" onclick="location.href='./pages/gastos.html'">
                     <div class="w-10 h-10 rounded-lg bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-file-invoice-dollar"></i></div>
                     <div class="mt-2"><h3 class="text-xl font-bold text-slate-800 dark:text-white leading-tight" data-kpi="gastos">$0</h3><p class="text-xs text-slate-500 dark:text-slate-400">Gastos Hoy</p></div>
                 </div>
 
-                <!-- 8. Clientes Registrados -->
                 <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28" onclick="location.href='./pages/clientes.html'">
                     <div class="w-10 h-10 rounded-lg bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-users"></i></div>
                     <div class="mt-2"><h3 class="text-2xl font-bold text-slate-800 dark:text-white" data-kpi="clientes">0</h3><p class="text-xs text-slate-500 dark:text-slate-400">Clientes Registrados</p></div>
                 </div>
             </div>
             
+            <!-- ═══════════ NUEVO: SECCIÓN DEUDORES DEL MES ═══════════ -->
+            <div id="deudores-section" class="mb-6 bg-white dark:bg-slate-800 rounded-xl border border-red-200 dark:border-red-900/50 shadow-sm dark:shadow-none overflow-hidden">
+                <div class="px-5 py-3 border-b border-red-100 dark:border-red-900/30 flex justify-between items-center bg-red-50/50 dark:bg-red-900/10">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation text-red-500 dark:text-red-400"></i>
+                        <h3 class="text-sm font-bold text-red-800 dark:text-red-300">Deudores del Mes</h3>
+                        <span class="text-[10px] font-bold text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded-full" data-kpi="deudores-badge">0</span>
+                    </div>
+                    <a href="./pages/caja.html" class="text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-700 flex items-center gap-1 group transition-colors">
+                        Ir a Cajar <i class="fa-solid fa-arrow-right text-[10px] transition-transform group-hover:translate-x-1"></i>
+                    </a>
+                </div>
+                <div id="deudores-dashboard-container" class="p-4 scroll-pagos">
+                    <div class="text-center text-slate-400 dark:text-slate-500 py-4 text-sm"><div class="loader mx-auto"></div> Cargando deudores...</div>
+                </div>
+            </div>
+
+            <!-- ═══ PRÓXIMOS PAGOS POR VENCER ═══ -->
+            <div id="proximos-pagos-section" class="mb-6 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none overflow-hidden">
+                <div class="px-5 py-3 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/30">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-bell text-amber-500 dark:text-amber-400"></i>
+                        <h3 class="text-sm font-bold text-slate-800 dark:text-white">Próximos Pagos (7 días)</h3>
+                    </div>
+                    <a href="./pages/clientes.html" class="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 flex items-center gap-1 group transition-colors">
+                        Ver todos <i class="fa-solid fa-arrow-right text-[10px] transition-transform group-hover:translate-x-1"></i>
+                    </a>
+                </div>
+                <div id="proximos-pagos-container" class="p-4 scroll-pagos">
+                    <div class="text-center text-slate-400 dark:text-slate-500 py-4 text-sm"><div class="loader mx-auto"></div> Cargando...</div>
+                </div>
+            </div>
+
             <!-- ═══ CHARTS ═══ -->
             <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
                 
@@ -252,7 +272,6 @@
                     <div class="chart-wrapper" style="height: 220px;"><canvas id="topClientesChart"></canvas></div>
                 </div>
 
-                <!-- Movimientos Recientes -->
                 <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none overflow-hidden flex flex-col lg:col-span-2 xl:col-span-2">
                     <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/30 shrink-0">
                         <div>
@@ -271,7 +290,7 @@
         </div>
     </div>
 
-    <!-- AUTH -->
+    <!-- AUTH CHECK -->
     <script>
         (function() {
             const raw = sessionStorage.getItem('parkingUser');
@@ -279,8 +298,11 @@
             let user = null;
             try { user = JSON.parse(raw); if (!user || typeof user !== 'object' || !user.rol) user = null; } catch(e) { user = null; }
             if (!user || !rawToken) {
-                sessionStorage.removeItem('parkingUser'); sessionStorage.removeItem('parkingToken'); sessionStorage.removeItem('parkingSaludo');
-                window.location.replace('./index.html'); return;
+                sessionStorage.removeItem('parkingUser'); 
+                sessionStorage.removeItem('parkingToken'); 
+                sessionStorage.removeItem('parkingSaludo');
+                window.location.replace('./index.html'); 
+                return;
             }
             const nameEl = document.getElementById('sidebar-user-name');
             if (nameEl) nameEl.textContent = user.nombre || user.usuario || '';
@@ -300,7 +322,10 @@
             var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             var time = d.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
             var el = document.getElementById('fecha-actual');
-            if(el) { var dateStr = d.toLocaleDateString('es-ES', options); el.innerText = dateStr.charAt(0).toUpperCase() + dateStr.slice(1) + ' - ' + time; }
+            if(el) { 
+                var dateStr = d.toLocaleDateString('es-ES', options); 
+                el.innerText = dateStr.charAt(0).toUpperCase() + dateStr.slice(1) + ' - ' + time; 
+            }
         }
         setInterval(updateDate, 1000);
         updateDate();
@@ -333,7 +358,10 @@
         }
         window.addEventListener('load', function() { setTimeout(applyChartTheme, 600); });
         new MutationObserver(function(mutations) {
-            mutations.forEach(function(m) { if (m.attributeName === 'class' && m.target.tagName === 'HTML') setTimeout(applyChartTheme, 50); });
+            mutations.forEach(function(m) { 
+                if (m.attributeName === 'class' && m.target.tagName === 'HTML') 
+                    setTimeout(applyChartTheme, 50); 
+            });
         }).observe(document.documentElement, { attributes: true });
     </script>
 </body>
