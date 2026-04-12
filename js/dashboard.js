@@ -204,6 +204,7 @@ function ocultarError() {
 }
 
 /* ═════════════ NUEVO: SECCIÓN DEUDORES EN DASHBOARD ═══════════ */
+/* ═════════════ NUEVO: SECCIÓN DEUDORES EN DASHBOARD ═══════════ */
 function renderDeudoresDashboard(deudores, total) {
     const container = document.getElementById('deudores-dashboard-container');
     if (!container) return;
@@ -222,8 +223,9 @@ function renderDeudoresDashboard(deudores, total) {
     
     deudores.forEach(function(d) {
         const phoneClean = (d.telefono || '').replace(/\D/g, '');
-        const whatsappLink = phoneClean ? `https://wa.me/57${phoneClean}?text=Hola ${d.nombre}, te recordamos que tienes el servicio del parqueadero pendiente de este mes.` : '#';
-        const iconVeh = d.tipo_vehiculo === 'Moto' ? 'fa-motorcycle' : (d.tipo_vehiculo === 'Camioneta' ? 'fa-truck-pickup' : 'fa-car');
+        const whatsappMsg = generarMensajeDeudorWhatsApp(d.nombre, d.placa, d.cuota, d.periodicidad);
+        const whatsappLink = phoneClean ? `https://wa.me/57${phoneClean}?text=${encodeURIComponent(whatsappMsg)}` : '#';
+        const iconVeh = d.tipoVehiculo === 'Moto' ? 'fa-motorcycle' : (d.tipoVehiculo === 'Camioneta' ? 'fa-truck-pickup' : 'fa-car');
         
         html += `
             <div class="deudor-card bg-white dark:bg-slate-700/50 rounded-lg border border-red-100 dark:border-red-900/30 p-3 hover:shadow-md transition-all">
@@ -252,7 +254,6 @@ function renderDeudoresDashboard(deudores, total) {
     
     html += '</div>';
     
-    // Agregar enlace para ver todos
     if (total > deudores.length) {
         html += `
             <div class="mt-3 text-center">
@@ -565,3 +566,46 @@ function renderMovimientos(movimientos) {
     });
     container.innerHTML = html;
 } 
+// ============================================
+// --- GENERADOR DE MENSAJES WHATSAPP ---
+// ============================================
+
+function generarMensajeDeudorWhatsApp(nombre, placa, cuota, periodicidad) {
+    const hora = new Date().getHours();
+    let saludo = '';
+    
+    if (hora >= 5 && hora < 12) {
+        saludo = '☀️ Buenos días';
+    } else if (hora >= 12 && hora < 18) {
+        saludo = '🌤️ Buenas tardes';
+    } else {
+        saludo = '🌙 Buenas noches';
+    }
+
+    const cuotaFormateada = cuota ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(cuota) : '';
+    
+    const periodoTexto = periodicidad ? periodicidad.toLowerCase() : 'mensual';
+
+    const mensaje = `${saludo}, estimad@ ${nombre} 🙏
+
+Espero que se encuentre muy bien. Le escribo de parte del Parqueadero ELIMAR 🅿️ para hacerle un recordatorio amable sobre el servicio de parqueadero correspondiente a este mes.
+
+📍 *Datos del servicio:*
+🚗 Placa: ${placa}
+📅 Periodo: ${periodoTexto}
+💰 Valor: ${cuotaFormateada}
+
+Queremos recordarle que por favor realice su pago a la mayor brevedad posible para mantener su servicio activo y sin inconvenientes 😊
+
+Estamos muy agradecidos por su confianza y preferencia, es un placer atenderle todos los días. Si ya realizó su pago, por favor haga caso omiso a este mensaje.
+
+📍 *Parqueadero ELIMAR*
+📍 Cll 20 N° 4-81 Barrio San José
+📍 Sahagún, Córdoba
+📞 3206753900 - 3206641353
+🕐 Abierto 24 horas
+
+¡Muchas gracias por su comprensión y puntualidad! 🙌✨`;
+
+    return mensaje;
+}

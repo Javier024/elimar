@@ -230,31 +230,33 @@ window.preFillFromDebtor = function(plate, nombre, telefono) {
 };
 
 // --- RENDERIZAR LISTA DE DEUDORES ---
+// --- RENDERIZAR LISTA DE DEUDORES ---
 function renderDeudoresList(deudores) {
     const container = document.getElementById('deudoresList');
     if(!container) return;
 
     if (!deudores || deudores.length === 0) {
-        container.innerHTML = '<div class="text-center text-emerald-600 text-xs py-2 font-medium">¡Todos al día! 🎉</div>';
+        container.innerHTML = '<div class="text-center text-emerald-600 dark:text-emerald-400 text-xs py-2 font-medium">¡Todos al día! 🎉</div>';
         return;
     }
 
     let html = '';
     deudores.forEach(d => {
         const phoneClean = d.telefono ? d.telefono.replace(/\D/g, '') : '';
-        const whatsappLink = phoneClean ? `https://wa.me/57${phoneClean}?text=Hola ${d.nombre}, te recordamos que tienes el servicio del parqueadero pendiente de este mes.` : '#';
+        const whatsappMsg = generarMensajeDeudorWhatsApp(d.nombre, d.placa, d.cuota_mensual, d.medio_pago);
+        const whatsappLink = phoneClean ? `https://wa.me/57${phoneClean}?text=${encodeURIComponent(whatsappMsg)}` : '#';
         
         html += `
-            <div class="flex items-center justify-between p-3 bg-white border border border-slate-100 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between p-3 bg-white dark:bg-slate-700/50 border border-slate-100 dark:border-slate-600/50 rounded-lg shadow-sm hover:shadow-md transition-shadow">
                 <div class="flex-1">
-                    <p class="text-sm font-bold text-slate-800">${d.nombre}</p>
-                    <p class="text-xs text-slate-500 font-mono">${d.placa}</p>
+                    <p class="text-sm font-bold text-slate-800 dark:text-slate-200">${d.nombre}</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">${d.placa}</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <a href="${whatsappLink}" target="_blank" class="p-2 text-emerald-600 hover:bg-emerald-50 rounded-full transition-colors" title="Enviar WhatsApp">
+                    <a href="${whatsappLink}" target="_blank" class="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-full transition-colors" title="Enviar WhatsApp">
                         <i class="fa-brands fa-whatsapp text-lg"></i>
                     </a>
-                    <button onclick="preFillFromDebtor('${d.placa}', '${d.nombre.replace(/'/g, "\\'")}', '${d.telefono || ''}')" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors" title="Ir a Cobrar">
+                    <button onclick="preFillFromDebtor('${d.placa}', '${d.nombre.replace(/'/g, "\\'")}', '${d.telefono || ''}')" class="p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-colors" title="Ir a Cobrar">
                         <i class="fa-solid fa-money-bill-wave"></i>
                     </button>
                 </div>
@@ -351,11 +353,11 @@ function renderTable(filterText = '') {
     const start = (currentPage - 1) * itemsPerPage;
     const pageData = filtered.slice(start, start + itemsPerPage);
     
-    if (pageData.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-slate-400">No hay transacciones</td></tr>'; return; }
+    if (pageData.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-slate-400 dark:text-slate-500">No hay transacciones</td></tr>'; return; }
 
     pageData.forEach(tx => {
         const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50 border-b border-slate-100 transition-colors";
+        tr.className = "hover:bg-slate-50 dark:hover:bg-slate-700/30 border-b border-slate-100 dark:border-slate-700/50 transition-colors";
         const fechaPago = tx.date || '---';
         const horaPago = tx.time || '';
         
@@ -391,39 +393,39 @@ function renderTable(filterText = '') {
 
         tr.innerHTML = `
             <td class="px-4 py-3 whitespace-nowrap">
-                <div class="text-sm font-medium text-slate-900">${fechaPago}</div>
-                <div class="text-xs text-slate-500">${horaPago}</div>
+                <div class="text-sm font-medium text-slate-900 dark:text-slate-200">${fechaPago}</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">${horaPago}</div>
             </td>
             <td class="px-4 py-3">
-                <div class="text-xs font-bold text-indigo-600 uppercase mb-1">Entrada</div>
-                <div class="text-xs text-slate-500">${entradaStr}</div>
+                <div class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-1">Entrada</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">${entradaStr}</div>
             </td>
             <td class="px-6 py-4">
-                <div class="text-sm font-medium text-slate-900">${tx.client}</div>
-                <div class="text-[10px] text-slate-500 flex items-center gap-1"><i class="fa-solid fa-phone text-[10px]"></i> ${tx.phone || '---'}</div>
+                <div class="text-sm font-medium text-slate-900 dark:text-slate-200">${tx.client}</div>
+                <div class="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1"><i class="fa-solid fa-phone text-[10px]"></i> ${tx.phone || '---'}</div>
             </td>
             <td class="px-6 py-4">
                 <div class="flex flex-col gap-1">
                     <div class="flex items-center gap-2">
-                        <span class="bg-slate-100 text-slate-700 text-xs font-bold px-2 py-1 rounded uppercase">${tx.plate.toUpperCase()}</span>
-                        <span class="text-[10px] text-slate-400">Puesto: ${tx.spot}</span>
+                        <span class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold px-2 py-1 rounded uppercase">${tx.plate.toUpperCase()}</span>
+                        <span class="text-[10px] text-slate-400 dark:text-slate-500">Puesto: ${tx.spot}</span>
                     </div>
-                    <span class="inline-flex items-center gap-1 text-[10px] text-slate-500 font-medium bg-slate-50 w-fit px-2 py-0.5 rounded border border-slate-100">
+                    <span class="inline-flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 font-medium bg-slate-50 dark:bg-slate-800 w-fit px-2 py-0.5 rounded border border-slate-100 dark:border-slate-700">
                         <i class="fa-solid fa-car-side"></i> ${vehicleType}
                     </span>
                 </div>
             </td>
             <td class="px-6 py-4">
-                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium ${tx.method === 'Efectivo' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}">${tx.method}</span>
+                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium ${tx.method === 'Efectivo' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'}">${tx.method}</span>
             </td>
             <td class="px-6 py-4 text-right">
-                <div class="text-sm font-bold text-slate-900">$${Number(tx.amount).toLocaleString('es-CO')}</div>
-                <div class="text-[10px] text-slate-500">${tx.period_type || ''} x${tx.period_quantity || 1}</div>
+                <div class="text-sm font-bold text-slate-900 dark:text-slate-200">$${Number(tx.amount).toLocaleString('es-CO')}</div>
+                <div class="text-[10px] text-slate-500 dark:text-slate-400">${tx.period_type || ''} x${tx.period_quantity || 1}</div>
             </td>
             <td class="px-6 py-4 text-center">
-                <button onclick="printReceipt(${tx.id})" class="text-indigo-600 hover:text-indigo-800 mr-2" title="Imprimir Factura"><i class="fa-solid fa-print"></i></button>
-                <button onclick="editTransaction(${tx.id})" class="text-slate-400 hover:text-slate-600 mr-2" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                <button onclick="deleteTransaction(${tx.id})" class="text-red-400 hover:text-red-600" title="Anular"><i class="fa-solid fa-trash"></i></button>
+                <button onclick="printReceipt(${tx.id})" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 mr-2" title="Imprimir Factura"><i class="fa-solid fa-print"></i></button>
+                <button onclick="editTransaction(${tx.id})" class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 mr-2" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="deleteTransaction(${tx.id})" class="text-red-400 hover:text-red-600 dark:hover:text-red-400" title="Anular"><i class="fa-solid fa-trash"></i></button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -599,7 +601,6 @@ async function createPDF(data) {
             const gs = new doc.GState({ opacity: alpha });
             doc.setGState(gs);
             doc.setFillColor(255, 255, 255);
-            
             doc.rect(logoX, logoY, logoW, inset, 'F');
             doc.rect(logoX, logoY + logoH - inset, logoW, inset, 'F');
             doc.rect(logoX, logoY, inset, logoH, 'F');
@@ -648,13 +649,11 @@ async function createPDF(data) {
     y += 18;
 
     const now = new Date();
-
     const col1X = margin;
     const col2X = pageWidth / 2 + 5;
     const valOffset = 42;
 
     doc.setFontSize(10);
-
     doc.setFont("helvetica", "bold");
     doc.setTextColor(120, 120, 120);
     doc.text("FECHA PAGO", col1X, y);
@@ -749,7 +748,6 @@ async function createPDF(data) {
     doc.text(exitDateStr, col2X + valOffset, col2Y);
 
     y += 12;
-
     doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.3);
     doc.line(margin, y, pageWidth - margin, y);
@@ -913,7 +911,6 @@ async function registrarCobro(e) {
     }
 
     try {
-        // 1) Registrar en caja
         const res = await fetch('/api/caja', { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' }, 
@@ -934,13 +931,11 @@ async function registrarCobro(e) {
         const result = await res.json(); 
         if (!res.ok) throw new Error(result.error || 'Error al registrar');
 
-        // 2) Registrar en historial
         try {
             const horaAhora = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
             const clientData = clients.find(c => c.placa === plate);
             const tipoVehiculo = clientData ? (clientData.tipo_vehiculo || '') : '';
 
-            // JSON compacto para caber en el campo spot de la BD
             const detalleSpot = [
                 client ? ('c:' + client) : '',
                 spot && spot !== '---' ? ('p:' + spot) : '',
@@ -984,7 +979,135 @@ async function registrarCobro(e) {
     }
 }
 
-// --- GESTIÓN (editTransaction y closeEditModal se mantienen igual) ---
+// ============================================
+// --- EDITAR TRANSACCIÓN (FUNCIONES AGREGADAS) ---
+// ============================================
+
+async function editTransaction(id) {
+    // Buscar en la lista local primero
+    let tx = transactions.find(t => t.id === id);
+    
+    // Si no está, hacer fetch a la API
+    if (!tx) {
+        try {
+            const res = await fetch(`/api/caja?id=${id}`);
+            if (!res.ok) throw new Error('No encontrado');
+            tx = await res.json();
+        } catch (error) {
+            alert('Error al cargar transacción: ' + error.message);
+            return;
+        }
+    }
+    
+    // Llenar campos del modal
+    document.getElementById('editId').value = tx.id;
+    document.getElementById('editDate').value = tx.date || '';
+    document.getElementById('editAmount').value = tx.amount || 0;
+    document.getElementById('editClient').value = tx.client || '';
+    document.getElementById('editPlate').value = tx.plate || '';
+    document.getElementById('editMethod').value = tx.method || 'Efectivo';
+    document.getElementById('editPeriodType').value = tx.period_type || 'Noche';
+    document.getElementById('editPeriodQty').value = tx.period_quantity || 1;
+    
+    // Mostrar modal con animación
+    const modal = document.getElementById('modalEdit');
+    const content = document.getElementById('modalEditContent');
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    // Timeout para permitir que el DOM se actualice antes de animar
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        content.classList.remove('scale-95', 'opacity-0');
+        content.classList.add('scale-100', 'opacity-100');
+    }, 10);
+}
+
+function closeEditModal() {
+    const modal = document.getElementById('modalEdit');
+    const content = document.getElementById('modalEditContent');
+    
+    // Animación de salida
+    content.classList.remove('scale-100', 'opacity-100');
+    content.classList.add('scale-95', 'opacity-0');
+    modal.classList.add('opacity-0');
+    
+    // Esperar a que termine la animación para ocultar
+    setTimeout(() => {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+        // Resetear estado para próxima apertura
+        modal.classList.remove('opacity-0');
+        content.classList.remove('scale-95', 'opacity-0');
+    }, 200);
+}
+
+async function saveEditTransaction() {
+    const id = document.getElementById('editId').value;
+    const date = document.getElementById('editDate').value;
+    const amount = document.getElementById('editAmount').value;
+    const client = document.getElementById('editClient').value;
+    const plate = document.getElementById('editPlate').value;
+    const method = document.getElementById('editMethod').value;
+    const periodType = document.getElementById('editPeriodType').value;
+    const periodQty = document.getElementById('editPeriodQty').value;
+    
+    // Validaciones
+    if (!client || client.trim() === '') {
+        alert('El nombre del cliente es requerido');
+        return;
+    }
+    
+    if (!amount || parseFloat(amount) <= 0) {
+        alert('El monto debe ser mayor a 0');
+        return;
+    }
+    
+    // Deshabilitar botón mientras guarda
+    const saveBtn = document.querySelector('#modalEdit button[onclick="saveEditTransaction()"]');
+    const originalBtnText = saveBtn.innerHTML;
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Guardando...';
+    
+    try {
+        const res = await fetch('/api/caja', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id,
+                client: client.trim(),
+                plate: plate.toUpperCase(),
+                amount: parseFloat(amount),
+                method,
+                period_type: periodType,
+                period_quantity: parseInt(periodQty) || 1,
+                date
+            })
+        });
+        
+        const result = await res.json();
+        
+        if (!res.ok) {
+            throw new Error(result.error || 'Error al actualizar');
+        }
+        
+        alert('Transacción actualizada correctamente');
+        closeEditModal();
+        loadData(); // Recargar datos
+        
+    } catch (error) {
+        alert('Error: ' + error.message);
+    } finally {
+        // Restaurar botón
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalBtnText;
+    }
+}
+
+// ============================================
+// --- ELIMINAR TRANSACCIÓN ---
+// ============================================
 
 async function deleteTransaction(id) {
     if(!confirm("¿Anular este cobro?")) return; 
@@ -1039,6 +1162,7 @@ async function deleteTransaction(id) {
     }
 }
 
+// --- ACTUALIZAR KPIs ---
 function updateKPIs() {
     const total = transactions.reduce((sum, t) => sum + Number(t.amount), 0); 
     const cash = transactions.filter(t => t.method === 'Efectivo').reduce((sum, t) => sum + Number(t.amount), 0); 
@@ -1054,3 +1178,49 @@ function updateKPIs() {
     if(elCard) elCard.innerText = `$${card.toLocaleString('es-CO')}`; 
     if(elCount) elCount.innerText = transactions.length;
 }
+// ============================================
+// --- GENERADOR DE MENSAJES WHATSAPP ---
+// ============================================
+
+function generarMensajeDeudorWhatsApp(nombre, placa, cuota, periodicidad) {
+    const hora = new Date().getHours();
+    let saludo = '';
+    
+    if (hora >= 5 && hora < 12) {
+        saludo = '☀️ Buenos días';
+    } else if (hora >= 12 && hora < 18) {
+        saludo = '🌤️ Buenas tardes';
+    } else {
+        saludo = '🌙 Buenas noches';
+    }
+
+    const cuotaFormateada = cuota ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(cuota) : '';
+    
+    const periodoTexto = periodicidad ? periodicidad.toLowerCase() : 'mensual';
+
+    const mensaje = `${saludo}, estimad@ ${nombre} 🙏
+
+Espero que se encuentre muy bien. Le escribo de parte del Parqueadero ELIMAR 🅿️ para hacerle un recordatorio amable sobre el servicio de parqueadero correspondiente a este mes.
+
+📍 *Datos del servicio:*
+🚗 Placa: ${placa}
+📅 Periodo: ${periodoTexto}
+💰 Valor: ${cuotaFormateada}
+
+Queremos recordarle que por favor realice su pago a la mayor brevedad posible para mantener su servicio activo y sin inconvenientes 😊
+
+Estamos muy agradecidos por su confianza y preferencia, es un placer atenderle todos los días. Si ya realizó su pago, por favor haga caso omiso a este mensaje.
+
+📍 *Parqueadero ELIMAR*
+📍 Cll 20 N° 4-81 Barrio San José
+📍 Sahagún, Córdoba
+📞 3206753900 - 3206641353
+🕐 Abierto 24 horas
+
+¡Muchas gracias por su comprensión y puntualidad! 🙌✨`;
+
+    return mensaje;
+}
+
+// Para uso desde otros módulos si es necesario
+window.generarMensajeDeudorWhatsApp = generarMensajeDeudorWhatsApp;
