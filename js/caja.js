@@ -571,14 +571,12 @@ async function createPDF(data) {
     const contentWidth = pageWidth - (margin * 2);
     let y = margin; 
 
-    // === LOGO MÁS ANCHO CON BORDES DIFUMINADOS ===
     const logoW = 80;
     const logoH = 32;
     const logoX = margin;
     const logoY = margin;
     const maxFade = 8; 
 
-    // Dibujar imagen
     try {
         doc.addImage('/img/logo.jpg', 'JPEG', logoX, logoY, logoW, logoH); 
     } catch (err) {
@@ -591,7 +589,6 @@ async function createPDF(data) {
         doc.text("ELIMAR", logoX + logoW / 2, logoY + logoH / 2 + 5, { align: 'center' });
     }
 
-    // Difuminado en orillas
     const fadeSteps = 18;
     for (let i = 0; i < fadeSteps; i++) {
         const progress = (i + 1) / fadeSteps;
@@ -616,7 +613,6 @@ async function createPDF(data) {
         doc.setGState(new doc.GState({ opacity: 1 }));
     } catch(e) {}
 
-    // === INFORMACIÓN DEL NEGOCIO (A LA DERECHA DEL LOGO) ===
     const textBlockX = logoX + logoW + 12;
     const textBlockTopY = logoY + 5;
 
@@ -637,14 +633,12 @@ async function createPDF(data) {
     doc.setFontSize(10);
     doc.text("Abierto 24/7", textBlockX, textBlockTopY + 28);
 
-    // === LÍNEA SEPARADORA ===
     y = logoY + logoH + 8;
     doc.setDrawColor(20, 50, 80);
     doc.setLineWidth(0.8);
     doc.line(margin, y, pageWidth - margin, y);
     y += 8;
 
-    // === TÍTULO RECIBO ===
     doc.setFillColor(245, 247, 250);
     doc.roundedRect(margin, y, contentWidth, 12, 2, 2, 'F');
     doc.setTextColor(20, 50, 80);
@@ -653,17 +647,14 @@ async function createPDF(data) {
     doc.text("RECIBO DE PAGO", pageWidth / 2, y + 8, { align: 'center' });
     y += 18;
 
-    // === HORA ACTUAL ===
     const now = new Date();
 
-    // === DATOS DEL RECIBO (2 columnas) ===
     const col1X = margin;
     const col2X = pageWidth / 2 + 5;
     const valOffset = 42;
 
     doc.setFontSize(10);
 
-    // Columna 1
     doc.setFont("helvetica", "bold");
     doc.setTextColor(120, 120, 120);
     doc.text("FECHA PAGO", col1X, y);
@@ -713,7 +704,6 @@ async function createPDF(data) {
     doc.setTextColor(data.entryDate ? 30 : 160);
     doc.text(entryDateText, col1X + valOffset, y);
 
-    // Columna 2
     let col2Y = y - 28;
 
     doc.setFont("helvetica", "bold");
@@ -760,13 +750,11 @@ async function createPDF(data) {
 
     y += 12;
 
-    // === LÍNEA SEPARADORA ===
     doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.3);
     doc.line(margin, y, pageWidth - margin, y);
     y += 8;
 
-    // === DETALLE DEL SERVICIO ===
     doc.setTextColor(20, 50, 80);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
@@ -805,7 +793,6 @@ async function createPDF(data) {
 
     y += (splitDesc.length * 4.5) + 15;
 
-    // === CAJA DEL TOTAL ===
     const totalBoxWidth = contentWidth;
     const totalBoxHeight = 22;
     const totalBoxX = margin;
@@ -826,14 +813,12 @@ async function createPDF(data) {
 
     y += totalBoxHeight + 15;
 
-    // === LÍNEA DE CORTE ===
     doc.setDrawColor(150, 150, 150);
     doc.setLineDash([3, 3], 0); 
     doc.line(margin + 10, y, pageWidth - margin - 10, y);
     doc.setLineDash([], 0);
     y += 8;
 
-    // === PIE DE PÁGINA ===
     const centerX = pageWidth / 2;
     doc.setFontSize(7);
     doc.setTextColor(180, 180, 180);
@@ -1017,14 +1002,32 @@ async function saveEditTransaction() {
     const periodQty = document.getElementById('editPeriodQty').value; 
     const date = document.getElementById('editDate').value;
     
+    if (!id || !amount) {
+        alert("ID y Monto son requeridos");
+        return;
+    }
+    
     try { 
         const res = await fetch('/api/caja', { 
             method: 'PUT', 
             headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ id, client, plate, amount, method, period_type: periodType, period_quantity: periodQty, date }) 
+            body: JSON.stringify({ 
+                id: parseInt(id), 
+                client, 
+                plate, 
+                amount, 
+                method, 
+                period_type: periodType, 
+                period_quantity: periodQty, 
+                date 
+            }) 
         }); 
-        if (!res.ok) throw new Error((await res.json()).error); 
-        alert("Actualizado"); 
+        
+        const result = await res.json();
+        
+        if (!res.ok) throw new Error(result.error || 'Error al actualizar'); 
+        
+        alert("Transacción actualizada correctamente"); 
         closeEditModal(); 
         loadData(); 
     } catch (error) { 

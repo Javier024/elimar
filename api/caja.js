@@ -120,7 +120,8 @@ export default async function handler(req, res) {
 
     // --- PUT: EDITAR COBRO ---
     if (req.method === "PUT") {
-        const { id, client, plate, spot, phone, amount, method, period_type, period_quantity, date } = req.body;
+        const { id, client, plate, amount, method, period_type, period_quantity, date } = req.body;
+        
         if (!id) return res.status(400).json({ error: "ID requerido" });
         if (!amount) return res.status(400).json({ error: "Monto requerido" });
 
@@ -128,10 +129,12 @@ export default async function handler(req, res) {
         const numQty = parseInt(period_quantity) || 1;
         const paymentDate = date || new Date().toISOString().split("T")[0];
 
+        // Solo actualizamos los campos que vienen del formulario de edición
         await db.execute({
-            sql: `UPDATE caja SET client=?, plate=?, spot=?, phone=?, amount=?, method=?, period_type=?, period_quantity=?, date=? WHERE id=?`,
-            args: [client, plate, spot, phone, numAmount, method, period_type, numQty, paymentDate, id]
+            sql: `UPDATE caja SET client=?, plate=?, amount=?, method=?, period_type=?, period_quantity=?, date=? WHERE id=?`,
+            args: [client, plate, numAmount, method, period_type, numQty, paymentDate, id]
         });
+        
         return res.status(200).json({ success: true, message: "Transacción actualizada" });
     }
 

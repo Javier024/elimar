@@ -4,7 +4,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log("Dashboard: Iniciando...");
     mostrarFechaYHora();
     actualizarSaludo();
-    iniciarReloj();       
+    iniciarReloj();
+    
+    // Pequeña espera para asegurar que auth-manager y main.js estén listos
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     try {
         await cargarDatosDashboard();
     } catch (error) {
@@ -90,8 +94,21 @@ async function cargarDatosDashboard() {
     ocultarError();
 
     try {
-        const respuesta = await fetch('/api/dashboard');
-        if (!respuesta.ok) throw new Error(`Error del servidor: ${respuesta.status}`);
+        // Incluir credenciales para autenticación
+        const respuesta = await fetch('/api/dashboard', {
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!respuesta.ok) {
+            if (respuesta.status === 401) {
+                throw new Error('Sesión expirada. Por favor inicie sesión nuevamente.');
+            }
+            throw new Error(`Error del servidor: ${respuesta.status}`);
+        }
+        
         const datos = await respuesta.json();
 
         if (datos.kpi) {
@@ -131,7 +148,6 @@ async function cargarDatosDashboard() {
             }
         } catch (err) { console.error("Error renderizando métodos:", err); }
 
-        // NUEVA GRÁFICA SEMANAL
         try {
             if (datos.chartSemanal && Array.isArray(datos.chartSemanal)) {
                 renderizarGraficaSemanal(datos.chartSemanal);
@@ -147,6 +163,14 @@ async function cargarDatosDashboard() {
     } catch (error) {
         console.error('Error cargando dashboard:', error);
         mostrarError(error.message || "Error de conexión desconocido");
+        
+        // Si es error 401, redirigir al login después de un momento
+        if (error.message.includes('Sesión expirada') || error.message.includes('401')) {
+            setTimeout(() => {
+                sessionStorage.removeItem('parkingUser');
+                window.location.replace('index.html');
+            }, 2000);
+        }
     } finally {
         mostrarLoaders(false);
         if(btnIcon) btnIcon.classList.remove('fa-spin');
@@ -181,9 +205,8 @@ let chartFinanzasInstance = null;
 let chartOcupacionInstance = null;
 let chartOcupacionMesInstance = null;
 let chartMetodosPagoInstance = null;
-let chartSemanalInstance = null; // Nueva instancia
+let chartSemanalInstance = null;
 
-// --- MODIFICADA: Ahora es Gráfico de Barras ---
 function renderizarGraficoFinanzas(data) {
     const canvas = document.getElementById('ingresosGastosChart');
     if (!canvas) return;
@@ -204,10 +227,9 @@ function renderizarGraficoFinanzas(data) {
     if (chartFinanzasInstance) chartFinanzasInstance.destroy();
 
     chartFinanzasInstance = new Chart(ctx, {
-        type: 'bar', // CAMBIO: De 'line' a 'bar'
+        type: 'bar',
         data: {
             labels: fechas.map(f => {
-                // Formatear fecha DD/MM para mejor lectura en barras
                 const parts = f.split('-');
                 return `${parts[2]}/${parts[1]}`;
             }),
@@ -215,15 +237,15 @@ function renderizarGraficoFinanzas(data) {
                 { 
                     label: 'Ingresos', 
                     data: datosIngresos, 
-                    backgroundColor: '#6366f1', // Color sólido
-                    borderRadius: 4, // Bordes redondeados estilo moderno
+                    backgroundColor: '#6366f1',
+                    borderRadius: 4,
                     barPercentage: 0.6,
                     categoryPercentage: 0.8
                 },
                 { 
                     label: 'Gastos', 
                     data: datosGastos, 
-                    backgroundColor: '#f43f5e', // Color sólido
+                    backgroundColor: '#f43f5e',
                     borderRadius: 4,
                     barPercentage: 0.6,
                     categoryPercentage: 0.8
@@ -259,7 +281,6 @@ function renderizarGraficoFinanzas(data) {
     });
 }
 
-// --- NUEVA: Gráfica Semanal ---
 function renderizarGraficaSemanal(data) {
     const canvas = document.getElementById('semanalChart');
     if (!canvas) return;
@@ -280,7 +301,7 @@ function renderizarGraficaSemanal(data) {
             datasets: [{
                 label: 'Movimientos',
                 data: valores,
-                backgroundColor: '#0ea5e9', // Azul cielo
+                backgroundColor: '#0ea5e9',
                 borderRadius: 4,
                 barPercentage: 0.5
             }]
@@ -292,7 +313,7 @@ function renderizarGraficaSemanal(data) {
                 y: { 
                     beginAtZero: true, 
                     grid: { color: '#f1f5f9' },
-                    ticks: { stepSize: 1, font: { family: 'Inter' } } // Enteros para coches
+                    ticks: { stepSize: 1, font: { family: 'Inter' } }
                 },
                 x: {
                     grid: { display: false },
@@ -356,7 +377,7 @@ function renderizarGraficaOcupacionMes(data) {
             datasets: [{
                 label: 'Movimientos',
                 data: valores,
-                backgroundColor: '#8b5cf6', // Violeta
+                backgroundColor: '#8b5cf6',
                 borderRadius: 4,
                 barPercentage: 0.6
             }]

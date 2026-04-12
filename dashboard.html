@@ -9,9 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-      <script src="./js/auth-manager.js"></script>
-  <script src="./js/main.js"></script> <!-- NUEVO -->
 
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -20,7 +17,6 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* Tarjetas clickeables */
         .stat-card { 
             transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; 
             cursor: pointer; 
@@ -28,17 +24,33 @@
         .stat-card:hover { 
             transform: translateY(-2px); 
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
-            background-color: #f8fafc; /* Un tono más oscuro al pasar el mouse */
+            background-color: #f8fafc;
         }
         
-        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #4f46e5; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: none; }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #4f46e5; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         .chart-wrapper { position: relative; width: 100%; }
+
+        /* Pantalla de carga inicial */
+        #auth-loader {
+            position: fixed; inset: 0; z-index: 9999;
+            background: white;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            transition: opacity 0.3s ease;
+        }
+        #auth-loader.fade-out { opacity: 0; pointer-events: none; }
     </style>
 </head>
 
 <body class="text-slate-700 antialiased flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50 w-full">
+
+    <!-- LOADER MIENTRAS VERIFICA SESIÓN -->
+    <div id="auth-loader">
+        <div class="loader" style="width:40px;height:40px;border-width:4px;"></div>
+        <p class="text-slate-400 text-sm mt-4 font-medium">Verificando sesión...</p>
+    </div>
 
     <!-- OVERLAY MÓVIL -->
     <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 z-40 hidden lg:hidden backdrop-blur-sm transition-opacity"></div>
@@ -124,7 +136,6 @@
             <!-- KPI GRID -->
             <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-4 mb-8">
                 
-                <!-- 1. Dentro (Ocupados) -> Va a Puestos -->
                 <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28" onclick="location.href='./pages/puestos.html'">
                     <div class="flex justify-between items-start">
                         <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shadow-sm"><i class="fa-solid fa-car"></i></div>
@@ -133,43 +144,36 @@
                     <div class="mt-2"><h3 class="text-2xl font-bold text-slate-800" data-kpi="vehiculos">0</h3><p class="text-xs text-slate-500">Dentro</p></div>
                 </div>
 
-                <!-- 2. Libres -> Va a Puestos -->
                 <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28" onclick="location.href='./pages/puestos.html'">
                     <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-sm"><i class="fa-solid fa-square-parking"></i></div>
                     <div class="mt-2"><h3 class="text-2xl font-bold text-slate-800" data-kpi="libres">0</h3><p class="text-xs text-slate-500">Libres</p></div>
                 </div>
 
-                <!-- 3. Reservados -> Va a Puestos -->
                 <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28" onclick="location.href='./pages/puestos.html'">
                     <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shadow-sm"><i class="fa-solid fa-clock"></i></div>
                     <div class="mt-2"><h3 class="text-2xl font-bold text-slate-800" data-kpi="reservados">0</h3><p class="text-xs text-slate-500">Reservados</p></div>
                 </div>
 
-                <!-- 4. Ingresos Total -> Va a Caja -->
                 <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28" onclick="location.href='./pages/caja.html'">
                     <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-sm"><i class="fa-solid fa-wallet"></i></div>
                     <div class="mt-2"><h3 class="text-xl font-bold text-slate-800 leading-tight" data-kpi="ingresosTotal">$0</h3><p class="text-xs text-slate-500">Ingresos Total</p></div>
                 </div>
 
-                <!-- 5. Gastos Total -> Va a Gastos -->
                 <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28" onclick="location.href='./pages/gastos.html'">
                     <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shadow-sm"><i class="fa-solid fa-arrow-trend-down"></i></div>
                     <div class="mt-2"><h3 class="text-xl font-bold text-slate-800 leading-tight" data-kpi="gastosTotal">$0</h3><p class="text-xs text-slate-500">Gastos Total</p></div>
                 </div>
 
-                <!-- 6. Ingresos Hoy -> Va a Caja -->
                 <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28" onclick="location.href='./pages/caja.html'">
                     <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shadow-sm"><i class="fa-solid fa-dollar-sign"></i></div>
                     <div class="mt-2"><h3 class="text-xl font-bold text-slate-800 leading-tight" data-kpi="ingresos">$0</h3><p class="text-xs text-slate-500">Ingresos Hoy</p></div>
                 </div>
 
-                <!-- 7. Gastos Hoy -> Va a Gastos -->
                 <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28" onclick="location.href='./pages/gastos.html'">
                     <div class="w-10 h-10 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center shadow-sm"><i class="fa-solid fa-file-invoice-dollar"></i></div>
                     <div class="mt-2"><h3 class="text-xl font-bold text-slate-800 leading-tight" data-kpi="gastos">$0</h3><p class="text-xs text-slate-500">Gastos Hoy</p></div>
                 </div>
 
-                <!-- 8. Deudores Mes -> Va a Caja -->
                 <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28 group" onclick="location.href='./pages/caja.html'">
                     <div class="w-full flex justify-between items-center">
                         <div class="w-10 h-10 rounded-lg bg-red-100 text-red-600 flex items-center justify-center shadow-sm"><i class="fa-solid fa-user-clock"></i></div>
@@ -185,7 +189,6 @@
             <!-- CHARTS SECTION -->
             <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
                 
-                <!-- Chart Finanzas (Bar Chart) -->
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col xl:col-span-2">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-chart-simple text-indigo-500"></i> Flujo Financiero (7 Días)</h3>
@@ -195,7 +198,6 @@
                     </div>
                 </div>
                 
-                <!-- Chart Métodos de Pago -->
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-wallet text-emerald-500"></i> Métodos de Pago</h3>
@@ -205,7 +207,6 @@
                     </div>
                 </div>
 
-                <!-- NUEVO: Chart Semanal -->
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-calendar-week text-sky-500"></i> Actividad Semanal</h3>
@@ -215,14 +216,12 @@
                     </div>
                 </div>
 
-                <!-- Sección Ocupación -->
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:col-span-2 xl:col-span-2">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-chart-pie text-indigo-500"></i> Análisis de Ocupación</h3>
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Ocupación Actual -->
                         <div class="chart-wrapper h-64 flex flex-col items-center justify-center relative border border-slate-100 rounded-xl bg-slate-50/50">
                             <div class="text-center mb-2">
                                 <span class="text-3xl font-bold text-slate-800" id="ocupacion-porcentaje">0%</span>
@@ -233,7 +232,6 @@
                             </div>
                         </div>
 
-                        <!-- Actividad Mensual -->
                         <div class="chart-wrapper h-64 relative p-2">
                             <h4 class="text-xs font-bold text-slate-400 uppercase mb-2 text-center">Actividad Mensual (Últimos 6 meses)</h4>
                             <canvas id="ocupacionMesChart"></canvas>
@@ -260,6 +258,49 @@
         </div>
     </div>
 
+    <!-- PRIMERO: Verificación de auth (bloquea todo hasta confirmar) -->
+    <script>
+        (function() {
+            const raw = sessionStorage.getItem('parkingUser');
+            const rawToken = sessionStorage.getItem('parkingToken');
+            let user = null;
+
+                        try {
+                user = JSON.parse(raw);
+                if (!user || typeof user !== 'object' || !user.rol) {
+                    user = null;
+                }
+            } catch(e) {
+                user = null;
+            }
+
+            if (!user || !rawToken) {
+                // Sin sesión válida → limpiar y mandar al login
+                sessionStorage.removeItem('parkingUser');
+                sessionStorage.removeItem('parkingToken');
+                sessionStorage.removeItem('parkingSaludo');
+                window.location.replace('./index.html');
+                return; // Detiene todo
+            }
+
+            // Sesión válida → mostrar nombre en sidebar y quitar loader
+            const nameEl = document.getElementById('sidebar-user-name');
+            if (nameEl) {
+                nameEl.textContent = user.nombre || user.usuario || '';
+            }
+
+            // Quitar pantalla de carga
+            const loader = document.getElementById('auth-loader');
+            if (loader) {
+                loader.classList.add('fade-out');
+                setTimeout(() => loader.remove(), 300);
+            }
+        })();
+    </script>
+
+    <!-- Después: Scripts del sistema (solo se ejecutan si pasó la auth) -->
+    <script src="./js/auth-manager.js"></script>
+    <script src="./js/main.js"></script>
     <script src="./js/dashboard.js"></script>
 </body>
 </html>

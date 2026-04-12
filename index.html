@@ -2,124 +2,138 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Iniciar Sesión | PARQUEADERO ELIMAR</title> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión | PARQUEADERO ELIMAR</title>
     <link rel="icon" type="image/jpeg" href="/img/LOGO1.jpg">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
     <style>
-        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-
-        .hidden-tab { display: none; animation: fadeIn 0.4s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .custom-input:focus { border-color: #0f172a; box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1); }
+               body { font-family: 'Inter', sans-serif; }
 
         .img-container {
             position: relative;
             overflow: hidden;
+            background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+        }
+        .img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
         }
 
-        .img-container::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            box-shadow: inset 0 0 30px 15px white;
-            filter: blur(10px);
-            pointer-events: none;
+        .custom-input:focus {
+            border-color: #0f172a;
+            box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
         }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
     </style>
 </head>
 <body class="bg-white min-h-screen w-full flex flex-col md:flex-row">
 
-    <!-- LADO IZQUIERDO: IMAGEN CON ORILLAS DIFUMINADAS -->
+    <!-- IMAGEN: sin ::before ni ::after -->
     <div class="img-container w-full h-64 md:h-full md:w-1/2 shrink-0">
-        <img src="/img/LOGO1.jpg" alt="Parqueadero Elimar" class="w-full h-full object-cover">
+        <img src="/img/LOGO1.jpg" alt="Parqueadero Elimar"
+             onerror="this.style.display='none'">
     </div>
 
-    <!-- LADO DERECHO: FORMULARIO -->
-    <div class="w-full md:w-1/2 flex-1 bg-white flex flex-col items-center justify-center p-6 md:p-12 relative overflow-y-auto">
+    <!-- FORMULARIO: z-index alto para garantizar que esté por encima de todo -->
+    <div class="w-full md:w-1/2 flex-1 bg-white flex flex-col items-center justify-center p-6 md:p-12 relative"
+         style="z-index: 10; overflow-y: auto;">
+
         <div class="w-full max-w-md py-4">
-            
+
             <!-- Tabs -->
             <div class="flex gap-8 mb-8 border-b border-slate-100">
-                <button onclick="showTab('login-section')" id="tab-login" class="pb-3 text-sm font-bold text-slate-900 border-b-2 border-slate-900 transition-colors">
+                <button id="tab-login" onclick="cambiarTab('login')"
+                    class="pb-3 text-sm font-bold text-slate-900 border-b-2 border-slate-900">
                     Iniciar Sesión
                 </button>
-                <button onclick="showTab('recover-section')" id="tab-recover" class="pb-3 text-sm font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition-colors">
+                <button id="tab-recover" onclick="cambiarTab('recover')"
+                    class="pb-3 text-sm font-semibold text-slate-400 border-b-2 border-transparent">
                     Recuperar
                 </button>
             </div>
 
-            <!-- SECCIÓN LOGIN -->
-            <div id="login-section" class="auth-content">
+            <!-- LOGIN -->
+            <div id="seccion-login" class="tab-content active">
                 <h2 class="text-2xl font-bold text-slate-900 mb-2">Bienvenido</h2>
                 <p class="text-slate-500 text-sm mb-8">Ingresa los datos.</p>
 
-                <form onsubmit="handleLogin(event)" class="space-y-5">
+                <form id="formLogin" class="space-y-5">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Usuario</label>
-                        <div class="relative group">
+                        <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fa-regular fa-user text-slate-400 group-focus-within:text-slate-900 transition-colors"></i>
+                                <i class="fa-regular fa-user text-slate-400"></i>
                             </div>
-                            <input type="text" id="loginUser" class="custom-input block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none" placeholder="Usuario" required>
+                            <input type="text" id="campoUser" autocomplete="username"
+                                class="custom-input block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none"
+                                placeholder="Usuario" required>
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Contraseña</label>
-                        <div class="relative group">
+                        <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fa-solid fa-lock text-slate-400 group-focus-within:text-slate-900 transition-colors"></i>
+                                <i class="fa-solid fa-lock text-slate-400"></i>
                             </div>
-                            <input type="password" id="loginPass" class="custom-input block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none" placeholder="••••••••" required>
+                            <input type="password" id="campoPass" autocomplete="current-password"
+                                class="custom-input block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none"
+                                placeholder="Contraseña" required>
                         </div>
                     </div>
 
                     <div class="flex items-center justify-end">
-                        <a href="#" onclick="showTab('recover-section')" class="text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">¿Olvidaste tu clave?</a>
+                        <a href="javascript:void(0)" onclick="cambiarTab('recover')"
+                           class="text-xs font-semibold text-emerald-600 hover:text-emerald-700">¿Olvidaste tu clave?</a>
                     </div>
 
-                    <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-slate-900/20 transition-all active:scale-95 flex items-center justify-center gap-2 mt-2">
+                    <button type="submit" id="btnLogin"
+                        class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
                         <span>Ingresar</span>
                         <i class="fa-solid fa-arrow-right text-xs"></i>
                     </button>
-                    <div id="loginError" class="text-red-500 text-xs text-center mt-3 hidden"></div>
                 </form>
             </div>
 
-            <!-- SECCIÓN RECUPERAR -->
-            <div id="recover-section" class="auth-content hidden-tab">
+            <!-- RECUPERAR -->
+            <div id="seccion-recover" class="tab-content">
                 <h2 class="text-2xl font-bold text-slate-900 mb-2">Restablecer Acceso</h2>
                 <p class="text-slate-500 text-sm mb-6">Te enviaremos una contraseña temporal a tu correo.</p>
 
                 <div class="space-y-5">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Tu Usuario</label>
-                        <div class="relative group">
+                        <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <i class="fa-solid fa-user text-slate-400"></i>
                             </div>
-                            <input type="text" id="recoverUser" class="custom-input block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none" placeholder="Ingresa tu usuario">
+                            <input type="text" id="campoRecoverUser"
+                                class="custom-input block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none"
+                                placeholder="Ingresa tu usuario">
                         </div>
                     </div>
 
-                    <button onclick="handleRecoverMethod('email')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-lg shadow-md transition-all flex items-center justify-center gap-2">
+                    <button type="button" id="btnRecover" onclick="recuperarClave()"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-lg shadow-md transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-envelope"></i>
                         <span>Enviar Contraseña por Correo</span>
                     </button>
 
                     <div class="text-center mt-4">
-                        <a href="#" onclick="showTab('login-section')" class="text-sm font-medium text-slate-500 hover:text-slate-900 flex items-center justify-center gap-2 transition-colors">
+                        <a href="javascript:void(0)" onclick="cambiarTab('login')"
+                           class="text-sm font-medium text-slate-500 hover:text-slate-900 flex items-center justify-center gap-2">
                             <i class="fa-solid fa-arrow-left text-xs"></i> Volver al Login
                         </a>
                     </div>
                 </div>
             </div>
-            
+
             <div class="mt-10 text-center">
                 <p class="text-xs text-slate-400">PARQUEADERO ELIMAR</p>
             </div>
