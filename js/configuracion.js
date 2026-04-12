@@ -7,32 +7,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function cargarConfiguracion() {
     try {
         const res = await fetch('/api/configuracion');
-        if (!res.ok) throw new Error('Error');
+        if (!res.ok) throw new Error('Error de servidor: ' + res.status);
         const data = await res.json();
         
-        // Helper para asignar valor si existe
-        const val = (id) => document.getElementById(id) ? (document.getElementById(id).value = data[id] || '') : null;
-
-        // Generales
-        val('confNombre'); val('confNit'); val('confDireccion'); val('confTelefono');
-
-        // Particular (Antes Carro)
-        val('tp_hora'); val('tp_noche'); val('tp_semana'); val('tp_quincena'); val('tp_mes');
-
-        // Moto
-        val('tm_hora'); val('tm_noche'); val('tm_semana'); val('tm_quincena'); val('tm_mes');
-
-        // Camioneta
-        val('tc_hora'); val('tc_noche'); val('tc_semana'); val('tc_quincena'); val('tc_mes');
-
-        // Admin / Login
-        val('adminNombre'); val('adminEmail'); val('adminNotif');
-        val('adminUser'); 
-        // No cargamos la contraseña en el input por seguridad, pero el usuario puede cambiarla
+        // Se usa forEach en lugar de una variable para evitar conflictos de nombres
+        var ids = ['confNombre', 'confNit', 'confDireccion', 'confTelefono', 
+                   'tp_hora', 'tp_noche', 'tp_semana', 'tp_quincena', 'tp_mes', 
+                   'tm_hora', 'tm_noche', 'tm_semana', 'tm_quincena', 'tm_mes', 
+                   'tc_hora', 'tc_noche', 'tc_semana', 'tc_quincena', 'tc_mes', 
+                   'adminNombre', 'adminEmail', 'adminNotif', 'adminUser'];
+        
+        ids.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.value = data[id] || '';
+        });
 
     } catch (error) {
         console.error(error);
-        mostrarToast('Error cargando datos', 'error');
+        mostrarToast('Error cargando datos de configuración', 'error');
     }
 }
 
@@ -44,39 +36,30 @@ async function guardarConfiguracion(e) {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
 
     const formData = {
-        // Generales
         nombre: document.getElementById('confNombre').value,
         nit: document.getElementById('confNit').value,
         direccion: document.getElementById('confDireccion').value,
         telefono: document.getElementById('confTelefono').value,
-        
-        // Particular
         tarifa_particular_hora: document.getElementById('tp_hora').value,
         tarifa_particular_noche: document.getElementById('tp_noche').value,
         tarifa_particular_semana: document.getElementById('tp_semana').value,
         tarifa_particular_quincena: document.getElementById('tp_quincena').value,
         tarifa_particular_mes: document.getElementById('tp_mes').value,
-
-        // Moto
         tarifa_moto_hora: document.getElementById('tm_hora').value,
         tarifa_moto_noche: document.getElementById('tm_noche').value,
         tarifa_moto_semana: document.getElementById('tm_semana').value,
         tarifa_moto_quincena: document.getElementById('tm_quincena').value,
         tarifa_moto_mes: document.getElementById('tm_mes').value,
-
-        // Camioneta
         tarifa_camioneta_hora: document.getElementById('tc_hora').value,
         tarifa_camioneta_noche: document.getElementById('tc_noche').value,
         tarifa_camioneta_semana: document.getElementById('tc_semana').value,
         tarifa_camioneta_quincena: document.getElementById('tc_quincena').value,
         tarifa_camioneta_mes: document.getElementById('tc_mes').value,
-
-        // Admin
         admin_nombre: document.getElementById('adminNombre').value,
         admin_email: document.getElementById('adminEmail').value,
         admin_notif: document.getElementById('adminNotif').value,
         admin_user: document.getElementById('adminUser').value,
-        admin_pass: document.getElementById('adminPass').value // Se guarda solo si se escribe algo nuevo
+        admin_pass: document.getElementById('adminPass').value
     };
 
     try {
@@ -88,29 +71,129 @@ async function guardarConfiguracion(e) {
         const data = await res.json();
         if(data.success) mostrarToast('Configuración actualizada correctamente');
         else mostrarToast(data.error, 'error');
-    } catch (error) { mostrarToast('Error de conexión', 'error'); }
-    finally { btn.disabled = false; btn.innerHTML = originalText; }
+    } catch (error) { 
+        mostrarToast('Error de conexión', 'error'); 
+    } finally { 
+        btn.disabled = false; 
+        btn.innerHTML = originalText; 
+    }
 }
 
-function mostrarToast(msg, type = 'success') {
+async function descargarBackup() {
+    if (!confirm("¿Generar y descargar la copia de seguridad completa del sistema?")) return;
+
+    const btn = event.target.closest('button');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando...';
+
+    try {
+        const res = await fetch('/api/configuracion?action=backup');
+        if (!res.ok) throw new Error("Error en la petición");
+        
+        const data = await res.json();
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        const fecha = new Date().toISOString().split('T')[0];
+        const hora = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }).replace(':', '-');
+        a.download = 'BACKUP_Elimar_' + fecha + '_' + hora + '.json';
+        
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        mostrarToast('Backup descargado (' + data.resumen.total_historial + ' registros en historial)');
+    } catch (error) {
+        console.error(error);
+        mostrarToast('Error al generar el backup', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+async function formatearSistema() {
+    if (!confirm("⚠️ ¿Estás SEGURO de que quieres FORMATEAR TODO el sistema?")) return;
+    if (!confirm("📉 Esta acción ELIMINARÁ:\n- Todos los clientes\n- Todo el historial\n- Todos los gastos\n- Las tarifas y configuración\n\nEsta acción NO se puede deshacer. ¿Continuar?")) return;
+
+    const pass = prompt("🔒 Escribe tu contraseña de administrador para confirmar:");
+    if (!pass) return;
+
+    const btn = event.target.closest('button');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Formateando...';
+
+    try {
+        const res = await fetch('/api/configuracion?action=format', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ confirm_pass: pass })
+        });
+
+        const data = await res.json();
+
+        if (res.status === 401) {
+            mostrarToast("Contraseña incorrecta. Acción cancelada.", "error");
+        } else if (data.success) {
+            mostrarToast("Sistema formateado. Cerrando sesión...", "success");
+            setTimeout(() => {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/';
+            }, 2000);
+        } else {
+            mostrarToast(data.error || "Error desconocido", "error");
+        }
+    } catch (error) {
+        console.error(error);
+        mostrarToast('Error de conexión', 'error');
+    } finally {
+        if (!data || !data.success) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+}
+
+function mostrarToast(msg, type) {
+    type = type || 'success';
     const toast = document.createElement('div');
-    toast.className = `fixed bottom-5 right-5 z-50 px-6 py-3 rounded-lg shadow-xl text-sm font-bold transition-all transform translate-y-10 opacity-0 ${type === 'error' ? 'bg-red-600 text-white' : 'bg-slate-800 text-white'}`;
-    toast.innerHTML = `<span class="flex items-center gap-2"><i class="fa-solid ${type === 'error' ? 'fa-circle-xmark' : 'fa-circle-check'}"></i> ${msg}</span>`; 
+    toast.className = 'fixed bottom-5 right-5 z-50 px-6 py-3 rounded-lg shadow-xl text-sm font-bold transition-all transform translate-y-10 opacity-0 ' + (type === 'error' ? 'bg-red-600 text-white' : 'bg-slate-800 text-white');
+    toast.innerHTML = '<span class="flex items-center gap-2"><i class="fa-solid ' + (type === 'error' ? 'fa-circle-xmark' : 'fa-circle-check') + '"></i> ' + msg + '</span>'; 
     document.body.appendChild(toast);
     requestAnimationFrame(() => toast.classList.remove('translate-y-10', 'opacity-0'));
-    setTimeout(() => { toast.classList.add('translate-y-10', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
+    setTimeout(() => { toast.classList.add('translate-y-10', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 3500);
 }
 
+// Se incluye la lógica de ocultar el botón directamente aquí
 function switchTab(tabName) {
-    document.querySelectorAll('.tab-btn').forEach(b => {
-        b.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm', 'border-t-2', 'border-indigo-600');
-        b.classList.add('text-slate-500', 'hover:text-slate-700', 'border-t-2', 'border-transparent');
+    document.querySelectorAll('.tab-btn').forEach(function(btn) {
+        btn.classList.remove('border-indigo-500', 'text-indigo-600');
+        btn.classList.add('border-transparent', 'text-slate-500');
     });
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
     
-    const btn = document.getElementById('tab-' + tabName);
-    btn.classList.remove('text-slate-500', 'hover:text-slate-700', 'border-t-2', 'border-transparent');
-    btn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm', 'border-t-2', 'border-indigo-600');
+    var activeBtn = document.getElementById('tab-' + tabName);
+    if (activeBtn) {
+        activeBtn.classList.remove('border-transparent', 'text-slate-500');
+        activeBtn.classList.add('border-indigo-500', 'text-indigo-600');
+    }
+
+    document.querySelectorAll('.tab-content').forEach(function(content) {
+        content.classList.add('hidden');
+    });
     
-    document.getElementById('content-' + tabName).classList.remove('hidden');
+    var activeContent = document.getElementById('content-' + tabName);
+    if (activeContent) activeContent.classList.remove('hidden');
+
+    // Ocultar botón guardar si estamos en sistema
+    var wrapper = document.getElementById('btnGuardarWrapper');
+    if (wrapper) {
+        wrapper.style.display = (tabName === 'sistema') ? 'none' : 'flex';
+    }
 }

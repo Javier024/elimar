@@ -5,11 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Historial | PARQUEADERO ELIMAR</title>
     <link rel="icon" type="image/jpeg" href="/img/logo.jpg">
+    
+    <!-- 1. TAILWIND + CONFIGURACIÓN DARK MODE -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <script src="../js/auth-manager.js"></script>
+    <!-- Librería para exportar Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
+    <!-- 2. CARGAR TEMA (Anti-parpadeo) -->
+    <script src="../js/theme.js"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -17,95 +25,236 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+
+        /* ==================== ESTILOS DE IMPRESIÓN ==================== */
+        @media print {
+            #sidebar,
+            #mobileMenuOverlay,
+            header,
+            #pageControls,
+            .no-print {
+                display: none !important;
+            }
+
+            html, body {
+                overflow: visible !important;
+                height: auto !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+            }
+
+            main {
+                overflow: visible !important;
+                height: auto !important;
+                width: 100% !important;
+                position: static !important;
+            }
+
+            .flex-1.overflow-y-auto,
+            #historyFeedScrollContainer {
+                overflow: visible !important;
+                max-height: none !important;
+                height: auto !important;
+            }
+
+            .max-w-7xl {
+                max-width: 100% !important;
+                height: auto !important;
+            }
+
+            table { width: 100% !important; page-break-inside: auto; }
+            thead { display: table-header-group !important; position: static !important; box-shadow: none !important; }
+            tr { page-break-inside: avoid; }
+
+            .text-slate-800, .text-slate-700, .text-slate-600, .text-slate-500, .text-slate-400 {
+                color: #1e293b !important;
+            }
+
+            .bg-white { background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bg-slate-50 { background-color: #f5f5f5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+            .bg-amber-100, .bg-orange-100, .bg-emerald-100, .bg-blue-100, .bg-violet-100, .bg-rose-100, .bg-indigo-50 {
+                background-color: #eee !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+            }
+
+            .border-l-amber-500, .border-l-orange-500, .border-l-emerald-500,
+            .border-l-blue-500, .border-l-violet-500, .border-l-rose-500, .border-l-slate-400 {
+                border-left: 4px solid #666 !important;
+            }
+
+            .shadow-sm, .shadow-lg, .shadow-md, .shadow-xl { box-shadow: none !important; }
+            .bg-white.rounded-xl { border: 1px solid #ccc !important; border-radius: 0 !important; }
+
+            #printHeader {
+                display: block !important;
+                text-align: center;
+                padding: 15px 0;
+                border-bottom: 2px solid #333;
+                margin-bottom: 15px;
+            }
+            #printHeader h1 { font-size: 20px; font-weight: 800; margin: 0; }
+            #printHeader p { font-size: 12px; color: #666; margin: 5px 0 0 0; }
+
+            #printFooter {
+                display: block !important;
+                text-align: center;
+                padding: 15px 0;
+                border-top: 1px solid #ccc;
+                margin-top: 20px;
+                font-size: 10px;
+                color: #999;
+            }
+
+            #printFilters {
+                display: block !important;
+                font-size: 11px;
+                color: #666;
+                margin-bottom: 10px;
+                padding: 8px;
+                background: #f9f9f9;
+                border: 1px solid #eee;
+            }
+
+            td:last-child, th:last-child { display: none !important; }
+        }
+
+        #printHeader, #printFooter, #printFilters { display: none; }
+
+        /* Dropdown de exportación */
+        .export-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 4px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15);
+            z-index: 50;
+            min-width: 200px;
+            overflow: hidden;
+        }
+        /* Dropdown Modo Oscuro */
+        .dark .export-dropdown {
+            background: #1e293b;
+            border-color: #334155;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);
+        }
+        
+        .export-dropdown.show { display: block; }
+        .export-dropdown button {
+            width: 100%;
+            text-align: left;
+            padding: 10px 14px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.15s;
+        }
+        .export-dropdown button:hover { background: #f1f5f9; }
+        .dark .export-dropdown button:hover { background: #334155; }
+        .export-dropdown button i { width: 16px; text-align: center; }
     </style>
 </head>
 
-<body class="text-slate-700 antialiased flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50 w-full">
+<!-- 3. BODY CON CLASES DARK -->
+<body class="text-slate-700 dark:text-slate-300 antialiased flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50 dark:bg-slate-900 w-full transition-colors duration-300">
 
     <!-- MOBILE MENU OVERLAY -->
-    <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 z-40 hidden backdrop-blur-sm transition-opacity"></div>
+    <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 dark:bg-black/70 z-40 hidden backdrop-blur-sm transition-opacity"></div>
 
     <!-- SIDEBAR -->
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col lg:static lg:z-auto lg:flex lg:flex-col shadow-xl lg:shadow-none">
-        
-        <div class="h-16 flex items-center px-6 border-b border-slate-100 shrink-0">
-            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200 flex-shrink-0">
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col lg:static lg:z-auto lg:flex lg:flex-col shadow-xl lg:shadow-none">
+        <div class="h-16 flex items-center px-6 border-b border-slate-100 dark:border-slate-700 shrink-0">
+            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/30 flex-shrink-0">
                 <i class="fa-solid fa-square-parking text-white text-sm"></i>
             </div>
             <div class="min-w-0">
-                <h1 class="text-lg font-bold text-slate-800 truncate">ELI<span class="text-indigo-600">MAR</span></h1>
-                <p class="text-[10px] text-slate-400 font-medium truncate" id="sidebar-user-name">Sistema</p>
+                <h1 class="text-lg font-bold text-slate-800 dark:text-white truncate">ELI<span class="text-indigo-600 dark:text-indigo-400">MAR</span></h1>
+                <p class="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate" id="sidebar-user-name">Sistema</p>
             </div>
         </div>
-
         <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-            <a href="../dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item"><i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard</a>
-            <a href="clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-users w-5 text-center"></i> Clientes</a>
-            <a href="puestos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-layer-group w-5 text-center"></i> Puestos</a>
-            <a href="caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-cash-register w-5 text-center"></i> Caja</a>
-            <a href="gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-receipt w-5 text-center"></i> Gastos</a>
-            
-            <a href="historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100 nav-item"><i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Historial</a>
-            
-            <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 nav-item"><i class="fa-solid fa-gear w-5 text-center"></i> Configuración</a>
+            <a href="../dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors nav-item"><i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard</a>
+            <a href="clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 nav-item"><i class="fa-solid fa-users w-5 text-center"></i> Clientes</a>
+            <a href="puestos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 nav-item"><i class="fa-solid fa-layer-group w-5 text-center"></i> Puestos</a>
+            <a href="caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 nav-item"><i class="fa-solid fa-cash-register w-5 text-center"></i> Caja</a>
+            <a href="gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 nav-item"><i class="fa-solid fa-receipt w-5 text-center"></i> Gastos</a>
+            <a href="historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 shadow-sm ring-1 ring-indigo-100 dark:ring-indigo-800/50 nav-item"><i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Historial</a>
+            <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 nav-item"><i class="fa-solid fa-gear w-5 text-center"></i> Configuración</a>
         </nav>
+        <div class="p-4 border-t border-slate-100 dark:border-slate-700 shrink-0 space-y-2">
+            <!-- BOTÓN MODO OSCURO -->
+            <button onclick="toggleTheme()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 transition-colors">
+                <i class="fa-solid fa-sun theme-toggle-icon text-amber-500"></i> 
+                <span class="theme-toggle-text">Modo Claro</span>
+            </button>
 
-        <div class="p-4 border-t border-slate-100 shrink-0">
-            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors">
+            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-100 dark:border-red-900/50 transition-colors">
                 <i class="fa-solid fa-power-off"></i> Cerrar Sesión
             </button>
         </div>
     </aside>
 
-    <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full bg-slate-50">
-        
-        <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20 shadow-sm shrink-0">
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full bg-slate-50 dark:bg-slate-900">
+        <header class="h-16 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20 shadow-sm shrink-0">
             <div class="flex items-center gap-4">
-                <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+                <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
                     <i class="fa-solid fa-bars text-xl"></i>
                 </button>
                 <div class="flex flex-col">
-                    <h2 class="text-lg lg:text-xl font-bold text-slate-800">Historial de Operaciones</h2>
-                    <span class="text-xs text-slate-500 font-medium hidden sm:block">Auditoría completa de movimientos</span>
+                    <h2 class="text-lg lg:text-xl font-bold text-slate-800 dark:text-white">Historial de Operaciones</h2>
+                    <span class="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:block">Auditoría completa de movimientos</span>
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <i class="fa-regular fa-calendar text-slate-400"></i>
-                <span id="fecha-actual" class="text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200"></span>
+                <i class="fa-regular fa-calendar text-slate-400 dark:text-slate-500"></i>
+                <span id="fecha-actual" class="text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-600"></span>
             </div>
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 lg:p-8">
             <div class="max-w-7xl mx-auto space-y-6 h-full flex flex-col">
                 
+                <!-- ENCABEZADO DE IMPRESIÓN -->
+                <div id="printHeader">
+                    <h1>PARQUEADERO ELIMAR</h1>
+                    <p>Reporte de Historial de Operaciones</p>
+                </div>
+                <div id="printFilters"></div>
+
                 <!-- Filtros -->
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col xl:flex-row gap-4 justify-between items-center shrink-0">
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col xl:flex-row gap-4 justify-between items-center shrink-0 no-print">
                     <div class="flex flex-wrap items-center gap-3 w-full xl:w-auto">
                         <div class="relative group w-full sm:w-auto">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fa-regular fa-calendar text-slate-400 text-xs group-focus-within:text-indigo-500 transition-colors"></i>
+                                <i class="fa-regular fa-calendar text-slate-400 dark:text-slate-500 text-xs"></i>
                             </div>
-                            <input type="date" id="filterDateStart" onchange="applyFilters()" class="pl-9 pr-3 py-2.5 w-full sm:w-36 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow bg-slate-50 focus:bg-white">
+                            <input type="date" id="filterDateStart" onchange="applyFilters()" class="pl-9 pr-3 py-2.5 w-full sm:w-36 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow bg-slate-50 dark:bg-slate-700 focus:bg-white dark:focus:bg-slate-600 text-slate-800 dark:text-slate-200">
                         </div>
                         <div class="relative group w-full sm:w-auto">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fa-solid fa-calendar-check text-slate-400 text-xs group-focus-within:text-indigo-500 transition-colors"></i>
+                                <i class="fa-solid fa-calendar-check text-slate-400 dark:text-slate-500 text-xs"></i>
                             </div>
-                            <input type="date" id="filterDateEnd" onchange="applyFilters()" class="pl-9 pr-3 py-2.5 w-full sm:w-36 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow bg-slate-50 focus:bg-white">
+                            <input type="date" id="filterDateEnd" onchange="applyFilters()" class="pl-9 pr-3 py-2.5 w-full sm:w-36 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow bg-slate-50 dark:bg-slate-700 focus:bg-white dark:focus:bg-slate-600 text-slate-800 dark:text-slate-200">
                         </div>
-                        
                         <div class="flex gap-2 w-full sm:w-auto">
                             <div class="relative flex-1">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <i class="fa-solid fa-search text-slate-400 text-xs group-focus-within:text-indigo-500 transition-colors"></i>
+                                    <i class="fa-solid fa-search text-slate-400 dark:text-slate-500 text-xs"></i>
                                 </div>
-                                <input type="text" id="filterSearch" onkeyup="applyFilters()" placeholder="Buscar..." class="pl-9 pr-3 py-2.5 w-full border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow bg-slate-50 focus:bg-white">
+                                <input type="text" id="filterSearch" onkeyup="applyFilters()" placeholder="Buscar..." class="pl-9 pr-3 py-2.5 w-full border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow bg-slate-50 dark:bg-slate-700 focus:bg-white dark:focus:bg-slate-600 text-slate-800 dark:text-slate-200">
                             </div>
                             <div class="relative">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <i class="fa-solid fa-filter text-slate-400 text-xs group-focus-within:text-indigo-500 transition-colors"></i>
+                                    <i class="fa-solid fa-filter text-slate-400 dark:text-slate-500 text-xs"></i>
                                 </div>
-                                <select id="filterType" onchange="applyFilters()" class="pl-9 pr-8 py-2.5 w-full border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow bg-slate-50 focus:bg-white appearance-none cursor-pointer">
+                                <select id="filterType" onchange="applyFilters()" class="pl-9 pr-8 py-2.5 w-full border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow bg-slate-50 dark:bg-slate-700 focus:bg-white dark:focus:bg-slate-600 text-slate-800 dark:text-slate-200 appearance-none cursor-pointer">
                                     <option value="all">Todas</option>
                                     <option value="ingreso">Ingresos</option>
                                     <option value="ingreso_visitante">Visitantes</option>
@@ -116,49 +265,80 @@
                                     <option value="vehiculo_moto">Motos</option>
                                     <option value="vehiculo_camioneta">Camionetas</option>
                                 </select>
-                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="w-full xl:w-auto mt-2 xl:mt-0 border-t xl:border-t-0 pt-2 xl:pt-0 border-slate-100">
-                        <button onclick="window.print()" class="w-full bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"><i class="fa-solid fa-print"></i> Imprimir Reporte</button>
+                    <!-- Botones de exportación -->
+                    <div class="w-full xl:w-auto mt-2 xl:mt-0 border-t xl:border-t-0 pt-2 xl:pt-0 border-slate-100 dark:border-slate-700 relative">
+                        <div class="flex gap-2">
+                            <button onclick="printReport()" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-print"></i> Imprimir
+                            </button>
+                            <div class="relative">
+                                <button onclick="toggleExportMenu()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-file-excel"></i> Excel
+                                    <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i>
+                                </button>
+                                <div id="exportDropdown" class="export-dropdown">
+                                    <button onclick="exportExcel(false)">
+                                        <i class="fa-solid fa-file-excel text-emerald-600 dark:text-emerald-400"></i>
+                                        <div>
+                                            <div class="font-semibold text-slate-700 dark:text-slate-200">Filtrados</div>
+                                            <div class="text-[10px] text-slate-400 dark:text-slate-500">Solo registros actuales</div>
+                                        </div>
+                                    </button>
+                                    <button onclick="exportExcel(true)">
+                                        <i class="fa-solid fa-database text-blue-600 dark:text-blue-400"></i>
+                                        <div>
+                                            <div class="font-semibold text-slate-700 dark:text-slate-200">Todo el historial</div>
+                                            <div class="text-[10px] text-slate-400 dark:text-slate-500">Todos los registros sin filtro</div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Contenedor Tabla -->
-                <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden relative">
-                    
-                    <div class="p-4 lg:p-5 border-b border-slate-200 shrink-0 bg-white z-10 flex justify-between items-center">
+                <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col h-full overflow-hidden relative">
+                    <div class="p-4 lg:p-5 border-b border-slate-200 dark:border-slate-700 shrink-0 bg-white dark:bg-slate-800 z-10 flex justify-between items-center no-print">
                         <div>
-                            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-list-ul text-indigo-500"></i> Registro de Actividad</h3>
+                            <h3 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                <i class="fa-solid fa-list-ul text-indigo-500 dark:text-indigo-400"></i> Registro de Actividad
+                            </h3>
                         </div>
                         <div class="text-right">
-                            <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Registros</span>
-                            <span class="text-xs font-mono font-medium text-slate-700" id="pageInfo">0 - 0 de 0</span>
+                            <span class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Registros</span>
+                            <span class="text-xs font-mono font-medium text-slate-700 dark:text-slate-300" id="pageInfo">0 - 0 de 0</span>
                         </div>
                     </div>
                     
                     <div id="historyFeedScrollContainer" class="flex-1 overflow-y-auto overflow-x-auto">
                         <table class="w-full text-left border-collapse">
-                            <thead class="bg-slate-50 text-xs uppercase text-slate-500 font-bold sticky top-0 z-10 shadow-sm">
+                            <thead class="bg-slate-50 dark:bg-slate-900/50 text-xs uppercase text-slate-500 dark:text-slate-400 font-bold sticky top-0 z-10 shadow-sm">
                                 <tr>
                                     <th class="p-4 rounded-tl-lg w-1/4">Operación</th>
                                     <th class="p-4 w-1/6">Fecha</th>
                                     <th class="p-4 w-1/4">Detalle / Puesto</th>
                                     <th class="p-4 w-1/4 text-right">Estado / Valor</th>
-                                    <th class="p-4 text-center w-16 rounded-tr-lg"></th>
+                                    <th class="p-4 text-center w-16 rounded-tr-lg no-print"></th>
                                 </tr>
                             </thead>
-                            <tbody id="historyFeedBody" class="divide-y divide-slate-100 text-sm text-slate-700"></tbody>
+                            <tbody id="historyFeedBody" class="divide-y divide-slate-100 dark:divide-slate-700/50 text-sm text-slate-700 dark:text-slate-300"></tbody>
                         </table>
                     </div>
 
-                    <!-- PAGINACIÓN -->
-                    <div class="p-4 border-t border-slate-200 bg-white shrink-0">
+                    <div class="p-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0 no-print">
                         <div id="pageControls" class="w-full"></div>
+                    </div>
+
+                    <div id="printFooter">
+                        Generado el <span id="printDateTime"></span> — PARQUEADERO ELIMAR — Sistema de Gestión
                     </div>
                 </div>
             </div>
@@ -180,15 +360,159 @@
             }
         }
 
+        function toggleExportMenu() {
+            document.getElementById('exportDropdown').classList.toggle('show');
+        }
+
+        // Cerrar dropdown al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('exportDropdown');
+            if (dropdown && !e.target.closest('.relative')) {
+                dropdown.classList.remove('show');
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
             const dateEl = document.getElementById("fecha-actual");
-            if(dateEl) {
+            if (dateEl) {
                 const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }; 
                 let dateStr = new Date().toLocaleDateString('es-ES', options);
                 dateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
                 dateEl.textContent = dateStr;
             }
         });
+
+        // ==================== IMPRIMIR REPORTE ====================
+        function printReport() {
+            if (!window.HistorialModule) {
+                mostrarToast("Módulo no cargado", "error");
+                return;
+            }
+            var mod = window.HistorialModule;
+            if (mod.filteredHistory.length === 0) {
+                mostrarToast("No hay registros para imprimir", "error");
+                return;
+            }
+
+            var pf = document.getElementById('printFilters');
+            var startStr = document.getElementById("filterDateStart").value;
+            var endStr = document.getElementById("filterDateEnd").value;
+            var searchStr = document.getElementById("filterSearch").value;
+            var typeEl = document.getElementById("filterType");
+            var typeText = typeEl.options[typeEl.selectedIndex].text;
+            var txt = 'Todos los registros';
+            if (startStr || endStr) txt = 'Fecha: ' + (startStr || '...') + ' hasta ' + (endStr || '...');
+            if (searchStr) txt += ' | Búsqueda: ' + searchStr;
+            if (typeEl.value !== 'all') txt += ' | Tipo: ' + typeText;
+            txt += ' | Total: ' + mod.filteredHistory.length + ' registros';
+            pf.textContent = txt;
+
+            var now = new Date();
+            document.getElementById('printDateTime').textContent = now.toLocaleDateString('es-CO') + ' ' + now.toLocaleTimeString('es-CO');
+
+            var savedPage = mod.currentPage;
+            mod.renderAllForPrint();
+
+            setTimeout(function() {
+                window.print();
+                setTimeout(function() {
+                    mod.currentPage = savedPage;
+                    mod.renderFeed();
+                }, 500);
+            }, 200);
+        }
+
+        // ==================== EXPORTAR EXCEL ====================
+        function exportExcel(useAll) {
+            if (!window.HistorialModule) {
+                mostrarToast("Módulo no cargado", "error");
+                return;
+            }
+            var mod = window.HistorialModule;
+            var data = useAll ? mod.allHistory : mod.filteredHistory;
+
+            if (data.length === 0) {
+                mostrarToast("No hay registros para exportar", "error");
+                document.getElementById('exportDropdown').classList.remove('show');
+                return;
+            }
+
+            document.getElementById('exportDropdown').classList.remove('show');
+
+            data = data.slice().sort(function(a, b) {
+                if (a.date !== b.date) return b.date.localeCompare(a.date);
+                return (b.entry || '').localeCompare(a.entry || '');
+            });
+
+            var rows = [['Fecha', 'Hora', 'Placa', 'Tipo Vehículo', 'Operación', 'Detalle / Puesto', 'Valor']];
+
+            data.forEach(function(item) {
+                var tipoVeh = item.tipo_vehiculo || '';
+                if (!tipoVeh) {
+                    var t = (item.type || '').toLowerCase();
+                    if (t === 'gasto') tipoVeh = 'N/A';
+                    else tipoVeh = 'Sin clasificar';
+                }
+
+                var operacion = item.type || 'SISTEMA';
+                var opMap = {
+                    'ingreso': 'Ingreso',
+                    'ingreso_visitante': 'Ingreso Visitante',
+                    'salida': 'Salida Oficial',
+                    'salida_viaje': 'Salida Viaje',
+                    'regreso_dueno': 'Regreso Dueño',
+                    'gasto': 'Gasto'
+                };
+                if (opMap[operacion.toLowerCase()]) operacion = opMap[operacion.toLowerCase()];
+
+                var valor = Number(item.paid) || 0;
+                if ((item.type || '').toLowerCase() === 'gasto' && valor > 0) valor = -valor;
+
+                rows.push([
+                    item.date || '',
+                    item.entry || '',
+                    item.plate || '---',
+                    tipoVeh,
+                    operacion,
+                    item.spot || '',
+                    valor
+                ]);
+            });
+
+            var wb = XLSX.utils.book_new();
+            var ws = XLSX.utils.aoa_to_sheet(rows);
+
+            ws['!cols'] = [
+                { wch: 12 }, { wch: 8 }, { wch: 12 }, 
+                { wch: 16 }, { wch: 20 }, { wch: 30 }, { wch: 14 }
+            ];
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Historial');
+
+            var now = new Date();
+            var dateFile = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+            var fileName = 'Historial_Elimar_' + dateFile;
+            if (!useAll) fileName += '_filtrado';
+
+            XLSX.writeFile(wb, fileName + '.xlsx');
+            mostrarToast('Archivo Excel descargado (' + data.length + ' registros)');
+        }
+
+        // ==================== TOAST GLOBAL ====================
+        function mostrarToast(msg, type) {
+            type = type || 'success';
+            var toast = document.createElement('div');
+            toast.className = 'fixed bottom-4 right-4 z-[999] px-4 py-3 rounded-lg shadow-lg text-sm font-bold transition-all transform translate-y-10 opacity-0 ' + (type === 'error' ? 'bg-red-600 text-white' : 'bg-slate-800 dark:bg-slate-700 dark:text-white text-white');
+            toast.innerText = msg;
+            document.body.appendChild(toast);
+            requestAnimationFrame(function() {
+                toast.classList.remove('translate-y-10', 'opacity-0');
+            });
+            setTimeout(function() {
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(function() { toast.remove(); }, 300);
+            }, 3000);
+        }
     </script>
     <script src="../js/auth-manager.js"></script>
     <script src="../js/main.js"></script>

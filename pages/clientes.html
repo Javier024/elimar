@@ -5,9 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Clientes | PARQUEADERO ELIMAR</title>
   <link rel="icon" type="image/jpeg" href="/img/logo.jpg">
+  
+  <!-- 1. TAILWIND + CONFIGURACIÓN DARK MODE -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- 2. CARGAR TEMA (Anti-parpadeo) -->
+  <script src="../js/theme.js"></script>
 
   <style>
     body { font-family: 'Inter', sans-serif; }
@@ -16,26 +23,25 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .dark ::-webkit-scrollbar-thumb { background: #475569; }
 
-    /* Estilos de inputs personalizados */
+    /* Estilos de inputs personalizados - Modo Claro */
     .custom-input { 
       background: #fff; 
       border: 1px solid #cbd5e1; 
       color: #334155; 
       transition: all .3s ease; 
-      padding: 12px 12px 12px 40px; /* Padding izquierdo para el icono */
+      padding: 12px 12px 12px 40px; 
       border-radius: 8px; 
       width: 100%; 
       font-size: 15px; 
     }
-    
-    /* Variación para inputs dentro del modal que tienen etiqueta flotante */
     .custom-input-modal { 
       background: #fff; 
       border: 1px solid #cbd5e1; 
       color: #334155; 
       transition: all .3s ease; 
-      padding: 28px 12px 8px 40px; /* Espacio superior para la label */
+      padding: 28px 12px 8px 40px; 
       border-radius: 8px; 
       width: 100%; 
       font-size: 15px; 
@@ -49,68 +55,72 @@
     }
     
     .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
-    
-    /* Icono para el modal (posición diferente debido al padding) */
     .input-icon-modal { position: absolute; left: 12px; top: 34px; color: #94a3b8; }
+
+    /* Estilos de inputs personalizados - Modo Oscuro */
+    .dark .custom-input, .dark .custom-input-modal { 
+      background: #1e293b; 
+      border-color: #334155; 
+      color: #f1f5f9; 
+    }
+    .dark .custom-input:focus, .dark .custom-input-modal:focus { 
+      border-color: #818cf8; 
+      background-color: #334155; 
+      box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2); 
+    }
+    .dark .input-icon, .dark .input-icon-modal { color: #64748b; }
   </style>
 </head>
-<body class="text-slate-700 antialiased flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50 w-full">
+
+<!-- 3. BODY CON CLASES DARK -->
+<body class="text-slate-700 dark:text-slate-300 antialiased flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50 dark:bg-slate-900 w-full transition-colors duration-300">
 
   <!-- Overlay Menú Móvil -->
-  <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 z-40 hidden backdrop-blur-sm transition-opacity"></div>
+  <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 dark:bg-black/70 z-40 hidden backdrop-blur-sm transition-opacity"></div>
 
   <!-- SIDEBAR -->
-  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col lg:static lg:translate-x-0 lg:z-auto lg:flex lg:flex-col shadow-xl lg:shadow-none">
-    <div class="h-16 flex items-center px-6 border-b border-slate-100 shrink-0">
-      <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200 flex-shrink-0"><i class="fa-solid fa-square-parking text-white text-sm"></i></div>
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col lg:static lg:translate-x-0 lg:z-auto lg:flex lg:flex-col shadow-xl lg:shadow-none">
+    <div class="h-16 flex items-center px-6 border-b border-slate-100 dark:border-slate-700 shrink-0">
+      <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/30 flex-shrink-0"><i class="fa-solid fa-square-parking text-white text-sm"></i></div>
       <div class="min-w-0">
-        <h1 class="text-lg font-bold text-slate-800 truncate">ELI<span class="text-indigo-600">MAR</span></h1>
-        <p class="text-[10px] text-slate-400 font-medium truncate" id="sidebar-user-name">Sistema</p>
+        <h1 class="text-lg font-bold text-slate-800 dark:text-white truncate">ELI<span class="text-indigo-600 dark:text-indigo-400">MAR</span></h1>
+        <p class="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate" id="sidebar-user-name">Sistema</p>
       </div>
     </div>
     
     <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-      <a href="../dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item">
-        <i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard
-      </a>
-      <a href="clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100 nav-item">
-        <i class="fa-solid fa-users w-5 text-center"></i> Clientes
-      </a>
-      <a href="puestos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item">
-        <i class="fa-solid fa-layer-group w-5 text-center"></i> Puestos
-      </a>
-      <a href="caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item">
-        <i class="fa-solid fa-cash-register w-5 text-center"></i> Caja
-      </a>
-      <a href="gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item">
-        <i class="fa-solid fa-receipt w-5 text-center"></i> Gastos
-      </a>
-      <a href="historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item">
-        <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Historial
-      </a>
-      <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors nav-item">
-        <i class="fa-solid fa-gear w-5 text-center"></i> Configuración
-      </a>
+      <a href="../dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors nav-item"><i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard</a>
+      <a href="clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 shadow-sm ring-1 ring-indigo-100 dark:ring-indigo-800/50 nav-item"><i class="fa-solid fa-users w-5 text-center"></i> Clientes</a>
+      <a href="puestos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors nav-item"><i class="fa-solid fa-layer-group w-5 text-center"></i> Puestos</a>
+      <a href="caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors nav-item"><i class="fa-solid fa-cash-register w-5 text-center"></i> Caja</a>
+      <a href="gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors nav-item"><i class="fa-solid fa-receipt w-5 text-center"></i> Gastos</a>
+      <a href="historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors nav-item"><i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Historial</a>
+      <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors nav-item"><i class="fa-solid fa-gear w-5 text-center"></i> Configuración</a>
     </nav>
 
-    <div class="p-4 border-t border-slate-100 shrink-0">
-      <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 border border-red-100 transition-colors">
+    <div class="p-4 border-t border-slate-100 dark:border-slate-700 shrink-0 space-y-2">
+      <!-- BOTÓN MODO OSCURO -->
+      <button onclick="toggleTheme()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 transition-colors">
+        <i class="fa-solid fa-sun theme-toggle-icon text-amber-500"></i> 
+        <span class="theme-toggle-text">Modo Claro</span>
+      </button>
+      <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-100 dark:border-red-900/50 transition-colors">
         <i class="fa-solid fa-power-off"></i> Cerrar Sesión
       </button>
     </div>
   </aside>
 
   <!-- MAIN CONTENT -->
-  <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full bg-slate-50">
+  <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full bg-slate-50 dark:bg-slate-900">
     <!-- Header -->
-    <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20 shrink-0">
+    <header class="h-16 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20 shrink-0">
       <div class="flex items-center gap-4">
-        <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+        <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
           <i class="fa-solid fa-bars text-xl"></i>
         </button>
         <div class="flex flex-col">
-          <h2 class="text-lg lg:text-xl font-bold text-slate-800">Gestión de Clientes</h2>
-          <span class="text-xs text-slate-500 font-medium hidden sm:block">Base de datos y estado de pagos</span>
+          <h2 class="text-lg lg:text-xl font-bold text-slate-800 dark:text-white">Gestión de Clientes</h2>
+          <span class="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:block">Base de datos y estado de pagos</span>
         </div>
       </div>
     </header>
@@ -121,58 +131,58 @@
         
         <!-- COLUMNA IZQUIERDA: FORMULARIO -->
         <div class="xl:col-span-4 space-y-6">
-          <div class="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-sm">
+          <div class="bg-white dark:bg-slate-800 p-5 md:p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none">
             <div class="flex items-center gap-2 mb-6">
-              <div class="p-2 bg-indigo-50 rounded-lg text-indigo-600"><i class="fa-solid fa-user-plus"></i></div>
-              <h3 class="font-bold text-slate-800 text-lg">Registrar Nuevo</h3>
+              <div class="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400"><i class="fa-solid fa-user-plus"></i></div>
+              <h3 class="font-bold text-slate-800 dark:text-white text-lg">Registrar Nuevo</h3>
             </div>
             
             <form id="formCliente">
               <div class="space-y-4">
                 <!-- Nombre -->
                 <div class="relative group">
-                  <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Nombre</label>
+                  <label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Nombre</label>
                   <i class="fa-regular fa-user input-icon group-focus-within:text-indigo-500 transition-colors"></i>
                   <input id="nombre" placeholder="Nombre completo" required class="custom-input peer">
                 </div>
 
-                <!-- Teléfono (Optimizado para móvil) -->
+                <!-- Teléfono -->
                 <div class="relative group">
-                  <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Teléfono</label>
+                  <label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Teléfono</label>
                   <i class="fa-solid fa-phone input-icon group-focus-within:text-indigo-500 transition-colors"></i>
                   <input id="telefono" placeholder="Teléfono" class="custom-input peer" inputmode="tel">
                 </div>
 
                 <!-- Placa -->
-                <div class="relative">
-                  <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Placa</label>
+                <div class="relative group">
+                  <label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Placa</label>
                   <i class="fa-solid fa-id-card input-icon group-focus-within:text-indigo-500 transition-colors"></i>
                   <input id="placa" placeholder="Placa" required class="custom-input uppercase peer" autocomplete="off">
                 </div>
                 
                 <!-- Vehículo -->
-                <div class="relative">
-                  <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Vehículo</label>
+                <div class="relative group">
+                  <label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Vehículo</label>
                   <i class="fa-solid fa-car input-icon group-focus-within:text-indigo-500 transition-colors"></i>
                   <select id="vehiculo" class="custom-input appearance-none cursor-pointer">
                     <option value="Carro">Carro</option>
                     <option value="Moto">Moto</option>
                     <option value="Camioneta">Camioneta</option>
                   </select>
-                  <i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 pointer-events-none"></i>
+                  <i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 dark:text-slate-500 pointer-events-none"></i>
                 </div>
                 
                 <!-- Fecha Registro -->
-                <div class="relative">
-                  <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Fecha Registro</label>
+                <div class="relative group">
+                  <label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Fecha Registro</label>
                   <i class="fa-regular fa-calendar input-icon group-focus-within:text-indigo-500 transition-colors"></i>
                   <input type="date" id="fechaRegistro" required class="custom-input pl-10">
                 </div>
                 
                 <!-- Grid: Periodicidad y Cuota -->
                 <div class="grid grid-cols-2 gap-4">
-                     <div class="relative">
-                       <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Periodicidad</label>
+                     <div class="relative group">
+                       <label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Periodicidad</label>
                        <i class="fa-solid fa-money-bill-wave input-icon group-focus-within:text-indigo-500 transition-colors"></i>
                        <select id="medioPago" class="custom-input appearance-none cursor-pointer">
                          <option value="Diario">Diario</option>
@@ -181,12 +191,12 @@
                          <option value="Mensual">Mensual</option>
                          <option value="Otro">Otro...</option>
                        </select>
-                       <i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 pointer-events-none"></i>
+                       <i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 dark:text-slate-500 pointer-events-none"></i>
                      </div>
-                     <div class="relative">
-                       <label class="text-xs font-bold text-emerald-600 ml-1 mb-1 block">Cuota ($)</label>
+                     <div class="relative group">
+                       <label class="text-xs font-bold text-emerald-600 dark:text-emerald-400 ml-1 mb-1 block">Cuota ($)</label>
                        <i class="fa-solid fa-dollar-sign input-icon text-emerald-500"></i>
-                       <input type="number" id="cuotaMensual" placeholder="0" class="custom-input pl-10 font-mono font-bold text-emerald-700" inputmode="decimal">
+                       <input type="number" id="cuotaMensual" placeholder="0" class="custom-input pl-10 font-mono font-bold text-emerald-700 dark:text-emerald-400" inputmode="decimal">
                      </div>
                 </div>
                 
@@ -197,7 +207,7 @@
                 </div>
               </div>
 
-              <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg shadow-indigo-200 transition-all transform active:scale-95 flex items-center justify-center gap-2 mt-6">
+              <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg shadow-indigo-200 dark:shadow-indigo-900/30 transition-all transform active:scale-95 flex items-center justify-center gap-2 mt-6">
                 <i class="fa-solid fa-save"></i> Guardar Cliente
               </button>
             </form>
@@ -206,17 +216,17 @@
 
         <!-- COLUMNA DERECHA: LISTA -->
         <div class="xl:col-span-8">
-          <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full min-h-[500px]">
+          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none overflow-hidden flex flex-col h-full min-h-[500px]">
             <!-- Toolbar Tabla -->
-            <div class="p-4 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white shrink-0">
-              <h3 class="font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-list-ul text-indigo-500"></i> Lista de Clientes</h3>
+            <div class="p-4 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white dark:bg-slate-800 shrink-0">
+              <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2"><i class="fa-solid fa-list-ul text-indigo-500 dark:text-indigo-400"></i> Lista de Clientes</h3>
               <div class="flex items-center gap-2 w-full sm:w-auto">
                 <div class="relative w-full sm:w-64">
-                  <i class="fa-solid fa-search absolute left-3 top-3 text-slate-400"></i>
-                  <input type="text" id="searchInput" placeholder="Buscar por nombre o placa..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 transition-colors">
+                  <i class="fa-solid fa-search absolute left-3 top-3 text-slate-400 dark:text-slate-500"></i>
+                  <input type="text" id="searchInput" placeholder="Buscar por nombre o placa..." class="w-full pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200">
                 </div>
-                <div class="text-xs font-medium bg-slate-100 text-slate-600 px-3 py-2 rounded-lg border border-slate-200 whitespace-nowrap">
-                  Total: <span id="totalCount">0</span>
+                <div class="text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 whitespace-nowrap">
+                  Total: <span id="totalCount" class="font-bold">0</span>
                 </div>
               </div>
             </div>
@@ -224,29 +234,29 @@
             <!-- Tabla -->
             <div class="overflow-x-auto flex-1">
               <table class="w-full text-left border-collapse min-w-[700px]">
-                <thead class="bg-slate-50/80 backdrop-blur sticky top-0 z-10">
+                <thead class="bg-slate-50/80 dark:bg-slate-900/50 backdrop-blur sticky top-0 z-10">
                     <tr>
-                        <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Info Cliente</th>
-                        <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Vehículo</th>
-                        <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Placa</th>
-                        <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Detalles</th>
-                        <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Estado Pago</th>
-                        <th class="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Acciones</th>
+                        <th class="px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Info Cliente</th>
+                        <th class="px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Vehículo</th>
+                        <th class="px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Placa</th>
+                        <th class="px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Detalles</th>
+                        <th class="px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Estado Pago</th>
+                        <th class="px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Acciones</th>
                     </tr>
                 </thead>
-                <tbody id="listaClientesBody" class="text-sm text-slate-700 divide-y divide-slate-50">
+                <tbody id="listaClientesBody" class="text-sm text-slate-700 dark:text-slate-300 divide-y divide-slate-50 dark:divide-slate-700/50">
                     <!-- Filas generadas por JS -->
                 </tbody>
               </table>
             </div>
             
             <!-- Paginación -->
-            <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0">
-                <button id="btnPrev" onclick="changePage('prev')" class="px-3 py-1.5 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-between shrink-0">
+                <button id="btnPrev" onclick="changePage('prev')" class="px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                     <i class="fa-solid fa-chevron-left mr-1"></i> Anterior
                 </button>
-                <span id="pageInfo" class="text-sm font-medium text-slate-500">Página 1 de 1</span>
-                <button id="btnNext" onclick="changePage('next')" class="px-3 py-1.5 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <span id="pageInfo" class="text-sm font-medium text-slate-500 dark:text-slate-400">Página 1 de 1</span>
+                <button id="btnNext" onclick="changePage('next')" class="px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                     Siguiente <i class="fa-solid fa-chevron-right ml-1"></i>
                 </button>
             </div>
@@ -257,12 +267,12 @@
   </main>
 
   <!-- MODAL EDITAR CLIENTE -->
-  <div id="modalEdit" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[70] transition-opacity opacity-0">
-      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0 duration-200 max-h-[90vh] overflow-y-auto" id="modalContent">
+  <div id="modalEdit" class="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[70] transition-opacity opacity-0">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0 duration-200 max-h-[90vh] overflow-y-auto" id="modalContent">
           <!-- Modal Header -->
-          <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-2xl sticky top-0 z-10">
-              <h3 class="text-lg font-bold text-slate-800">Editar Cliente</h3>
-              <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors z-10 relative">
+          <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/30 rounded-t-2xl sticky top-0 z-10">
+              <h3 class="text-lg font-bold text-slate-800 dark:text-white">Editar Cliente</h3>
+              <button onclick="closeModal()" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors z-10 relative">
                   <i class="fa-solid fa-xmark"></i>
               </button>
           </div>
@@ -272,43 +282,43 @@
             <input type="hidden" id="editId">
             
             <div class="relative">
-              <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Nombre</label>
+              <label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Nombre</label>
               <i class="fa-regular fa-user input-icon-modal"></i>
               <input id="editNombre" class="custom-input-modal" placeholder="Nombre">
             </div>
             
             <div class="relative">
-              <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Teléfono</label>
+              <label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Teléfono</label>
               <i class="fa-solid fa-phone input-icon-modal"></i>
               <input id="editTelefono" class="custom-input-modal" placeholder="Teléfono" inputmode="tel">
             </div>
             
             <div class="relative">
-              <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Placa</label>
+              <label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Placa</label>
               <i class="fa-solid fa-id-card input-icon-modal"></i>
               <input id="editPlaca" class="custom-input-modal uppercase" placeholder="Placa">
             </div>
             
             <div class="relative">
-              <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Vehículo</label>
+              <label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Vehículo</label>
               <i class="fa-solid fa-car input-icon-modal"></i>
               <select id="editVehiculo" class="custom-input-modal appearance-none cursor-pointer">
                 <option value="Carro">Carro</option>
                 <option value="Moto">Moto</option>
                 <option value="Camioneta">Camioneta</option>
               </select>
-              <i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 pointer-events-none"></i>
+              <i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 dark:text-slate-500 pointer-events-none"></i>
             </div>
             
             <div class="relative">
-              <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">F. Registro</label>
+              <label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">F. Registro</label>
               <i class="fa-regular fa-calendar input-icon-modal"></i>
               <input type="date" id="editFechaRegistro" class="custom-input-modal">
             </div>
             
             <div class="grid grid-cols-2 gap-4">
                 <div class="relative">
-                  <label class="text-xs font-bold text-slate-500 ml-1 mb-1 block">Periodicidad</label>
+                  <label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Periodicidad</label>
                   <i class="fa-solid fa-money-bill-wave input-icon-modal"></i>
                   <select id="editMedioPago" class="custom-input-modal appearance-none cursor-pointer">
                     <option value="Diario">Diario</option>
@@ -317,12 +327,12 @@
                     <option value="Mensual">Mensual</option>
                     <option value="Otro">Otro...</option>
                   </select>
-                  <i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 pointer-events-none"></i>
+                  <i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 dark:text-slate-500 pointer-events-none"></i>
                 </div>
                 <div class="relative">
-                  <label class="text-xs font-bold text-emerald-600 ml-1 mb-1 block">Cuota ($)</label>
+                  <label class="text-xs font-bold text-emerald-600 dark:text-emerald-400 ml-1 mb-1 block">Cuota ($)</label>
                   <i class="fa-solid fa-dollar-sign input-icon-modal text-emerald-500"></i>
-                  <input type="number" id="editCuotaMensual" class="custom-input-modal font-mono font-bold text-emerald-700" placeholder="0" inputmode="decimal">
+                  <input type="number" id="editCuotaMensual" class="custom-input-modal font-mono font-bold text-emerald-700 dark:text-emerald-400" placeholder="0" inputmode="decimal">
                 </div>
             </div>
 
@@ -333,12 +343,12 @@
           </div>
 
           <!-- Modal Footer -->
-          <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex justify-end gap-3 sticky bottom-0">
-            <button onclick="deleteClientFromModal()" class="text-rose-600 hover:bg-rose-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors mr-auto">
+          <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700 rounded-b-2xl flex justify-end gap-3 sticky bottom-0">
+            <button onclick="deleteClientFromModal()" class="text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors mr-auto">
               <i class="fa-solid fa-trash mr-1"></i> Eliminar
             </button>
-            <button onclick="closeModal()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200 transition-colors">Cancelar</button>
-            <button onclick="updateClient()" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-colors">
+            <button onclick="closeModal()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">Cancelar</button>
+            <button onclick="updateClient()" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 dark:shadow-indigo-900/30 transition-colors">
               <i class="fa-solid fa-check mr-1"></i> Guardar
             </button>
           </div>

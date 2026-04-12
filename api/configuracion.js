@@ -1,22 +1,94 @@
 // parqueo/api/configuracion.js
 import { db } from "./db.js";
 import bcrypt from "bcryptjs"; 
-import { authGuard } from "./_lib/auth.js"; // <-- NUEVO
+import { authGuard } from "./_lib/auth.js";
 
 export default async function handler(req, res) {
   try {
-    const user = authGuard(req, res); // <-- NUEVO
-    if (!user) return; // <-- NUEVO
+    const user = authGuard(req, res);
+    if (!user) return;
 
-    let data = {};
-    
-    // --- PASO 1: LECTURA LIMPIA ---
-    // Ya no intentamos crear la tabla aquí. Se asume que ya existe en Turso.
+    // --- PASO 1: LECTURA ---
     if (req.method === "GET") {
-      const result = await db.execute("SELECT * FROM configuracion WHERE id = 1");
-      if (result.rows.length > 0) {
-        data = result.rows[0];
+      const action = req.query.action;
+
+      // ===== BACKUP COMPLETO (SEGUN TU LISTA EXACTA) =====
+      if (action === "backup") {
+        try {
+          // Función auxiliar para no explotar si falta alguna tabla
+          const safeQuery = async (sql) => {
+            try {
+              const result = await db.execute(sql);
+              return result.rows;
+            } catch (err) {
+              console.warn(`[Backup Omitido] Error: ${err.message}`);
+              return [];
+            }
+          };
+
+          // 1. consultamos todo en paralelo (Las 6 tablas que mencionaste + usuarios)
+          const [
+            configuracion, 
+            clientes, 
+            puestos, 
+            caja, 
+            gastos, 
+            historial, 
+            usuariosRaw
+          ] = await Promise.all([
+            safeQuery("SELECT * FROM configuracion"),
+            safeQuery("SELECT * FROM clientes"),
+            safeQuery("SELECT * FROM puestos"),
+            safeQuery("SELECT * FROM caja ORDER BY fecha DESC, id DESC"),
+            safeQuery("SELECT * FROM gastos ORDER BY date DESC, id DESC"),
+            safeQuery("SELECT * FROM historial ORDER BY date DESC, entry DESC"),
+            safeQuery("SELECT * FROM usuarios")
+          ]);
+
+          // Seguridad: Eliminar contraseña hasheada de los usuarios en el archivo
+          const usuarios = usuariosRaw.map(u => {
+            const copia = { ...u };
+            delete copia.password;
+            return copia;
+          });
+
+          const backup = {
+            info: {
+              sistema: "PARQUEADERO ELIMAR",
+              version: "1.0",
+              fecha_generacion: new Date().toISOString(),
+              generado_por: user.nombre || user.usuario || "Admin"
+            },
+            tablas: {
+              configuracion,
+              clientes,
+              puestos,
+              caja,
+              gastos,
+              historial,
+              usuarios
+            },
+            resumen: {
+              total_configuracion: configuracion.length,
+              total_clientes: clientes.length,
+              total_puestos: puestos.length,
+              total_caja: caja.length,
+              total_gastos: gastos.length,
+              total_historial: historial.length,
+              total_usuarios: usuarios.length
+            }
+          };
+
+          return res.status(200).json(backup);
+        } catch (backupError) {
+          console.error("Error crítico generando backup:", backupError);
+          return res.status(500).json({ error: "Error al generar el backup", detalle: backupError.message });
+        }
       }
+
+      // Lógica normal de GET (Obtener configuración)
+      const result = await db.execute("SELECT * FROM configuracion WHERE id = 1");
+      const data = result.rows.length > 0 ? result.rows[0] : {};
       return res.status(200).json(data);
     }
 
@@ -24,7 +96,6 @@ export default async function handler(req, res) {
     if (req.method === "POST") {
       const body = req.body;
       
-      // Manejo de Contraseña: Si el usuario ingresó una nueva, la hasheamos
       let hashedPass = body.admin_pass;
       if (body.admin_pass && body.admin_pass.length > 0) {
           const salt = await bcrypt.genSalt(10);
@@ -39,16 +110,10 @@ export default async function handler(req, res) {
         'admin_nombre', 'admin_email', 'admin_notif', 'admin_user'
       ];
       
-      // Mapeamos los valores normales
       const values = fields.map(f => body[f] || (f.startsWith('tarifa_') ? 0 : ''));
-      
-      // Agregamos manualmente la contraseña hasheada al final del array
       values.push(hashedPass);
-      
-      // Agregamos admin_pass al array de campos para el SQL
       const allFields = [...fields, 'admin_pass'];
 
-      // Guardar en TABLA CONFIGURACION
       const check = await db.execute("SELECT id FROM configuracion WHERE id = 1");
 
       if (check.rows.length > 0) {
@@ -62,7 +127,6 @@ export default async function handler(req, res) {
         });
       }
 
-      // Sincronizar con TABLA USUARIOS (Para que el cambio de usuario/clave funcione en el login)
       if (body.admin_user || body.admin_pass || body.admin_email) {
           try {
               let userUpdates = [];
@@ -71,11 +135,9 @@ export default async function handler(req, res) {
               if (body.admin_user) { userUpdates.push("usuario = ?"); userArgs.push(body.admin_user); }
               if (body.admin_email) { userUpdates.push("email = ?"); userArgs.push(body.admin_email); }
               if (body.admin_nombre) { userUpdates.push("nombre = ?"); userArgs.push(body.admin_nombre); }
-              
-              // Solo actualizamos la contraseña en usuarios si se ingresó una nueva
               if (body.admin_pass && body.admin_pass.length > 0) {
                   userUpdates.push("password = ?");
-                  userArgs.push(hashedPass); // Usamos la misma versión hasheada
+                  userArgs.push(hashedPass);
               }
 
               if (userUpdates.length > 0) {
@@ -84,14 +146,61 @@ export default async function handler(req, res) {
               }
           } catch (syncError) {
               console.error("Error sincronizando usuarios:", syncError.message);
-              // No fallamos la petición completa, pero logueamos el error
           }
       }
 
       return res.status(200).json({ 
           success: true, 
-          message: "Configuración guardada correctamente. Si cambiaste usuario o contraseña, vuelve a iniciar sesión." 
+          message: "Configuración guardada correctamente." 
       });
+    }
+
+    // --- PASO 3: FORMATEAR SISTEMA ---
+    if (req.method === "PUT") {
+      const action = req.query.action;
+
+      if (action === "format") {
+        const { confirm_pass } = req.body;
+
+        if (!confirm_pass) {
+          return res.status(400).json({ error: "Se requiere la contraseña" });
+        }
+
+        const adminRes = await db.execute("SELECT password FROM usuarios WHERE rol = 'admin' LIMIT 1");
+        if (adminRes.rows.length === 0) {
+          return res.status(400).json({ error: "No se encontró usuario administrador" });
+        }
+
+        const isValid = await bcrypt.compare(confirm_pass, adminRes.rows[0].password);
+        if (!isValid) {
+          return res.status(401).json({ error: "Contraseña incorrecta" });
+        }
+
+        try {
+          // Función segura para borrar sin explotar si falta alguna tabla
+          const safeDelete = async (sql) => {
+            try { await db.execute(sql); } catch (e) { console.warn("Format omitido:", e.message); }
+          };
+
+          // Borramos exactamente las 6 tablas operativas
+          await safeDelete("DELETE FROM historial");
+          await safeDelete("DELETE FROM gastos");
+          await safeDelete("DELETE FROM caja");
+          await safeDelete("DELETE FROM clientes");
+          await safeDelete("DELETE FROM puestos");
+          await safeDelete("DELETE FROM configuracion");
+          await safeDelete("DELETE FROM usuarios WHERE rol != 'admin'");
+
+          return res.status(200).json({ 
+            success: true, 
+            message: "Sistema formateado exitosamente." 
+          });
+        } catch (deleteError) {
+          console.error("Error borrando tablas:", deleteError);
+          return res.status(500).json({ error: "Error al limpiar", detalle: deleteError.message });
+        }
+      }
+      return res.status(400).json({ error: "Acción PUT no válida" });
     }
 
     return res.status(405).json({ error: "Método no permitido" });
