@@ -10,7 +10,6 @@ async function cargarConfiguracion() {
         if (!res.ok) throw new Error('Error de servidor: ' + res.status);
         const data = await res.json();
         
-        // Se usa forEach en lugar de una variable para evitar conflictos de nombres
         var ids = ['confNombre', 'confNit', 'confDireccion', 'confTelefono', 
                    'tp_hora', 'tp_noche', 'tp_semana', 'tp_quincena', 'tp_mes', 
                    'tm_hora', 'tm_noche', 'tm_semana', 'tm_quincena', 'tm_mes', 
@@ -142,7 +141,7 @@ async function formatearSistema() {
             mostrarToast("Contraseña incorrecta. Acción cancelada.", "error");
         } else if (data.success) {
             mostrarToast("Sistema formateado. Cerrando sesión...", "success");
-            setTimeout(() => {
+            setTimeout(function() {
                 localStorage.clear();
                 sessionStorage.clear();
                 window.location.href = '/';
@@ -163,15 +162,23 @@ async function formatearSistema() {
 
 function mostrarToast(msg, type) {
     type = type || 'success';
-    const toast = document.createElement('div');
-    toast.className = 'fixed bottom-5 right-5 z-50 px-6 py-3 rounded-lg shadow-xl text-sm font-bold transition-all transform translate-y-10 opacity-0 ' + (type === 'error' ? 'bg-red-600 text-white' : 'bg-slate-800 text-white');
-    toast.innerHTML = '<span class="flex items-center gap-2"><i class="fa-solid ' + (type === 'error' ? 'fa-circle-xmark' : 'fa-circle-check') + '"></i> ' + msg + '</span>'; 
+    var toast = document.createElement('div');
+    if (type === 'error') {
+        toast.className = 'fixed bottom-5 right-5 z-50 px-6 py-3 rounded-lg shadow-xl text-sm font-bold transition-all transform translate-y-10 opacity-0 bg-red-600 text-white';
+    } else {
+        toast.className = 'fixed bottom-5 right-5 z-50 px-6 py-3 rounded-lg shadow-xl text-sm font-bold transition-all transform translate-y-10 opacity-0 bg-slate-800 dark:bg-slate-700 dark:text-white text-white';
+    }
+    toast.innerHTML = '<span class="flex items-center gap-2"><i class="fa-solid ' + (type === 'error' ? 'fa-circle-xmark' : 'fa-circle-check') + '"></i> ' + msg + '</span>';
     document.body.appendChild(toast);
-    requestAnimationFrame(() => toast.classList.remove('translate-y-10', 'opacity-0'));
-    setTimeout(() => { toast.classList.add('translate-y-10', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 3500);
+    requestAnimationFrame(function() {
+        toast.classList.remove('translate-y-10', 'opacity-0');
+    });
+    setTimeout(function() {
+        toast.classList.add('translate-y-10', 'opacity-0');
+        setTimeout(function() { toast.remove(); }, 300);
+    }, 3500);
 }
 
-// Se incluye la lógica de ocultar el botón directamente aquí
 function switchTab(tabName) {
     document.querySelectorAll('.tab-btn').forEach(function(btn) {
         btn.classList.remove('border-indigo-500', 'text-indigo-600');
@@ -191,7 +198,6 @@ function switchTab(tabName) {
     var activeContent = document.getElementById('content-' + tabName);
     if (activeContent) activeContent.classList.remove('hidden');
 
-    // Ocultar botón guardar si estamos en sistema
     var wrapper = document.getElementById('btnGuardarWrapper');
     if (wrapper) {
         wrapper.style.display = (tabName === 'sistema') ? 'none' : 'flex';

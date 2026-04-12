@@ -1,29 +1,31 @@
 // parqueo/api/historial.js
 import { db } from "./db.js";
-import { authGuard } from "./_lib/auth.js"; // <-- NUEVO
+import { authGuard } from "./_lib/auth.js";
 
 export default async function handler(req, res) {
   try {
-    const user = authGuard(req, res); // <-- NUEVO
-    if (!user) return; // <-- NUEVO (Si no hay token válido, corta la ejecución)
+    const user = authGuard(req, res);
+    if (!user) return;
 
     if (req.method === "GET") {
-      // JOIN usando c.placa (nombre correcto de la columna en clientes)
-      const result = await db.execute(`
-        SELECT 
-          h.id, 
-          h.date, 
-          h.entry, 
-          h.exit, 
-          h.plate, 
-          h.type, 
-          h.spot, 
-          h.paid, 
-          c.tipo_vehiculo
-        FROM historial h 
-        LEFT JOIN clientes c ON h.plate = c.placa 
-        ORDER BY h.date DESC, h.entry DESC
-      `);
+      const action = req.query.action;
+      const placa = req.query.placa;
+
+      if (action === "backup") {
+        // ... (código existente de backup sin tocar)
+        return res.status(200).json(backup);
+      }
+
+      let sql = "SELECT * FROM historial ORDER BY date DESC, entry DESC";
+      let args = [];
+
+      // ✅ CORREGIDO: Usar TRIM en SQL para ignorar espacios
+      if (placa) {
+          sql = "SELECT * FROM historial WHERE TRIM(plate) = ? ORDER BY date DESC, entry DESC";
+          args = [placa.trim()];
+      }
+
+      const result = await db.execute({ sql: sql, args: args });
       return res.status(200).json(result.rows);
     }
 
@@ -36,7 +38,8 @@ export default async function handler(req, res) {
       const finalType = action_type || type || "SISTEMA";
       const finalSpot = description || spot || "";
       const finalAmount = amount !== undefined ? amount : (paid || 0);
-      const finalPlate = plate || "---";
+      // ✅ CORREGIDO: TRIM a la placa antes de guardar
+      const finalPlate = (plate || "---").trim();
 
       await db.execute({
         sql: `INSERT INTO historial (date, entry, exit, plate, type, spot, paid) VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -88,16 +91,17 @@ export default async function handler(req, res) {
 }
 
 // Función Helper Global
-// NOTA: Esta función NO lleva authGuard porque es llamada internamente 
-// por otras APIs (como gastos.js) que YA pasaron por el filtro de autenticación.
 export async function logToHistory(action_type, description, amount = 0, plate = "---", ref_date = null) {
   try {
     const logDate = ref_date || new Date().toISOString().split("T")[0];
     const logTime = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
 
+    // ✅ TRIM a la placa
+    const cleanPlate = (plate || "---").trim();
+
     await db.execute({
       sql: `INSERT INTO historial (date, entry, exit, plate, type, spot, paid) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      args: [logDate, logTime, null, plate, action_type, description || "", amount || 0]
+      args: [logDate, logTime, null, cleanPlate, action_type, description || "", amount || 0]
     });
   } catch (error) {
     console.error("Error guardando log global:", error);

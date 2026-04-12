@@ -2,18 +2,13 @@
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("Dashboard: Iniciando...");
-    mostrarFechaYHora();
     actualizarSaludo();
-    iniciarReloj();
-    
-    // Pequeña espera para asegurar que auth-manager y main.js estén listos
     await new Promise(resolve => setTimeout(resolve, 100));
-    
     try {
         await cargarDatosDashboard();
     } catch (error) {
         console.error("Error crítico al iniciar:", error);
-        mostrarError("Error fatal al iniciar la interfaz: " + error.message);
+        mostrarError("Error fatal: " + error.message);
     }
 });
 
@@ -22,47 +17,15 @@ const formatearMoneda = (amount) => {
     return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(valor);
 };
 
-function mostrarFechaYHora() {
-    try {
-        const fechaElemento = document.getElementById('fecha-actual');
-        if (fechaElemento) {
-            actualizarTextoHora();
-        }
-    } catch (e) { console.error("Error fecha:", e); }
-}
-
-function actualizarTextoHora() {
-    const fechaElemento = document.getElementById('fecha-actual');
-    if (!fechaElemento) return;
-
-    const ahora = new Date();
-    const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'long' };
-    const opcionesHora = { hour: 'numeric', minute: '2-digit' };
-    
-    const textoFecha = ahora.toLocaleDateString('es-ES', opcionesFecha);
-    const textoHora = ahora.toLocaleTimeString('es-ES', opcionesHora);
-    
-    const fechaFormateada = textoFecha.charAt(0).toUpperCase() + textoFecha.slice(1);
-    
-    fechaElemento.innerHTML = `<span class="hidden sm:inline">${fechaFormateada}</span> <span class="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded ml-1">${textoHora}</span>`;
-}
-
-function iniciarReloj() {
-    setInterval(actualizarTextoHora, 60000);
-}
-
 function actualizarSaludo() {
     const usuario = JSON.parse(sessionStorage.getItem('parkingUser'));
-    const usuarioDisplay = document.getElementById('sidebar-user-name');
-    
-    if (usuario && usuarioDisplay) {
-        const hora = new Date().getHours();
-        let saludo = "Buenas noches";
-        
-        if (hora >= 5 && hora < 12) saludo = "Buenos días";
-        else if (hora >= 12 && hora < 19) saludo = "Buenas tardes";
-        
-        usuarioDisplay.innerHTML = `<span class="text-indigo-600 font-bold">${saludo},</span> ${usuario.nombre.split(' ')[0]}`;
+    const el = document.getElementById('sidebar-user-name');
+    if (usuario && el) {
+        const h = new Date().getHours();
+        let s = "Buenas noches";
+        if (h >= 5 && h < 12) s = "Buenos días";
+        else if (h >= 12 && h < 19) s = "Buenas tardes";
+        el.innerHTML = `<span class="text-indigo-600 font-bold">${s},</span> ${usuario.nombre.split(' ')[0]}`;
     }
 }
 
@@ -71,421 +34,351 @@ function toggleMenu() {
     const overlay = document.getElementById('mobileMenuOverlay');
     if (sidebar && overlay) {
         sidebar.classList.toggle('-translate-x-full');
-        if (sidebar.classList.contains('-translate-x-full')) {
-            overlay.classList.add('hidden'); overlay.classList.remove('flex');
-        } else {
-            overlay.classList.remove('hidden'); overlay.classList.add('flex');
-        }
+        if (sidebar.classList.contains('-translate-x-full')) { overlay.classList.add('hidden'); overlay.classList.remove('flex'); }
+        else { overlay.classList.remove('hidden'); overlay.classList.add('flex'); }
     }
 }
 
 function cerrarSesion() {
-    if(confirm('¿Estás seguro de que deseas cerrar sesión?')) {
-        sessionStorage.removeItem('parkingUser');
-        window.location.replace('index.html');
-    }
+    if (confirm('¿Cerrar sesión?')) { sessionStorage.removeItem('parkingUser'); window.location.replace('index.html'); }
 }
 
+/* ═══════════ HELPERS DE TEMA ═══════════ */
+function esDark() { return document.documentElement.classList.contains('dark'); }
+function cTexto() { return esDark() ? '#cbd5e1' : '#475569'; }
+function cGrid() { return esDark() ? '#334155' : '#f1f5f9'; }
+function cDisponible() { return esDark() ? '#334155' : '#f1f5f9'; }
+function cBordeDona() { return esDark() ? '#1e293b' : '#ffffff'; }
+
+function colorOcupacion(pct) {
+    if (pct >= 80) return '#ef4444';
+    if (pct >= 50) return '#f59e0b';
+    return '#10b981';
+}
+
+/* ═══════════ TEXTO "SIN DATOS" ═══════════ */
+function mostrarSinDatos(canvasId, texto) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = esDark() ? '#64748b' : '#94a3b8';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(texto || 'Sin datos aún', canvas.width / 2, canvas.height / 2);
+}
+
+/* ═══════════ DATOS PRINCIPALES ═══════════ */
 async function cargarDatosDashboard() {
     const btnIcon = document.querySelector('button[onclick="cargarDatosDashboard()"] i');
-    if(btnIcon) btnIcon.classList.add('fa-spin');
-    
+    if (btnIcon) btnIcon.classList.add('fa-spin');
     mostrarLoaders(true);
     ocultarError();
 
     try {
-        // Incluir credenciales para autenticación
-        const respuesta = await fetch('/api/dashboard', {
-            credentials: 'same-origin',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (!respuesta.ok) {
-            if (respuesta.status === 401) {
-                throw new Error('Sesión expirada. Por favor inicie sesión nuevamente.');
-            }
-            throw new Error(`Error del servidor: ${respuesta.status}`);
+        const res = await fetch('/api/dashboard', { credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } });
+        if (!res.ok) {
+            if (res.status === 401) throw new Error('Sesión expirada.');
+            throw new Error('Error del servidor: ' + res.status);
         }
-        
-        const datos = await respuesta.json();
+        const d = await res.json();
 
-        if (datos.kpi) {
-            actualizarKPI('vehiculos', datos.kpi.vehiculos || 0);
-            actualizarKPI('libres', datos.kpi.libres || 0);
-            actualizarKPI('reservados', datos.kpi.reservados || 0);
-            actualizarKPI('ingresos', formatearMoneda(datos.kpi.ingresos));
-            actualizarKPI('gastos', formatearMoneda(datos.kpi.gastos));
-            actualizarKPI('ingresosTotal', formatearMoneda(datos.kpi.ingresosTotal));
-            actualizarKPI('gastosTotal', formatearMoneda(datos.kpi.gastosTotal));
-            actualizarKPI('alertas', datos.kpi.alertas || 0);
-            actualizarKPI('deudores', datos.kpi.deudores || 0);
-            
-            const porcentajeElem = document.getElementById('ocupacion-porcentaje');
-            if(porcentajeElem) porcentajeElem.textContent = `${datos.kpi.ocupacionPorcentaje || 0}%`;
+        if (d.kpi) {
+            const k = d.kpi;
+
+            // KPIs
+            actualizarKPI('libres', k.libres || 0);
+            actualizarKPI('reservados', k.reservados || 0);
+            actualizarKPI('deudores', k.deudores || 0);
+            actualizarKPI('clientes', k.clientes || 0);
+            actualizarKPI('ingresos', formatearMoneda(k.ingresos));
+            actualizarKPI('gastos', formatearMoneda(k.gastos));
+
+            // Desglose por tipo
+            actualizarKPI('carrosDentro', k.carrosDentro || 0);
+            actualizarKPI('motosDentro', k.motosDentro || 0);
+            actualizarKPI('camionetasDentro', k.camionetasDentro || 0);
+
+            // Balance con color dinámico
+            actualizarKPIBalance('balanceHoy', k.balanceHoy || 0);
+
+            // Ocupación
+            const pctEl = document.getElementById('ocupacion-porcentaje');
+            if (pctEl) pctEl.textContent = (k.ocupacionPorcentaje || 0) + '%';
         }
 
-        try {
-            if (datos.chartFinanzas && Array.isArray(datos.chartFinanzas)) {
-                renderizarGraficoFinanzas(datos.chartFinanzas);
-            }
-        } catch (err) { console.error("Error renderizando finanzas:", err); }
+        // Gráficas
+        if (d.chartFinanzas && d.chartFinanzas.length > 0) {
+            try { renderFinanzas(d.chartFinanzas); } catch(e) { console.error(e); }
+        } else { mostrarSinDatos('ingresosGastosChart', 'Sin datos financieros'); }
 
-        try {
-            renderizarGraficoOcupacion(datos.kpi ? datos.kpi.ocupacionPorcentaje : 0);
-        } catch (err) { console.error("Error renderizando ocupación:", err); }
-        
-        try {
-            if (datos.chartOcupacionMes && Array.isArray(datos.chartOcupacionMes)) {
-                renderizarGraficaOcupacionMes(datos.chartOcupacionMes);
-            }
-        } catch (err) { console.error("Error renderizando ocupación mensual:", err); }
+        try { renderOcupacion(d.kpi ? d.kpi.ocupacionPorcentaje : 0); } catch(e) { console.error(e); }
 
-        try {
-            if (datos.chartMetodosPago && Array.isArray(datos.chartMetodosPago)) {
-                renderizarGraficaMetodosPago(datos.chartMetodosPago);
-            }
-        } catch (err) { console.error("Error renderizando métodos:", err); }
+        if (d.chartMetodosPago && d.chartMetodosPago.length > 0) {
+            try { renderMetodosPago(d.chartMetodosPago); } catch(e) { console.error(e); }
+        } else { mostrarSinDatos('metodosPagoChart', 'Sin métodos de pago'); }
 
-        try {
-            if (datos.chartSemanal && Array.isArray(datos.chartSemanal)) {
-                renderizarGraficaSemanal(datos.chartSemanal);
-            }
-        } catch (err) { console.error("Error renderizando gráfica semanal:", err); }
+        if (d.chartHorasPico && d.chartHorasPico.length > 0) {
+            try { renderHorasPico(d.chartHorasPico); } catch(e) { console.error(e); }
+        } else { mostrarSinDatos('horasPicoChart', 'Sin actividad aún'); }
 
-        try {
-            if (datos.movimientosRecientes) {
-                renderizarMovimientosRecientes(datos.movimientosRecientes);
-            }
-        } catch (err) { console.error("Error movimientos:", err); }
+        if (d.chartTipoVehiculo && d.chartTipoVehiculo.length > 0) {
+            try { renderTipoVehiculo(d.chartTipoVehiculo); } catch(e) { console.error(e); }
+        } else { mostrarSinDatos('tipoVehiculoChart', 'Sin datos de vehículos'); }
+
+        if (d.chartTopClientes && d.chartTopClientes.length > 0) {
+            try { renderTopClientes(d.chartTopClientes); } catch(e) { console.error(e); }
+        } else { mostrarSinDatos('topClientesChart', 'Sin clientes frecuentes'); }
+
+        if (d.movimientosRecientes) {
+            try { renderMovimientos(d.movimientosRecientes); } catch(e) { console.error(e); }
+        }
 
     } catch (error) {
-        console.error('Error cargando dashboard:', error);
-        mostrarError(error.message || "Error de conexión desconocido");
-        
-        // Si es error 401, redirigir al login después de un momento
-        if (error.message.includes('Sesión expirada') || error.message.includes('401')) {
-            setTimeout(() => {
-                sessionStorage.removeItem('parkingUser');
-                window.location.replace('index.html');
-            }, 2000);
-        }
+        console.error('Error dashboard:', error);
+        mostrarError(error.message || "Error de conexión");
+        if (error.message.includes('Sesión') || error.message.includes('401'))
+            setTimeout(() => { sessionStorage.removeItem('parkingUser'); window.location.replace('index.html'); }, 2000);
     } finally {
         mostrarLoaders(false);
-        if(btnIcon) btnIcon.classList.remove('fa-spin');
+        if (btnIcon) btnIcon.classList.remove('fa-spin');
     }
 }
 
+/* ═══════════ ACTUALIZADORES ═══════════ */
 function actualizarKPI(key, valor) {
-    const elemento = document.querySelector(`[data-kpi="${key}"]`);
-    if (elemento) elemento.textContent = valor;
+    const el = document.querySelector(`[data-kpi="${key}"]`);
+    if (el) el.textContent = valor;
 }
 
-function mostrarLoaders(mostrar) {
-    const loaders = document.querySelectorAll('.loader');
-    loaders.forEach(l => { if(mostrar) l.classList.remove('hidden'); else l.classList.add('hidden'); });
+function actualizarKPIBalance(key, valor) {
+    const el = document.querySelector(`[data-kpi="${key}"]`);
+    if (!el) return;
+    el.textContent = formatearMoneda(valor);
+    el.className = valor >= 0
+        ? 'text-lg font-bold leading-tight text-emerald-600 dark:text-emerald-400'
+        : 'text-lg font-bold leading-tight text-rose-600 dark:text-rose-400';
 }
 
-function mostrarError(mensaje) {
-    const banner = document.getElementById('error-banner');
-    if(banner) {
-        banner.classList.remove('hidden');
-        const mensajeElem = banner.querySelector('p');
-        if(mensajeElem) mensajeElem.textContent = mensaje;
-    }
-}
+function mostrarLoaders(m) { document.querySelectorAll('.loader').forEach(l => { if(m) l.classList.remove('hidden'); else l.classList.add('hidden'); }); }
+function mostrarError(msg) { const b = document.getElementById('error-banner'); if(b) { b.classList.remove('hidden'); const p = b.querySelector('p'); if(p) p.textContent = msg; } }
+function ocultarError() { const b = document.getElementById('error-banner'); if(b) b.classList.add('hidden'); }
 
-function ocultarError() {
-    const banner = document.getElementById('error-banner');
-    if(banner) banner.classList.add('hidden');
-}
+/* ═══════════ INSTANCIAS ═══════════ */
+let chFinanzas = null, chOcupacion = null, chMetodos = null, chHorasPico = null, chTipoVehiculo = null, chTopClientes = null;
 
-let chartFinanzasInstance = null;
-let chartOcupacionInstance = null;
-let chartOcupacionMesInstance = null;
-let chartMetodosPagoInstance = null;
-let chartSemanalInstance = null;
-
-function renderizarGraficoFinanzas(data) {
+/* ═══════════ 1. FLUJO FINANCIERO ═══════════ */
+function renderFinanzas(data) {
     const canvas = document.getElementById('ingresosGastosChart');
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!Array.isArray(data)) return;
+    if (chFinanzas) chFinanzas.destroy();
 
-    const mapaDatos = {};
-    data.forEach(item => {
-        if (!mapaDatos[item.date]) mapaDatos[item.date] = { ingresos: 0, gastos: 0 };
-        if (item.type === 'ingreso') mapaDatos[item.date].ingresos += (item.amount || 0);
-        else if (item.type === 'gasto') mapaDatos[item.date].gastos += (item.amount || 0);
+    const mapa = {};
+    data.forEach(i => {
+        if (!mapa[i.date]) mapa[i.date] = { ingresos: 0, gastos: 0 };
+        if (i.type === 'ingreso') mapa[i.date].ingresos += (i.amount || 0);
+        else mapa[i.date].gastos += (i.amount || 0);
     });
+    const fechas = Object.keys(mapa).sort();
 
-    const fechas = Object.keys(mapaDatos).sort();
-    const datosIngresos = fechas.map(f => mapaDatos[f].ingresos);
-    const datosGastos = fechas.map(f => mapaDatos[f].gastos);
-
-    if (chartFinanzasInstance) chartFinanzasInstance.destroy();
-
-    chartFinanzasInstance = new Chart(ctx, {
+    chFinanzas = new Chart(canvas.getContext('2d'), {
         type: 'bar',
         data: {
-            labels: fechas.map(f => {
-                const parts = f.split('-');
-                return `${parts[2]}/${parts[1]}`;
-            }),
+            labels: fechas.map(f => { const p = f.split('-'); return p[2] + '/' + p[1]; }),
             datasets: [
-                { 
-                    label: 'Ingresos', 
-                    data: datosIngresos, 
-                    backgroundColor: '#6366f1',
-                    borderRadius: 4,
-                    barPercentage: 0.6,
-                    categoryPercentage: 0.8
-                },
-                { 
-                    label: 'Gastos', 
-                    data: datosGastos, 
-                    backgroundColor: '#f43f5e',
-                    borderRadius: 4,
-                    barPercentage: 0.6,
-                    categoryPercentage: 0.8
-                }
+                { label: 'Ingresos', data: fechas.map(f => mapa[f].ingresos), backgroundColor: '#6366f1', borderRadius: 4, barPercentage: 0.6, categoryPercentage: 0.8 },
+                { label: 'Gastos', data: fechas.map(f => mapa[f].gastos), backgroundColor: '#f43f5e', borderRadius: 4, barPercentage: 0.6, categoryPercentage: 0.8 }
             ]
         },
-        options: { 
-            responsive: true, 
-            maintainAspectRatio: false, 
+        options: {
+            responsive: true, maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
-            plugins: { 
-                legend: { position: 'top', labels: { boxWidth: 12, usePointStyle: true, font: { family: 'Inter' } } },
-                tooltip: { 
-                    backgroundColor: '#1e293b',
-                    padding: 12,
-                    cornerRadius: 8,
-                    titleFont: { size: 13 },
-                    bodyFont: { size: 13 }
-                }
-            }, 
-            scales: { 
-                y: { 
-                    beginAtZero: true, 
-                    grid: { borderDash: [2, 4], color: '#f1f5f9' },
-                    ticks: { font: { family: 'Inter' } }
-                }, 
-                x: { 
-                    grid: { display: false },
-                    ticks: { font: { family: 'Inter' } }
-                } 
-            } 
+            plugins: {
+                legend: { position: 'top', labels: { boxWidth: 12, usePointStyle: true, font: { family: 'Inter' }, color: cTexto() } },
+                tooltip: { backgroundColor: '#1e293b', padding: 12, cornerRadius: 8, callbacks: { label: ctx => ctx.dataset.label + ': ' + formatearMoneda(ctx.parsed.y) } }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: { borderDash: [2,4], color: cGrid() }, ticks: { font: { family: 'Inter' }, color: cTexto(), callback: v => v >= 1000000 ? '$'+(v/1000000).toFixed(1)+'M' : v >= 1000 ? '$'+(v/1000).toFixed(0)+'K' : '$'+v } },
+                x: { grid: { display: false }, ticks: { font: { family: 'Inter' }, color: cTexto() } }
+            }
         }
     });
 }
 
-function renderizarGraficaSemanal(data) {
-    const canvas = document.getElementById('semanalChart');
+/* ═══════════ 2. MÉTODOS DE PAGO ═══════════ */
+function renderMetodosPago(data) {
+    const canvas = document.getElementById('metodosPagoChart');
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!Array.isArray(data)) return;
-    if (chartSemanalInstance) chartSemanalInstance.destroy();
+    if (chMetodos) chMetodos.destroy();
 
-    const labels = data.map(d => {
-        const parts = d.fecha.split('-');
-        return `${parts[2]}/${parts[1]}`;
+    const colores = ['#10b981','#3b82f6','#f59e0b','#8b5cf6','#f43f5e','#06b6d4'];
+    const total = data.reduce((s, d) => s + (d.total || 0), 0);
+
+    chMetodos = new Chart(canvas.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: data.map(d => d.metodo),
+            datasets: [{ data: data.map(d => d.total), backgroundColor: colores.slice(0, data.length), borderWidth: 2, borderColor: cBordeDona(), hoverOffset: 6 }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, cutout: '60%',
+            plugins: {
+                legend: { position: 'right', labels: { usePointStyle: true, pointStyle: 'circle', font: { family: 'Inter', size: 11 }, color: cTexto(), padding: 10 } },
+                tooltip: { backgroundColor: '#1e293b', padding: 10, cornerRadius: 6, callbacks: { label: ctx => { const pct = total > 0 ? ((ctx.parsed/total)*100).toFixed(1) : 0; return ctx.label + ': ' + formatearMoneda(ctx.parsed) + ' (' + pct + '%)'; } } }
+            }
+        }
     });
-    const valores = data.map(d => d.total);
+}
 
-    chartSemanalInstance = new Chart(ctx, {
-        type: 'bar',
+/* ═══════════ 3. HORAS PICO ═══════════ */
+function renderHorasPico(data) {
+    const canvas = document.getElementById('horasPicoChart');
+    if (!canvas) return;
+    if (chHorasPico) chHorasPico.destroy();
+
+    const ctx = canvas.getContext('2d');
+    const mapa = {};
+    data.forEach(d => { mapa[parseInt(d.hora)] = d.total || 0; });
+    const labels = [];
+    const valores = [];
+    for (let h = 5; h <= 22; h++) {
+        labels.push(h.toString().padStart(2, '0') + ':00');
+        valores.push(mapa[h] || 0);
+    }
+
+    const gradiente = ctx.createLinearGradient(0, 0, 0, 220);
+    gradiente.addColorStop(0, 'rgba(245, 158, 11, 0.25)');
+    gradiente.addColorStop(1, 'rgba(245, 158, 11, 0)');
+
+    const maxVal = Math.max(...valores);
+    const maxIdx = valores.indexOf(maxVal);
+    const pointColors = valores.map((v, i) => i === maxIdx ? '#f59e0b' : 'rgba(245, 158, 11, 0.5)');
+    const pointRadii = valores.map((v, i) => i === maxIdx ? 6 : 0);
+
+    chHorasPico = new Chart(ctx, {
+        type: 'line',
         data: {
             labels: labels,
             datasets: [{
-                label: 'Movimientos',
-                data: valores,
-                backgroundColor: '#0ea5e9',
-                borderRadius: 4,
-                barPercentage: 0.5
+                label: 'Vehículos', data: valores, borderColor: '#f59e0b', backgroundColor: gradiente,
+                borderWidth: 2.5, fill: true, tension: 0.4,
+                pointBackgroundColor: pointColors, pointBorderColor: pointColors,
+                pointRadius: pointRadii, pointHoverRadius: 6
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1e293b', padding: 10, cornerRadius: 6, callbacks: { label: ctx => ctx.parsed.y + ' vehículo' + (ctx.parsed.y !== 1 ? 's' : '') + ' (promedio)' } } },
             scales: {
-                y: { 
-                    beginAtZero: true, 
-                    grid: { color: '#f1f5f9' },
-                    ticks: { stepSize: 1, font: { family: 'Inter' } }
-                },
-                x: {
-                    grid: { display: false },
-                    ticks: { font: { family: 'Inter' } }
-                }
-            },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#1e293b',
-                    padding: 10,
-                    cornerRadius: 6
-                }
+                y: { beginAtZero: true, grid: { color: cGrid() }, ticks: { stepSize: 1, font: { family: 'Inter', size: 10 }, color: cTexto() } },
+                x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 10 }, color: cTexto(), maxRotation: 0, autoSkip: true, maxTicksLimit: 9 } }
             }
         }
     });
 }
 
-function renderizarGraficoOcupacion(porcentaje) {
+/* ═══════════ 4. OCUPACIÓN ACTUAL ═══════════ */
+function renderOcupacion(porcentaje) {
     const canvas = document.getElementById('ocupacionChart');
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (chartOcupacionInstance) chartOcupacionInstance.destroy();
+    if (chOcupacion) chOcupacion.destroy();
 
-    chartOcupacionInstance = new Chart(ctx, {
+    chOcupacion = new Chart(canvas.getContext('2d'), {
         type: 'doughnut',
         data: {
             labels: ['Ocupado', 'Disponible'],
-            datasets: [{ 
-                data: [porcentaje, 100 - porcentaje], 
-                backgroundColor: ['#4f46e5', '#f1f5f9'], 
-                borderWidth: 0,
-                hoverOffset: 4
-            }]
+            datasets: [{ data: [porcentaje, 100 - porcentaje], backgroundColor: [colorOcupacion(porcentaje), cDisponible()], borderWidth: 0, hoverOffset: 4 }]
         },
-        options: { 
-            responsive: true, 
-            maintainAspectRatio: false, 
-            cutout: '80%', 
-            plugins: { legend: { display: false } } 
-        }
+        options: { responsive: true, maintainAspectRatio: false, cutout: '78%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
     });
 }
 
-function renderizarGraficaOcupacionMes(data) {
-    const canvas = document.getElementById('ocupacionMesChart');
+/* ═══════════ 5. TIPO DE VEHÍCULO ═══════════ */
+function renderTipoVehiculo(data) {
+    const canvas = document.getElementById('tipoVehiculoChart');
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (chartOcupacionMesInstance) chartOcupacionMesInstance.destroy();
+    if (chTipoVehiculo) chTipoVehiculo.destroy();
 
-    const labels = data.map(d => {
-        const fecha = new Date(d.mes + '-01');
-        return fecha.toLocaleDateString('es-ES', { month: 'short' });
-    });
-    const valores = data.map(d => d.total_movimientos);
+    const mapaColores = { 'Carro': '#3b82f6', 'Moto': '#f59e0b', 'Camioneta': '#8b5cf6', 'Bicicleta': '#10b981' };
+    const coloresDefault = ['#6366f1','#f43f5e','#0ea5e9','#f59e0b','#10b981','#8b5cf6'];
+    const total = data.reduce((s, d) => s + (d.total || 0), 0);
 
-    chartOcupacionMesInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Movimientos',
-                data: valores,
-                backgroundColor: '#8b5cf6',
-                borderRadius: 4,
-                barPercentage: 0.6
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { 
-                    beginAtZero: true, 
-                    grid: { color: '#f1f5f9' },
-                    ticks: { font: { family: 'Inter' } }
-                },
-                x: {
-                    grid: { display: false },
-                    ticks: { font: { family: 'Inter' } }
-                }
-            },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#1e293b',
-                    padding: 10,
-                    cornerRadius: 6
-                }
-            }
-        }
-    });
-}
-
-function renderizarGraficaMetodosPago(data) {
-    const canvas = document.getElementById('metodosPagoChart');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (chartMetodosPagoInstance) chartMetodosPagoInstance.destroy();
-
-    const labels = data.map(d => d.metodo);
-    const valores = data.map(d => d.total);
-    const colors = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6']; 
-
-    chartMetodosPagoInstance = new Chart(ctx, {
+    chTipoVehiculo = new Chart(canvas.getContext('2d'), {
         type: 'doughnut',
         data: {
-            labels: labels,
-            datasets: [{
-                data: valores,
-                backgroundColor: colors.slice(0, labels.length),
-                borderWidth: 2,
-                borderColor: '#ffffff',
-                hoverOffset: 4
-            }]
+            labels: data.map(d => d.tipo || 'Otro'),
+            datasets: [{ data: data.map(d => d.total), backgroundColor: data.map((d, i) => mapaColores[d.tipo] || coloresDefault[i % coloresDefault.length]), borderWidth: 2, borderColor: cBordeDona(), hoverOffset: 6 }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '60%',
+            responsive: true, maintainAspectRatio: false, cutout: '55%',
             plugins: {
-                legend: {
-                    position: 'right',
-                    labels: {
-                        usePointStyle: true,
-                        pointStyle: 'circle',
-                        font: { family: 'Inter', size: 12 }
-                    }
-                }
+                legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', font: { family: 'Inter', size: 11 }, color: cTexto(), padding: 12 } },
+                tooltip: { backgroundColor: '#1e293b', padding: 10, cornerRadius: 6, callbacks: { label: ctx => { const pct = total > 0 ? ((ctx.parsed/total)*100).toFixed(1) : 0; return ctx.label + ': ' + ctx.parsed + ' (' + pct + '%)'; } } }
             }
         }
     });
 }
 
-function renderizarMovimientosRecientes(movimientos) {
+/* ═══════════ 6. TOP 5 CLIENTES ═══════════ */
+function renderTopClientes(data) {
+    const canvas = document.getElementById('topClientesChart');
+    if (!canvas) return;
+    if (chTopClientes) chTopClientes.destroy();
+
+    const invertido = data.slice().reverse();
+    const colores = ['#94a3b8','#94a3b8','#94a3b8','#f59e0b','#f59e0b'];
+
+    chTopClientes = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: invertido.map(d => d.plate || '---'),
+            datasets: [{ label: 'Visitas', data: invertido.map(d => d.total), backgroundColor: invertido.map((d, i) => colores[i]), borderRadius: 4, barPercentage: 0.7 }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+            plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1e293b', padding: 10, cornerRadius: 6, callbacks: { label: ctx => ctx.parsed.x + ' visita' + (ctx.parsed.x !== 1 ? 's' : '') } } },
+            scales: {
+                x: { beginAtZero: true, grid: { color: cGrid() }, ticks: { stepSize: 1, font: { family: 'Inter', size: 10 }, color: cTexto() } },
+                y: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11, weight: 'bold' }, color: cTexto() } }
+            }
+        }
+    });
+}
+
+/* ═══════════ 7. MOVIMIENTOS RECIENTES ═══════════ */
+function renderMovimientos(movimientos) {
     const container = document.getElementById('movimientos-container');
-    if(!container) return;
+    if (!container) return;
 
     if (!movimientos || movimientos.length === 0) {
-        container.innerHTML = `<div class="text-center text-slate-400 py-4 text-sm">No hay movimientos recientes.</div>`;
+        container.innerHTML = '<div class="text-center text-slate-400 dark:text-slate-500 py-8 text-sm">No hay movimientos recientes.</div>';
         return;
     }
 
     let html = '';
     movimientos.forEach(mov => {
-        let icon = 'fa-car';
-        let color = 'text-blue-600';
-        const tipo = (mov.type || "").toLowerCase();
+        let icon = 'fa-car', color = 'text-blue-600';
+        const tipo = (mov.type || '').toLowerCase();
         if (tipo.includes('gasto')) { icon = 'fa-receipt'; color = 'text-rose-600'; }
         else if (tipo.includes('caja')) { icon = 'fa-cash-register'; color = 'text-emerald-600'; }
         else if (tipo.includes('moto')) { icon = 'fa-motorcycle'; }
-        
-        let estadoBadge = '';
-        if (!mov.exit) {
-            estadoBadge = `<span class="ml-2 inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>`;
-        }
+
+        const badge = !mov.exit ? '<span class="ml-2 inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>' : '';
 
         html += `
-            <div class="flex items-center justify-between p-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors cursor-pointer" onclick="location.href='pages/historial.html'">
+            <div class="flex items-center justify-between p-3 border-b border-slate-50 dark:border-slate-700/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer" onclick="location.href='pages/historial.html'">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center ${color}">
+                    <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center ${color}">
                         <i class="fa-solid ${icon} text-xs"></i>
                     </div>
                     <div>
-                        <p class="text-sm font-medium text-slate-800">${mov.type} ${estadoBadge}</p>
-                        <p class="text-xs text-slate-500">${mov.plate || '---'} <span class="mx-1">•</span> ${mov.date}</p>
+                        <p class="text-sm font-medium text-slate-800 dark:text-slate-200">${mov.type} ${badge}</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">${mov.plate || '---'} <span class="mx-1">•</span> ${mov.date}</p>
                     </div>
                 </div>
-                <div class="text-xs text-slate-400 font-mono">${mov.entry}</div>
-            </div>
-        `;
+                <div class="text-xs text-slate-400 dark:text-slate-500 font-mono">${mov.entry}</div>
+            </div>`;
     });
-
     container.innerHTML = html;
 }

@@ -95,10 +95,8 @@
                     <span class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Registro de egresos operativos</span>
                 </div>
             </div>
-            <div class="flex items-center gap-2">
-                <i class="fa-regular fa-calendar text-slate-400 dark:text-slate-500"></i>
-                <span id="fecha-actual" class="text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-600"></span>
-            </div>
+           <!-- DESPUÉS -->
+<div class="text-right text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-600 shadow-sm whitespace-nowrap hidden md:block" id="date-display">--:--</div>
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 lg:p-8">
@@ -216,35 +214,41 @@
         </div>
     </main>
 
-    <script>
-        // Lógica Menú Móvil
-        function toggleMenu() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('mobileMenuOverlay');
-            
-            if (sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.remove('-translate-x-full');
-                overlay.classList.remove('hidden');
-                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
-            } else {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.add('opacity-0');
-                setTimeout(() => overlay.classList.add('hidden'), 300);
-            }
+   <!-- DESPUÉS -->
+<script>
+    function toggleMenu() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobileMenuOverlay');
+        
+        if (sidebar.classList.contains('-translate-x-full')) {
+            sidebar.classList.remove('-translate-x-full');
+            overlay.classList.remove('hidden');
+            setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+        } else {
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('opacity-0');
+            setTimeout(() => overlay.classList.add('hidden'), 300);
         }
+    }
 
-        // Inicialización de fechas
-        document.addEventListener('DOMContentLoaded', () => {
-            const dateInput = document.getElementById('gastoFecha');
-            if(dateInput) dateInput.valueAsDate = new Date();
+    function updateDate() {
+        var d = new Date();
+        var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        var time = d.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
+        var el = document.getElementById('date-display');
+        if(el) {
+            var dateStr = d.toLocaleDateString('es-ES', options);
+            el.innerText = dateStr.charAt(0).toUpperCase() + dateStr.slice(1) + ' - ' + time;
+        }
+    }
+    setInterval(updateDate, 1000);
+    updateDate();
 
-            const fechaDisplay = document.getElementById("fecha-actual");
-            if(fechaDisplay) {
-                let dateStr = new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-                fechaDisplay.textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
-            }
-        });
-    </script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var dateInput = document.getElementById('gastoFecha');
+        if(dateInput) dateInput.valueAsDate = new Date();
+    });
+</script>
     
     <script src="../js/auth-manager.js"></script>
     <script src="../js/main.js"></script>

@@ -6,7 +6,6 @@
     <title>Dashboard | PARQUEADERO ELIMAR</title>
     <link rel="icon" type="image/jpeg" href="/img/logo.jpg">
     
-    <!-- 1. TAILWIND + CONFIGURACIÓN DARK MODE -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>tailwind.config = { darkMode: 'class' }</script>
 
@@ -14,7 +13,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- 2. CARGAR TEMA (Anti-parpadeo) -->
     <script src="./js/theme.js"></script>
 
     <style>
@@ -34,9 +32,7 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
             background-color: #f8fafc;
         }
-        .dark .stat-card:hover { 
-            background-color: #1e293b;
-        }
+        .dark .stat-card:hover { background-color: #1e293b; }
         
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid #4f46e5; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; }
         .dark .loader { border-color: #334155; border-top-color: #818cf8; }
@@ -44,7 +40,6 @@
         
         .chart-wrapper { position: relative; width: 100%; }
 
-        /* Pantalla de carga inicial */
         #auth-loader {
             position: fixed; inset: 0; z-index: 9999;
             background: white;
@@ -61,80 +56,54 @@
 
 <body class="text-slate-700 dark:text-slate-300 antialiased flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50 dark:bg-slate-900 w-full transition-colors duration-300">
 
-    <!-- LOADER MIENTRAS VERIFICA SESIÓN -->
     <div id="auth-loader">
         <div class="loader" style="width:40px;height:40px;border-width:4px;"></div>
         <p class="text-sm mt-4 font-medium">Verificando sesión...</p>
     </div>
 
-    <!-- OVERLAY MÓVIL -->
     <div id="mobileMenuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-slate-900/50 dark:bg-black/70 z-40 hidden lg:hidden backdrop-blur-sm transition-opacity"></div>
 
     <!-- SIDEBAR -->
     <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col lg:static lg:translate-x-0 lg:z-auto lg:flex lg:flex-col shadow-xl lg:shadow-none">
-        
         <div class="h-16 flex items-center px-6 border-b border-slate-100 dark:border-slate-700 shrink-0">
-            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/30 flex-shrink-0">
-                <i class="fa-solid fa-square-parking text-white text-sm"></i>
-            </div>
+            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/30 flex-shrink-0"><i class="fa-solid fa-square-parking text-white text-sm"></i></div>
             <div class="min-w-0">
                 <h1 class="text-lg font-bold text-slate-800 dark:text-white truncate">ELI<span class="text-indigo-600 dark:text-indigo-400">MAR</span></h1>
                 <p class="text-xs text-slate-500 dark:text-slate-400 font-medium truncate mt-1" id="sidebar-user-name">Cargando...</p>
             </div>
         </div>
-        
         <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-            <a href="./dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 shadow-sm ring-1 ring-indigo-100 dark:ring-indigo-800/50 nav-item">
-                <i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard
-            </a>
-            <a href="./pages/clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors nav-item">
-                <i class="fa-solid fa-users w-5 text-center"></i> Clientes
-            </a>
-            <a href="./pages/puestos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors nav-item">
-                <i class="fa-solid fa-layer-group w-5 text-center"></i> Puestos
-            </a>
-            <a href="./pages/caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors nav-item">
-                <i class="fa-solid fa-cash-register w-5 text-center"></i> Caja
-            </a>
-            <a href="./pages/gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors nav-item">
-                <i class="fa-solid fa-receipt w-5 text-center"></i> Gastos
-            </a>
-            <a href="./pages/historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors nav-item">
-                <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Historial
-            </a>
-            <a href="./pages/configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors nav-item">
-                <i class="fa-solid fa-gear w-5 text-center"></i> Configuración
-            </a>
+            <a href="./dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 shadow-sm ring-1 ring-indigo-100 dark:ring-indigo-800/50 nav-item"><i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard</a>
+            <a href="./pages/clientes.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors nav-item"><i class="fa-solid fa-users w-5 text-center"></i> Clientes</a>
+            <a href="./pages/puestos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors nav-item"><i class="fa-solid fa-layer-group w-5 text-center"></i> Puestos</a>
+            <a href="./pages/caja.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors nav-item"><i class="fa-solid fa-cash-register w-5 text-center"></i> Caja</a>
+            <a href="./pages/gastos.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors nav-item"><i class="fa-solid fa-receipt w-5 text-center"></i> Gastos</a>
+            <a href="./pages/historial.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors nav-item"><i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Historial</a>
+            <a href="./pages/configuracion.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors nav-item"><i class="fa-solid fa-gear w-5 text-center"></i> Configuración</a>
         </nav>
-
         <div class="p-4 border-t border-slate-100 dark:border-slate-700 shrink-0 space-y-2">
-            <!-- BOTÓN MODO OSCURO -->
             <button onclick="toggleTheme()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 transition-colors">
-                <i class="fa-solid fa-sun theme-toggle-icon text-amber-500"></i> 
-                <span class="theme-toggle-text">Modo Claro</span>
+                <i class="fa-solid fa-sun theme-toggle-icon text-amber-500"></i> <span class="theme-toggle-text">Modo Claro</span>
             </button>
-
             <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-100 dark:border-red-900/50 transition-colors">
                 <i class="fa-solid fa-power-off"></i> Cerrar Sesión
             </button>
         </div>
     </aside>
 
+    <!-- CONTENIDO PRINCIPAL -->
     <div class="flex-1 flex flex-col w-full h-screen relative overflow-hidden bg-slate-50 dark:bg-slate-900">
         
         <header class="h-16 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20 shadow-sm shrink-0">
             <div class="flex items-center gap-4">
-                <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
-                    <i class="fa-solid fa-bars text-xl"></i>
-                </button>
+                <button onclick="toggleMenu()" class="lg:hidden p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button>
                 <div>
                     <h2 class="text-lg lg:text-xl font-bold text-slate-800 dark:text-white">Panel de Control</h2>
                     <span class="hidden sm:inline text-xs text-slate-500 dark:text-slate-400">Vista general del sistema</span>
                 </div>
             </div>
             <div class="flex items-center gap-3">
-                <span id="fecha-actual" class="text-xs lg:text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-700 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-600 shadow-sm flex items-center gap-2">Cargando...</span>
-                
+                <div class="text-right text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-600 shadow-sm whitespace-nowrap hidden md:block" id="fecha-actual">--:--</div>
                 <button onclick="cargarDatosDashboard()" class="p-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800" title="Actualizar datos">
                     <i class="fa-solid fa-rotate-right"></i>
                 </button>
@@ -154,47 +123,47 @@
                 <button onclick="location.reload()" class="text-xs bg-white dark:bg-slate-800 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-3 py-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 font-medium">Reintentar</button>
             </div>
 
-            <!-- KPI GRID -->
+            <!-- ═══ KPI GRID: 8 tarjetas en 2 filas ═══ -->
             <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-4 mb-8">
                 
+                <!-- 1. Carros / Motos / Camionetas (LIVE) -->
                 <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28" onclick="location.href='./pages/puestos.html'">
                     <div class="flex justify-between items-start">
-                        <div class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-car"></i></div>
+                        <div class="w-10 h-10 rounded-lg bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-car-side"></i></div>
                         <div class="p-1 bg-blue-50 dark:bg-blue-900/30 rounded text-blue-600 dark:text-blue-400 text-xs font-bold animate-pulse">LIVE</div>
                     </div>
-                    <div class="mt-2"><h3 class="text-2xl font-bold text-slate-800 dark:text-white" data-kpi="vehiculos">0</h3><p class="text-xs text-slate-500 dark:text-slate-400">Dentro</p></div>
+                    <div class="mt-2">
+                        <div class="flex items-center gap-2.5 flex-wrap">
+                            <span class="flex items-center gap-1 text-base font-bold text-slate-800 dark:text-white">
+                                <i class="fa-solid fa-car text-blue-500 text-[10px]"></i>
+                                <span data-kpi="carrosDentro">0</span>
+                            </span>
+                            <span class="flex items-center gap-1 text-base font-bold text-slate-800 dark:text-white">
+                                <i class="fa-solid fa-motorcycle text-amber-500 text-[10px]"></i>
+                                <span data-kpi="motosDentro">0</span>
+                            </span>
+                            <span class="flex items-center gap-1 text-base font-bold text-slate-800 dark:text-white">
+                                <i class="fa-solid fa-truck text-purple-500 text-[10px]"></i>
+                                <span data-kpi="camionetasDentro">0</span>
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Dentro</p>
+                    </div>
                 </div>
 
+                <!-- 2. Libres -->
                 <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28" onclick="location.href='./pages/puestos.html'">
                     <div class="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-square-parking"></i></div>
                     <div class="mt-2"><h3 class="text-2xl font-bold text-slate-800 dark:text-white" data-kpi="libres">0</h3><p class="text-xs text-slate-500 dark:text-slate-400">Libres</p></div>
                 </div>
 
+                <!-- 3. Reservados -->
                 <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28" onclick="location.href='./pages/puestos.html'">
                     <div class="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-clock"></i></div>
                     <div class="mt-2"><h3 class="text-2xl font-bold text-slate-800 dark:text-white" data-kpi="reservados">0</h3><p class="text-xs text-slate-500 dark:text-slate-400">Reservados</p></div>
                 </div>
 
-                <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28" onclick="location.href='./pages/caja.html'">
-                    <div class="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-wallet"></i></div>
-                    <div class="mt-2"><h3 class="text-xl font-bold text-slate-800 dark:text-white leading-tight" data-kpi="ingresosTotal">$0</h3><p class="text-xs text-slate-500 dark:text-slate-400">Ingresos Total</p></div>
-                </div>
-
-                <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28" onclick="location.href='./pages/gastos.html'">
-                    <div class="w-10 h-10 rounded-lg bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-arrow-trend-down"></i></div>
-                    <div class="mt-2"><h3 class="text-xl font-bold text-slate-800 dark:text-white leading-tight" data-kpi="gastosTotal">$0</h3><p class="text-xs text-slate-500 dark:text-slate-400">Gastos Total</p></div>
-                </div>
-
-                <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28" onclick="location.href='./pages/caja.html'">
-                    <div class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-dollar-sign"></i></div>
-                    <div class="mt-2"><h3 class="text-xl font-bold text-slate-800 dark:text-white leading-tight" data-kpi="ingresos">$0</h3><p class="text-xs text-slate-500 dark:text-slate-400">Ingresos Hoy</p></div>
-                </div>
-
-                <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28" onclick="location.href='./pages/gastos.html'">
-                    <div class="w-10 h-10 rounded-lg bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-file-invoice-dollar"></i></div>
-                    <div class="mt-2"><h3 class="text-xl font-bold text-slate-800 dark:text-white leading-tight" data-kpi="gastos">$0</h3><p class="text-xs text-slate-500 dark:text-slate-400">Gastos Hoy</p></div>
-                </div>
-
+                <!-- 4. Deudores -->
                 <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28 group" onclick="location.href='./pages/caja.html'">
                     <div class="w-full flex justify-between items-center">
                         <div class="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-user-clock"></i></div>
@@ -205,169 +174,167 @@
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400">Deudores Mes</p>
                 </div>
+
+                <!-- 5. Balance Hoy -->
+                <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28" onclick="location.href='./pages/caja.html'">
+                    <div class="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-scale-balanced"></i></div>
+                    <div class="mt-2">
+                        <h3 class="text-lg font-bold leading-tight text-emerald-600 dark:text-emerald-400" data-kpi="balanceHoy">$0</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Balance Hoy</p>
+                    </div>
+                </div>
+
+                <!-- 6. Ingresos Hoy -->
+                <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28" onclick="location.href='./pages/caja.html'">
+                    <div class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-dollar-sign"></i></div>
+                    <div class="mt-2"><h3 class="text-xl font-bold text-slate-800 dark:text-white leading-tight" data-kpi="ingresos">$0</h3><p class="text-xs text-slate-500 dark:text-slate-400">Ingresos Hoy</p></div>
+                </div>
+
+                <!-- 7. Gastos Hoy -->
+                <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28" onclick="location.href='./pages/gastos.html'">
+                    <div class="w-10 h-10 rounded-lg bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                    <div class="mt-2"><h3 class="text-xl font-bold text-slate-800 dark:text-white leading-tight" data-kpi="gastos">$0</h3><p class="text-xs text-slate-500 dark:text-slate-400">Gastos Hoy</p></div>
+                </div>
+
+                <!-- 8. Clientes Registrados -->
+                <div class="stat-card bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col justify-between h-28" onclick="location.href='./pages/clientes.html'">
+                    <div class="w-10 h-10 rounded-lg bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 flex items-center justify-center shadow-sm"><i class="fa-solid fa-users"></i></div>
+                    <div class="mt-2"><h3 class="text-2xl font-bold text-slate-800 dark:text-white" data-kpi="clientes">0</h3><p class="text-xs text-slate-500 dark:text-slate-400">Clientes Registrados</p></div>
+                </div>
             </div>
             
-            <!-- CHARTS SECTION -->
+            <!-- ═══ CHARTS ═══ -->
             <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
                 
                 <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col xl:col-span-2">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2"><i class="fa-solid fa-chart-simple text-indigo-500 dark:text-indigo-400"></i> Flujo Financiero (7 Días)</h3>
+                        <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2"><i class="fa-solid fa-chart-column text-indigo-500 dark:text-indigo-400"></i> Flujo Financiero (7 Días)</h3>
                     </div>
-                    <div class="chart-wrapper" style="height: 300px;">
-                        <canvas id="ingresosGastosChart"></canvas>
-                    </div>
+                    <div class="chart-wrapper" style="height: 280px;"><canvas id="ingresosGastosChart"></canvas></div>
                 </div>
                 
                 <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2"><i class="fa-solid fa-wallet text-emerald-500 dark:text-emerald-400"></i> Métodos de Pago</h3>
+                        <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2"><i class="fa-solid fa-credit-card text-emerald-500 dark:text-emerald-400"></i> Métodos de Pago</h3>
                     </div>
-                    <div class="chart-wrapper flex items-center justify-center" style="height: 300px;">
-                        <canvas id="metodosPagoChart"></canvas>
-                    </div>
+                    <div class="chart-wrapper flex items-center justify-center" style="height: 280px;"><canvas id="metodosPagoChart"></canvas></div>
                 </div>
 
                 <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2"><i class="fa-solid fa-calendar-week text-sky-500 dark:text-sky-400"></i> Actividad Semanal</h3>
+                        <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2"><i class="fa-solid fa-bolt text-amber-500 dark:text-amber-400"></i> Horas Pico</h3>
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700 px-2 py-0.5 rounded-full">Prom. 7 días</span>
                     </div>
-                    <div class="chart-wrapper" style="height: 250px;">
-                        <canvas id="semanalChart"></canvas>
-                    </div>
+                    <div class="chart-wrapper" style="height: 220px;"><canvas id="horasPicoChart"></canvas></div>
                 </div>
 
-                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col lg:col-span-2 xl:col-span-2">
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col items-center justify-center">
+                    <div class="text-center mb-3">
+                        <span class="text-4xl font-black text-slate-800 dark:text-white" id="ocupacion-porcentaje">0%</span>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1">Ocupación Actual</p>
+                    </div>
+                    <div class="chart-wrapper" style="width:160px;height:160px;"><canvas id="ocupacionChart"></canvas></div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2"><i class="fa-solid fa-chart-pie text-indigo-500 dark:text-indigo-400"></i> Análisis de Ocupación</h3>
+                        <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2"><i class="fa-solid fa-car-side text-sky-500 dark:text-sky-400"></i> Tipo de Vehículo</h3>
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700 px-2 py-0.5 rounded-full">30 días</span>
                     </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="chart-wrapper h-64 flex flex-col items-center justify-center relative border border-slate-100 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-900/30">
-                            <div class="text-center mb-2">
-                                <span class="text-3xl font-bold text-slate-800 dark:text-white" id="ocupacion-porcentaje">0%</span>
-                                <p class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">Ocupación Actual</p>
-                            </div>
-                            <div class="w-40 h-40 relative">
-                                <canvas id="ocupacionChart"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="chart-wrapper h-64 relative p-2">
-                            <h4 class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-2 text-center">Actividad Mensal (Últimos 6 meses)</h4>
-                            <canvas id="ocupacionMesChart"></canvas>
-                        </div>
-                    </div>
+                    <div class="chart-wrapper flex items-center justify-center" style="height: 220px;"><canvas id="tipoVehiculoChart"></canvas></div>
                 </div>
-            </div>
 
-            <!-- Movimientos Recientes -->
-            <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none overflow-hidden">
-                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/30">
-                    <div>
-                        <h3 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wide">Movimientos Recientes</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Últimas acciones del sistema</p>
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none flex flex-col">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2"><i class="fa-solid fa-trophy text-amber-500 dark:text-amber-400"></i> Top 5 Clientes</h3>
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-700 px-2 py-0.5 rounded-full">30 días</span>
                     </div>
-                    <a href="./pages/historial.html" class="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1 group transition-colors">
-                        Ver todo <i class="fa-solid fa-arrow-right text-[10px] transition-transform group-hover:translate-x-1"></i>
-                    </a>
+                    <div class="chart-wrapper" style="height: 220px;"><canvas id="topClientesChart"></canvas></div>
                 </div>
-                <div id="movimientos-container" class="p-0 bg-white dark:bg-slate-800">
-                    <div class="text-center text-slate-400 dark:text-slate-500 py-8 text-sm"><div class="loader mx-auto"></div> Cargando movimientos...</div>
+
+                <!-- Movimientos Recientes -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none overflow-hidden flex flex-col lg:col-span-2 xl:col-span-2">
+                    <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/30 shrink-0">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wide">Movimientos Recientes</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Últimas acciones del sistema</p>
+                        </div>
+                        <a href="./pages/historial.html" class="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1 group transition-colors">
+                            Ver todo <i class="fa-solid fa-arrow-right text-[10px] transition-transform group-hover:translate-x-1"></i>
+                        </a>
+                    </div>
+                    <div id="movimientos-container" class="flex-1 overflow-y-auto p-0 bg-white dark:bg-slate-800">
+                        <div class="text-center text-slate-400 dark:text-slate-500 py-8 text-sm"><div class="loader mx-auto"></div> Cargando movimientos...</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- PRIMERO: Verificación de auth (bloquea todo hasta confirmar) -->
+    <!-- AUTH -->
     <script>
         (function() {
             const raw = sessionStorage.getItem('parkingUser');
             const rawToken = sessionStorage.getItem('parkingToken');
             let user = null;
-
-            try {
-                user = JSON.parse(raw);
-                if (!user || typeof user !== 'object' || !user.rol) {
-                    user = null;
-                }
-            } catch(e) {
-                user = null;
-            }
-
+            try { user = JSON.parse(raw); if (!user || typeof user !== 'object' || !user.rol) user = null; } catch(e) { user = null; }
             if (!user || !rawToken) {
-                sessionStorage.removeItem('parkingUser');
-                sessionStorage.removeItem('parkingToken');
-                sessionStorage.removeItem('parkingSaludo');
-                window.location.replace('./index.html');
-                return; 
+                sessionStorage.removeItem('parkingUser'); sessionStorage.removeItem('parkingToken'); sessionStorage.removeItem('parkingSaludo');
+                window.location.replace('./index.html'); return;
             }
-
             const nameEl = document.getElementById('sidebar-user-name');
-            if (nameEl) {
-                nameEl.textContent = user.nombre || user.usuario || '';
-            }
-
+            if (nameEl) nameEl.textContent = user.nombre || user.usuario || '';
             const loader = document.getElementById('auth-loader');
-            if (loader) {
-                loader.classList.add('fade-out');
-                setTimeout(() => loader.remove(), 300);
-            }
+            if (loader) { loader.classList.add('fade-out'); setTimeout(() => loader.remove(), 300); }
         })();
     </script>
 
-    <!-- Después: Scripts del sistema -->
     <script src="./js/auth-manager.js"></script>
     <script src="./js/main.js"></script>
     <script src="./js/dashboard.js"></script>
 
-    <!-- INYECCIÓN PARA ADAPTAR CHART.JS AL MODO OSCURO -->
+    <!-- RELOJ -->
     <script>
-        // Función para aplicar colores de Chart.js según el tema activo
+        function updateDate() {
+            var d = new Date();
+            var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            var time = d.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
+            var el = document.getElementById('fecha-actual');
+            if(el) { var dateStr = d.toLocaleDateString('es-ES', options); el.innerText = dateStr.charAt(0).toUpperCase() + dateStr.slice(1) + ' - ' + time; }
+        }
+        setInterval(updateDate, 1000);
+        updateDate();
+    </script>
+
+    <!-- DARK MODE CHARTS -->
+    <script>
         function applyChartTheme() {
             const isDark = document.documentElement.classList.contains('dark');
             const textColor = isDark ? '#cbd5e1' : '#475569';
-            const gridColor = isDark ? '#334155' : '#e2e8f0';
-
+            const gridColor = isDark ? '#334155' : '#f1f5f9';
             Chart.defaults.color = textColor;
             Chart.defaults.borderColor = gridColor;
-            
-            // Actualizar gráficos existentes sin destruirlos
             Object.keys(Chart.instances).forEach(function(id) {
                 const chart = Chart.instances[id];
                 if (chart && chart.options && chart.options.scales) {
-                    // Actualizar escalas X e Y
-                    ['x', 'y', 'y1'].forEach(function(scaleId) {
-                        if (chart.options.scales[scaleId]) {
-                            chart.options.scales[scaleId].ticks = chart.options.scales[scaleId].ticks || {};
-                            chart.options.scales[scaleId].ticks.color = textColor;
-                            chart.options.scales[scaleId].grid = chart.options.scales[scaleId].grid || {};
-                            chart.options.scales[scaleId].grid.color = gridColor;
+                    ['x','y','y1'].forEach(function(s) {
+                        if (chart.options.scales[s]) {
+                            chart.options.scales[s].ticks = chart.options.scales[s].ticks || {};
+                            chart.options.scales[s].ticks.color = textColor;
+                            chart.options.scales[s].grid = chart.options.scales[s].grid || {};
+                            chart.options.scales[s].grid.color = gridColor;
                         }
                     });
-                    chart.update('none'); // Actualizar sin animación
+                    chart.update('none');
                 }
-                // Actualizar colores de las leyendas de gráficos de torta/dona
-                if (chart.options.plugins && chart.options.plugins.legend && chart.options.plugins.legend.labels) {
+                if (chart.options.plugins && chart.options.plugins.legend && chart.options.plugins.legend.labels)
                     chart.options.plugins.legend.labels.color = textColor;
-                }
             });
         }
-
-        // Aplicar al cargar
-        window.addEventListener('load', function() {
-            setTimeout(applyChartTheme, 500); // Esperar un poco a que dashboard.js cargue los gráficos
-        });
-
-        // Re-aplicar cuando se cambia el tema (escuchar el cambio de clase en el HTML)
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.attributeName === 'class' && mutation.target.tagName === 'HTML') {
-                    setTimeout(applyChartTheme, 50);
-                }
-            });
-        });
-        observer.observe(document.documentElement, { attributes: true });
+        window.addEventListener('load', function() { setTimeout(applyChartTheme, 600); });
+        new MutationObserver(function(mutations) {
+            mutations.forEach(function(m) { if (m.attributeName === 'class' && m.target.tagName === 'HTML') setTimeout(applyChartTheme, 50); });
+        }).observe(document.documentElement, { attributes: true });
     </script>
 </body>
 </html>

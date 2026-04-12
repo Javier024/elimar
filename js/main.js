@@ -5,8 +5,11 @@
     window.fetch = async function(url, options) {
         options = options || {};
 
-        // Solo inyectar token en peticiones a la API que NO sean auth
-        if (typeof url === 'string' && url.indexOf('/api/') === 0 && url.indexOf('/api/auth') === -1) {
+        if (typeof url === 'string' && url.indexOf('/api/auth') === 0) {
+            return originalFetch.call(this, url, options);
+        }
+
+        if (typeof url === 'string' && url.indexOf('/api/') === 0) {
             var token = sessionStorage.getItem('parkingToken');
             
             if (token) {
@@ -14,11 +17,15 @@
                     'x-session-token': token
                 });
             } else {
-                // CORREGIDO: ruta ./index.html (no ../index.html)
                 window.location.replace('./index.html');
-                return new Promise(function() {}); // Detener la petición
+                return new Promise(function() {});
             }
         }
-        return originalFetch.call(this, url, options);
+        
+        try {
+            return await originalFetch.call(this, url, options);
+        } catch (error) {
+            return originalFetch.call(this, url, options);
+        }
     };
 })();

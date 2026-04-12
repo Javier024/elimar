@@ -63,9 +63,38 @@ function toggleModal(modalId, show) {
   }
 }
 
+// ✅ FUNCION MODIFICADA: Cuenta por días, semanas y meses
 function calcularTiempo(horaInicioUnix) {
   if (!horaInicioUnix) return "";
   var diff = new Date() - new Date(Number(horaInicioUnix) * 1000);
+  var totalDias = Math.floor(diff / 86400000);
+  var totalSemanas = Math.floor(totalDias / 7);
+  var totalMeses = Math.floor(totalDias / 30);
+
+  // Más de 1 mes
+  if (totalMeses >= 1) {
+    var diasRestMes = totalDias - (totalMeses * 30);
+    if (diasRestMes > 0 && totalMeses < 12) {
+      return totalMeses + ' mes' + (totalMeses > 1 ? 'es' : '') + ' ' + diasRestMes + 'd';
+    }
+    return totalMeses + ' mes' + (totalMeses > 1 ? 'es' : '');
+  }
+
+  // Más de 1 semana
+  if (totalSemanas >= 1) {
+    var diasRestSem = totalDias - (totalSemanas * 7);
+    if (diasRestSem > 0) {
+      return totalSemanas + ' sem ' + diasRestSem + 'd';
+    }
+    return totalSemanas + ' semana' + (totalSemanas > 1 ? 's' : '');
+  }
+
+  // 1 día o más (pero menos de 1 semana)
+  if (totalDias >= 1) {
+    return totalDias + ' día' + (totalDias > 1 ? 's' : '');
+  }
+
+  // Menos de 1 día: mostrar horas y minutos
   var h = Math.floor(diff / 3600000);
   var m = Math.floor((diff % 3600000) / 60000);
   return h > 0 ? h + 'h ' + m + 'm' : m + 'm';
@@ -100,7 +129,6 @@ function initApp() {
     renderMapa(e.target.value.toLowerCase());
   });
 
-  // Actualizar contadores de días cada 60 segundos
   setInterval(function() {
     document.querySelectorAll('[data-fecha-salida]').forEach(function(el) {
       var ts = el.getAttribute('data-fecha-salida');
@@ -118,7 +146,10 @@ function cargarClientesCache() {
       return [];
     })
     .then(function(data) {
-      clientesCache = data;
+      clientesCache = data.map(function(c) {
+        if (c.placa) c.placa = c.placa.trim();
+        return c;
+      });
     })
     .catch(function(e) {
       console.error("Error cargando clientes:", e);
@@ -249,7 +280,7 @@ function getCardHTML(s) {
     bodyHTML = '<div class="p-5 flex-1 flex flex-col items-center justify-center text-center space-y-2"><div class="font-bold text-slate-800">' + (meta.reservation && meta.reservation.nombre ? meta.reservation.nombre : '---') + '</div><div class="text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full">' + (meta.reservation && meta.reservation.placa ? meta.reservation.placa : '---') + '</div></div>';
     actionsHTML = '<div class="grid grid-cols-2 gap-px bg-slate-100 border-t border-slate-100"><button onclick="ocuparReserva(' + s.id + ')" class="bg-white py-3 text-xs font-bold text-purple-600 hover:bg-purple-50 transition-colors">Ocupar</button><button onclick="liberar(' + s.id + ')" class="bg-white py-3 text-xs font-bold text-slate-500 hover:bg-slate-50 transition-colors">Cancelar</button></div>';
   }
-  // === DUEÑO FUERA (Libre con datos guardados) ===
+  // === DUEÑO FUERA ===
   else if (s.estado === 'libre' && hasOwner) {
     borderClass = "border-l-4 border-l-amber-400";
     var diasTexto = formatDiasFuera(ownerInfo.fecha_salida);
@@ -267,7 +298,7 @@ function getCardHTML(s) {
       '<button onclick="restaurarDueno(' + s.id + ')" class="bg-white py-3 text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-colors"><i class="fa-solid fa-rotate mr-1"></i>Restaurar</button>' +
       '</div>';
   }
-  // === LIBRE (Sin dueño guardado) ===
+  // === LIBRE ===
   else if (s.estado === 'libre') {
     borderClass = "border-l-4 border-l-emerald-500";
     headerHTML = '<div class="bg-emerald-50 px-4 py-2 flex justify-between items-center border-b border-emerald-100"><span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Disponible</span><span class="font-bold text-slate-700 text-2xl">' + s.numero + '</span></div>';
@@ -278,14 +309,13 @@ function getCardHTML(s) {
       '<button onclick="abrirModalReservar(' + s.id + ', \'' + s.numero + '\')" class="bg-purple-600 hover:bg-purple-700 text-white py-2.5 text-sm font-bold shadow-md transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-bookmark mr-1"></i> Reservar</button>' +
       '</div>';
   }
-  // === VISITANTE (Ocupado sin cliente_id) ===
+  // === VISITANTE ===
   else if (s.estado === 'ocupado' && isTempUser) {
     borderClass = "border-l-4 border-l-amber-500";
     var nombre = meta.temp_user.nombre;
     var placa = meta.temp_user.placa;
     var entryTime = formatHoraEntrada(s.hora_inicio);
 
-    // Info del dueño si existe
     var ownerLineHTML = '';
     if (hasOwner) {
       var diasTextoVisitante = formatDiasFuera(ownerInfo.fecha_salida);
@@ -304,7 +334,6 @@ function getCardHTML(s) {
       ownerLineHTML +
       '</div>';
 
-    // Botones: si hay dueño, agregar Restaurar
     if (hasOwner) {
       actionsHTML = '<div class="grid grid-cols-3 gap-1">' +
         '<button onclick="abrirModalCobro(' + s.id + ', \'visitante\')" class="bg-amber-600 hover:bg-amber-700 text-white py-3 text-xs font-bold transition-colors flex flex-col items-center justify-center gap-0.5"><i class="fa-solid fa-money-bill-wave"></i>Cobrar</button>' +
@@ -409,17 +438,17 @@ window.abrirModalCobro = function(id, type) {
   if (type === 'cliente') {
     monto = spot.cuota_mensual || 0;
     if (!monto) {
-      var clientData = clientesCache.find(function(x) { return x.placa === spot.cliente_placa; });
+      var clientData = clientesCache.find(function(x) { return x.placa === (spot.cliente_placa || '').trim(); });
       if (clientData) monto = clientData.cuota_mensual || 0;
     }
     nombre = spot.cliente_nombre || 'Cliente';
-    placa = spot.cliente_placa;
+    placa = (spot.cliente_placa || '---').trim();
     tel = spot.cliente_telefono || '';
   } else {
     var m = {};
     try { m = JSON.parse(spot.llave_caracteristicas || '{}'); } catch(e) {}
     nombre = (m.temp_user && m.temp_user.nombre) ? m.temp_user.nombre : 'Visitante';
-    placa = (m.temp_user && m.temp_user.placa) ? m.temp_user.placa : '---';
+    placa = (m.temp_user && m.temp_user.placa) ? m.temp_user.placa.trim() : '---';
     monto = 0;
   }
 
@@ -481,7 +510,6 @@ window.procesarSalirYCobro = function() {
   var amount = document.getElementById('cobroMonto').value;
   if (!amount || amount <= 0) return alert("Ingrese un monto válido");
 
-  // Esta acción limpia TODO el puesto (salida definitiva)
   var action = cobroData.type === 'cliente' ? 'salida_oficial' : 'salir_visitante';
 
   fetch("/api/puestos", {
@@ -515,7 +543,7 @@ window.abrirModalAsignar = function(id, num) {
   select.innerHTML = '<option value="">-- Seleccione Cliente --</option>';
 
   var available = clientesCache.filter(function(c) {
-    return !allSpots.some(function(s) { return s.cliente_placa === c.placa && s.estado === 'ocupado'; });
+    return !allSpots.some(function(s) { return (s.cliente_placa || '').trim() === c.placa && s.estado === 'ocupado'; });
   });
   if (available.length === 0) {
     var opt = document.createElement("option");
@@ -579,7 +607,7 @@ window.abrirModalVisitante = function() {
 
   cSelect.innerHTML = '<option value="">-- Opcional: Cliente Registrado --</option>';
   clientesCache.filter(function(c) {
-    return !allSpots.some(function(s) { return s.cliente_placa === c.placa && s.estado === 'ocupado'; });
+    return !allSpots.some(function(s) { return (s.cliente_placa || '').trim() === c.placa && s.estado === 'ocupado'; });
   }).forEach(function(c) {
     cSelect.add(new Option(c.nombre + ' (' + c.placa + ')', c.id));
   });
@@ -633,8 +661,8 @@ window.onVisitanteClientChange = function() {
 window.confirmarVisitante = function() {
   var sid = document.getElementById('visitanteSpotSelect').value;
   var typeRadio = document.querySelector('input[name="visitanteType"]:checked');
-  var nombre = document.getElementById('visitanteNombre').value;
-  var placa = document.getElementById('visitantePlaca').value;
+  var nombre = document.getElementById('visitanteNombre').value.trim();
+  var placa = document.getElementById('visitantePlaca').value.trim().toUpperCase();
   var cid = null;
 
   if (typeRadio && typeRadio.value === 'registered') {
@@ -642,7 +670,7 @@ window.confirmarVisitante = function() {
     var c = clientesCache.find(function(x) { return x.id == cid; });
     if (c) {
       nombre = c.nombre;
-      placa = c.placa;
+      placa = c.placa.trim().toUpperCase();
     }
   }
 
@@ -680,8 +708,8 @@ window.abrirModalReservar = function(id, num) {
 
 window.confirmarReservar = function() {
   var id = document.getElementById('reservaId').value;
-  var nombre = document.getElementById('reservaNombre').value;
-  var placa = document.getElementById('reservaPlaca').value;
+  var nombre = document.getElementById('reservaNombre').value.trim();
+  var placa = document.getElementById('reservaPlaca').value.trim().toUpperCase();
   if (!nombre) return alert("Nombre requerido");
 
   fetch("/api/puestos", {
@@ -699,7 +727,7 @@ window.confirmarReservar = function() {
   });
 };
 
-// --- OCUPAR RESERVA (Con selector de clientes) ---
+// --- OCUPAR RESERVA ---
 window.ocuparReserva = function(id) {
   var spot = allSpots.find(function(s) { return s.id === id; });
   if (!spot) return;
@@ -707,7 +735,7 @@ window.ocuparReserva = function(id) {
   var meta = {};
   try { meta = JSON.parse(spot.llave_caracteristicas || '{}'); } catch(e) {}
   var reservaNombre = (meta.reservation && meta.reservation.nombre) ? meta.reservation.nombre : '';
-  var reservaPlaca = (meta.reservation && meta.reservation.placa) ? meta.reservation.placa : '';
+  var reservaPlaca = (meta.reservation && meta.reservation.placa) ? meta.reservation.placa.trim().toUpperCase() : '';
   
   document.getElementById('ocuparReservaInfo').innerHTML = 
     '<div class="text-sm text-purple-700">Reserva a nombre de: <strong>' + reservaNombre + '</strong>' +
@@ -717,7 +745,7 @@ window.ocuparReserva = function(id) {
   select.innerHTML = '<option value="">-- Ocupar sin cliente registrado --</option>';
   
   var available = clientesCache.filter(function(c) {
-    return !allSpots.some(function(s) { return s.cliente_placa === c.placa && s.estado === 'ocupado'; });
+    return !allSpots.some(function(s) { return (s.cliente_placa || '').trim() === c.placa && s.estado === 'ocupado'; });
   });
   
   var defaultOption = '';
@@ -763,7 +791,7 @@ window.cerrarModalOcuparReserva = function() {
   toggleModal('modalOcuparReserva', false);
 };
 
-// --- SALIDA DE VIAJE (Guarda dueño, deja libre para visitante) ---
+// --- SALIDA DE VIAJE ---
 window.salirViaje = function(id) {
   var s = allSpots.find(function(x) { return x.id === id; });
   if (!s) return;
@@ -791,7 +819,7 @@ window.salirViaje = function(id) {
   });
 };
 
-// --- RESTAURAR DUEÑO (Con info de días fuera) ---
+// --- RESTAURAR DUEÑO ---
 window.restaurarDueno = function(id) {
   var spot = allSpots.find(function(x) { return x.id === id; });
   if (!spot) return mostrarToast("Puesto no encontrado", "error");
@@ -803,7 +831,6 @@ window.restaurarDueno = function(id) {
   var diasFuera = calcularDiasFuera(ownerInfo.fecha_salida);
   var diasTexto = diasFuera === 0 ? 'Hoy mismo' : diasFuera + ' día(s)';
   
-  // Verificar si hay visitante actualmente
   var hayVisitante = spot.estado === 'ocupado' && !spot.cliente_id;
   var advertencia = hayVisitante ? '\n\n⚠️ HAY UN VISITANTE EN EL PUESTO.\nSerá desplazado automáticamente.' : '';
   
@@ -811,7 +838,6 @@ window.restaurarDueno = function(id) {
     'Placa: ' + (ownerInfo.placa || '---') + '\n' +
     'Tiempo fuera: ' + diasTexto + advertencia)) return;
   
-  // Si hay visitante, liberarlo primero
   if (hayVisitante) {
     fetch("/api/puestos", {
       method: "PUT",

@@ -159,6 +159,12 @@
         .export-dropdown button:hover { background: #f1f5f9; }
         .dark .export-dropdown button:hover { background: #334155; }
         .export-dropdown button i { width: 16px; text-align: center; }
+
+
+       /* Keyframe para el spinner del timeline */
+@keyframes tl-spin {
+    to { transform: rotate(360deg); }
+} 
     </style>
 </head>
 
@@ -212,10 +218,8 @@
                     <span class="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:block">Auditoría completa de movimientos</span>
                 </div>
             </div>
-            <div class="flex items-center gap-2">
-                <i class="fa-regular fa-calendar text-slate-400 dark:text-slate-500"></i>
-                <span id="fecha-actual" class="text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-600"></span>
-            </div>
+           <!-- DESPUÉS -->
+<div class="text-right text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-600 shadow-sm whitespace-nowrap hidden md:block" id="date-display">--:--</div>
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 lg:p-8">
@@ -260,6 +264,7 @@
                                     <option value="ingreso_visitante">Visitantes</option>
                                     <option value="salida">Salidas</option>
                                     <option value="regreso_dueno">Regresos</option>
+                                    <option value="pago">Pagos</option>
                                     <option value="GASTO">Gastos</option>
                                     <option value="vehiculo_carro">Carros</option>
                                     <option value="vehiculo_moto">Motos</option>
@@ -372,15 +377,19 @@
             }
         });
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const dateEl = document.getElementById("fecha-actual");
-            if (dateEl) {
-                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }; 
-                let dateStr = new Date().toLocaleDateString('es-ES', options);
-                dateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
-                dateEl.textContent = dateStr;
-            }
-        });
+        // DESPUÉS
+        function updateDate() {
+        var d = new Date();
+        var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        var time = d.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
+        var el = document.getElementById('date-display');
+            if(el) {
+        var dateStr = d.toLocaleDateString('es-ES', options);
+        el.innerText = dateStr.charAt(0).toUpperCase() + dateStr.slice(1) + ' - ' + time;
+    }
+}
+setInterval(updateDate, 1000);
+updateDate();
 
         // ==================== IMPRIMIR REPORTE ====================
         function printReport() {

@@ -85,10 +85,8 @@
           <span class="hidden sm:inline text-xs text-slate-500 dark:text-slate-400">Control de pagos y facturación</span>
         </div>
       </div>
-      <div class="flex items-center gap-2">
-        <i class="fa-regular fa-calendar text-slate-400 dark:text-slate-500"></i>
-        <span id="fecha-actual" class="text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-600"></span>
-      </div>
+      <!-- DESPUÉS -->
+<div class="text-right text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-600 shadow-sm whitespace-nowrap hidden md:block" id="date-display">--:--</div>
     </header>
     
     <div class="flex-1 overflow-y-auto p-4 lg:p-8">
@@ -317,45 +315,54 @@
     </div>
   </div>
 
-  <script>
-      function toggleMenu() {
-          const sidebar = document.getElementById('sidebar');
-          const overlay = document.getElementById('mobileMenuOverlay');
-          sidebar.classList.toggle('-translate-x-full');
-          if (sidebar.classList.contains('-translate-x-full')) {
-              overlay.classList.add('hidden'); overlay.classList.remove('flex');
-          } else {
-              overlay.classList.remove('hidden'); overlay.classList.add('flex');
-          }
-      }
-      
-      function toggleCustomPeriod() {
-          const typeSelect = document.getElementById('cajaPeriodType');
-          const customContainer = document.getElementById('customPeriodContainer');
-          const customInput = document.getElementById('cajaPeriodCustom');
-          
-          if (typeSelect.value === 'Otro') {
-              customContainer.classList.remove('hidden');
-              customInput.required = true;
-          } else {
-              customContainer.classList.add('hidden');
-              customInput.required = false;
-              customInput.value = '';
-          }
-      }
+  <!-- DESPUÉS -->
+<script>
+    function toggleMenu() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobileMenuOverlay');
+        sidebar.classList.toggle('-translate-x-full');
+        if (sidebar.classList.contains('-translate-x-full')) {
+            overlay.classList.add('hidden'); overlay.classList.remove('flex');
+        } else {
+            overlay.classList.remove('hidden'); overlay.classList.add('flex');
+        }
+    }
+    
+    function toggleCustomPeriod() {
+        const typeSelect = document.getElementById('cajaPeriodType');
+        const customContainer = document.getElementById('customPeriodContainer');
+        const customInput = document.getElementById('cajaPeriodCustom');
+        
+        if (typeSelect.value === 'Otro') {
+            customContainer.classList.remove('hidden');
+            customInput.required = true;
+        } else {
+            customContainer.classList.add('hidden');
+            customInput.required = false;
+            customInput.value = '';
+        }
+    }
 
-      function changePage(direction) {
-          alert("Paginación: Implementar lógica de backend o cálculo local completo.");
-      }
-      
-      const fechaElement = document.getElementById("fecha-actual");
-      const fechaInput = document.getElementById("cajaDate");
-      if(fechaElement) {
-          let dateStr = new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" }); 
-          fechaElement.textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
-      }
-      if(fechaInput) fechaInput.valueAsDate = new Date(); 
-  </script>
+    function changePage(direction) {
+        alert("Paginación: Implementar lógica de backend o cálculo local completo.");
+    }
+
+    function updateDate() {
+        var d = new Date();
+        var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        var time = d.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
+        var el = document.getElementById('date-display');
+        if(el) {
+            var dateStr = d.toLocaleDateString('es-ES', options);
+            el.innerText = dateStr.charAt(0).toUpperCase() + dateStr.slice(1) + ' - ' + time;
+        }
+    }
+    setInterval(updateDate, 1000);
+    updateDate();
+
+    const fechaInput = document.getElementById('cajaDate');
+    if(fechaInput) fechaInput.valueAsDate = new Date(); 
+</script>
   
   <script src="../js/auth-manager.js"></script>
   <script src="../js/main.js"></script>
