@@ -1,11 +1,9 @@
 // parqueo/api/puestos.js
 import { db } from "./db.js";
-import { authGuard } from "./_lib/auth.js"; // <-- NUEVO
+import { authGuard } from "./_lib/auth.js";
 
 async function isPlateAvailable(plate, currentSpotId = null) {
-    // FIX SEGURIDAD: Escapar comillas dobles para evitar inyección en el LIKE JSON
-    const safePlate = plate.replace(/"/g, '""'); 
-    
+    const safePlate = plate.replace(/"/g, '""');
     const officialCheck = await db.execute({
         sql: `SELECT p.id FROM puestos p 
                JOIN clientes c ON p.cliente_id = c.id 
@@ -26,8 +24,8 @@ async function isPlateAvailable(plate, currentSpotId = null) {
 
 export default async function handler(req, res) {
   try {
-    const user = authGuard(req, res); // <-- NUEVO
-    if (!user) return; // <-- NUEVO (Si no hay token válido, corta la ejecución)
+    const user = authGuard(req, res);
+    if (!user) return;
 
     if (req.method === "GET") {
       const result = await db.execute(`
@@ -45,8 +43,31 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "POST") {
-      const { numero } = req.body;
-      if (!numero) return res.status(400).json({ error: "Número requerido" });
+      const { numero, cantidad } = req.body;
+
+      // ✅ CREACIÓN MASIVA POR CANTIDAD
+      if (cantidad && Number(cantidad) > 0) {
+        const count = Math.min(Number(cantidad), 500);
+        const last = await db.execute({ sql: "SELECT numero FROM puestos ORDER BY CAST(numero AS INTEGER) DESC LIMIT 1", args: [] });
+        let startNum = 1;
+        if (last.rows.length > 0) {
+          const parsed = parseInt(last.rows[0].numero);
+          if (!isNaN(parsed)) startNum = parsed + 1;
+        }
+        let created = 0;
+        for (let i = 0; i < count; i++) {
+          const num = String(startNum + i);
+          const existe = await db.execute({ sql: "SELECT id FROM puestos WHERE numero = ?", args: [num] });
+          if (existe.rows.length === 0) {
+            await db.execute({ sql: `INSERT INTO puestos (numero, estado, puesto_info, llave_caracteristicas) VALUES (?, 'libre', '{}', '{}')`, args: [num] });
+            created++;
+          }
+        }
+        return res.status(200).json({ success: true, message: `${created} puestos creados desde #${startNum}`, created });
+      }
+
+      // Creación individual (compatibilidad)
+      if (!numero) return res.status(400).json({ error: "Número o cantidad requerido" });
       const existe = await db.execute({ sql: "SELECT id FROM puestos WHERE numero = ?", args: [numero] });
       if (existe.rows.length > 0) return res.status(400).json({ error: "Número existe" });
       await db.execute({ sql: `INSERT INTO puestos (numero, estado, puesto_info, llave_caracteristicas) VALUES (?, 'libre', '{}', '{}')`, args: [numero] });
@@ -54,7 +75,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "PUT") {
-      const { id, accion, llave_info, temp_name, temp_plate, spot_id_selected, nuevo_numero, nombre, placa, cliente_id } = req.body;
+      const { id, accion, llave_info, temp_name, temp_plate, spot_id_selected, nuevo_numero, nombre, placa, cliente_id, tipo_vehiculo } = req.body;
       const targetId = id || spot_id_selected;
 
       if (!targetId && accion !== 'editar_numero') return res.status(400).json({ error: "ID del puesto requerido" });
@@ -73,7 +94,7 @@ export default async function handler(req, res) {
           return res.status(200).json({ success: true, message: "Reserva creada" });
       }
 
-      // --- 1. OCUPAR RESERVA (Con opción de asignar cliente) ---
+      // --- 1. OCUPAR RESERVA ---
       if (accion === "ocupar_reserva") {
         const spotCheck = await db.execute({ sql: "SELECT * FROM puestos WHERE id = ?", args: [targetId] });
         if (spotCheck.rows.length === 0) return res.status(404).json({ error: "Puesto no encontrado" });
@@ -109,13 +130,12 @@ export default async function handler(req, res) {
           return res.status(200).json({ success: true, message: "Número actualizado" });
       }
 
-      // --- 3. SALIDA OFICIAL (Salir y Cobrar → TOTALLY LIBRE) ---
+      // --- 3. SALIDA OFICIAL ---
       if (accion === "salida_oficial") {
         const spotActual = await db.execute({ sql: `SELECT p.*, c.nombre, c.placa, c.telefono FROM puestos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.id = ?`, args: [targetId] });
         if (spotActual.rows.length === 0) return res.status(404).json({ error: "Puesto no encontrado" });
         const s = spotActual.rows[0];
         
-        // Limpia TODO el puesto
         await db.execute({ 
             sql: `UPDATE puestos SET estado = 'libre', cliente_id = NULL, hora_inicio = NULL, puesto_info = '{}', llave_caracteristicas = '{}' WHERE id = ?`, 
             args: [targetId] 
@@ -127,7 +147,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, message: "Salida registrada." });
       }
 
-      // --- 4. SALIDA DE VIAJE (Guarda datos del dueño) ---
+      // --- 4. SALIDA DE VIAJE ---
       if (accion === "salida_viaje") {
         const spotActual = await db.execute({ 
             sql: `SELECT p.*, c.nombre, c.placa, c.telefono FROM puestos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.id = ?`, 
@@ -136,7 +156,6 @@ export default async function handler(req, res) {
         if (spotActual.rows.length === 0) return res.status(404).json({ error: "Puesto no encontrado" });
         const s = spotActual.rows[0];
         
-        // Guardar info del dueño con fecha de salida
         const ownerInfo = {
             nombre: s.nombre || 'Desconocido',
             placa: s.placa || '---',
@@ -157,23 +176,21 @@ export default async function handler(req, res) {
             }); 
         } catch(e) { console.error("Historial error:", e); }
         
-        return res.status(200).json({ success: true, message: "Salida de viaje registrada. Puesto disponible para visitante." });
+        return res.status(200).json({ success: true, message: "Salida de viaje registrada." });
       }
 
-      // --- 5. RESTAURAR DUEÑO (Con contador de días) ---
+      // --- 5. RESTAURAR DUEÑO ---
       if (accion === "restaurar_dueno") {
         const s = (await db.execute({ sql: "SELECT * FROM puestos WHERE id = ?", args: [targetId] })).rows[0];
         const owner = JSON.parse(s.puesto_info || '{}');
         if (!owner.nombre) return res.status(400).json({ error: "No hay dueño guardado" });
         
-        // Calcular días fuera
         let diasFuera = 0;
         if (owner.fecha_salida) {
             const diffSegundos = now - Number(owner.fecha_salida);
             diasFuera = Math.max(0, Math.floor(diffSegundos / 86400));
         }
         
-        // Actualizar info del dueño con fecha de regreso y días fuera
         owner.fecha_regreso = now;
         owner.ultima_estadia_fuera = diasFuera;
         
@@ -198,14 +215,21 @@ export default async function handler(req, res) {
         });
       }
 
-      // --- 6. ASIGNAR VISITANTE ---
+      // --- 6. ASIGNAR VISITANTE (con tipo_vehiculo) ---
       if (accion === "asignar_visitante") {
         let nombre = temp_name;
         let placa = temp_plate;
         let telefono = "";
+        let tipoVeh = tipo_vehiculo || 'Carro';
+
         if (cliente_id) {
             const client = (await db.execute({ sql: "SELECT * FROM clientes WHERE id = ?", args: [cliente_id] })).rows[0];
-            if (client) { nombre = client.nombre; placa = client.placa; telefono = client.telefono || ''; }
+            if (client) { 
+                nombre = client.nombre; 
+                placa = client.placa; 
+                telefono = client.telefono || '';
+                tipoVeh = client.tipo_vehiculo || 'Carro';
+            }
         }
         if (!nombre || !placa) return res.status(400).json({ error: "Nombre y Placa son requeridos" });
         if (!(await isPlateAvailable(placa, targetId))) return res.status(400).json({ error: `La placa ${placa.toUpperCase()} ya está en otro puesto.` });
@@ -213,7 +237,7 @@ export default async function handler(req, res) {
              await db.execute(`UPDATE puestos SET estado = 'libre', cliente_id = NULL, hora_inicio = NULL, llave_caracteristicas = '{}' WHERE id = ?`, [spot_id_selected]);
         }
         const llaveData = {
-            temp_user: { nombre, placa: placa.toUpperCase(), telefono: telefono, fecha_ingreso: now }, 
+            temp_user: { nombre, placa: placa.toUpperCase(), telefono: telefono, tipo_vehiculo: tipoVeh, fecha_ingreso: now }, 
             llave: llave_info || { tiene: false, desc: "" } 
         };
         await db.execute({ 
@@ -244,19 +268,17 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, message: "Cliente asignado" });
       }
 
-      // --- 8. SALIDA VISITANTE (Preserva dueño si existe) ---
+      // --- 8. SALIDA VISITANTE ---
       if (accion === "salir_visitante") {
         const spot = (await db.execute({ sql: "SELECT puesto_info FROM puestos WHERE id = ?", args: [targetId] })).rows[0];
         const owner = JSON.parse(spot.puesto_info || '{}');
         
         if (owner.nombre) {
-            // Hay dueño guardado: limpiar visitante pero mantener dueño
             await db.execute({ 
                 sql: `UPDATE puestos SET estado = 'libre', cliente_id = NULL, hora_inicio = NULL, llave_caracteristicas = '{}' WHERE id = ?`, 
                 args: [targetId] 
             });
         } else {
-            // No hay dueño: limpiar todo
             await db.execute({ 
                 sql: `UPDATE puestos SET estado = 'libre', cliente_id = NULL, hora_inicio = NULL, llave_caracteristicas = '{}', puesto_info = '{}' WHERE id = ?`, 
                 args: [targetId] 

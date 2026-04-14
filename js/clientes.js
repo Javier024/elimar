@@ -9,11 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupEventListeners() {
-    // Formulario Crear
     const form = document.getElementById('formCliente');
     if(form) form.addEventListener('submit', handleCreateClient);
 
-    // Buscador
     const searchInput = document.getElementById('searchInput');
     if(searchInput) {
         searchInput.addEventListener('input', (e) => {
@@ -22,7 +20,6 @@ function setupEventListeners() {
         });
     }
 
-    // Lógica "Otro" pago en Crear
     const medioPagoSelect = document.getElementById('medioPago');
     const otroContainer = document.getElementById('otroPagoContainer');
     if(medioPagoSelect && otroContainer) {
@@ -31,7 +28,6 @@ function setupEventListeners() {
         });
     }
     
-    // Lógica "Otro" pago en Editar
     const editMedioPagoSelect = document.getElementById('editMedioPago');
     const editOtroContainer = document.getElementById('editOtroPagoContainer');
     if(editMedioPagoSelect && editOtroContainer) {

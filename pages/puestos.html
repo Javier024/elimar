@@ -5,13 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Puestos | PARQUEADERO ELIMAR</title>
   <link rel="icon" type="image/jpeg" href="/img/logo.jpg">
-  
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { darkMode: 'class' }</script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="../js/theme.js"></script>
-
   <style>
     body { font-family: 'Inter', sans-serif; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -86,7 +84,7 @@
               <input type="text" id="searchInput" placeholder="Buscar placa o puesto..." class="w-full pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200">
             </div>
             <div class="flex gap-2">
-              <button onclick="window.abrirModalCrearPuesto()" class="flex-1 sm:flex-none bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-plus"></i> <span class="hidden sm:inline">Nuevo Puesto</span></button>
+              <button onclick="window.abrirModalCrearPuesto()" class="flex-1 sm:flex-none bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-plus"></i> <span class="hidden sm:inline">Crear Puestos</span></button>
               <button onclick="window.abrirModalVisitante()" class="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-user-group"></i> <span class="hidden sm:inline">Visitante</span></button>
             </div>
           </div>
@@ -107,20 +105,27 @@
           </div>
         </div>
 
-        <div id="map-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-20"></div>
+        <div id="map-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3 pb-20"></div>
       </div>
     </div>
   </main>
 
-  <!-- MODAL CREAR PUESTO -->
+  <!-- ═══════════════════════════════════════════════════════════
+       MODAL CREAR PUESTOS (ahora por CANTIDAD)
+       ═══════════════════════════════════════════════════════════ -->
   <div id="modalCrearPuesto" class="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[100] transition-opacity opacity-0">
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm mx-4 transform transition-all scale-95 opacity-0 duration-200 flex flex-col max-h-[90vh]" id="modalCrearPuestoContent">
       <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/30 rounded-t-2xl shrink-0">
-        <h3 class="text-lg font-bold text-slate-800 dark:text-white">Crear Puesto</h3>
+        <h3 class="text-lg font-bold text-slate-800 dark:text-white">Crear Puestos</h3>
         <button onclick="window.cerrarModalCrearPuesto()" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="p-6 space-y-4 overflow-y-auto flex-1">
-        <div class="relative group"><label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Número de Puesto</label><i class="fa-solid fa-hashtag input-icon group-focus-within:text-indigo-500 transition-colors"></i><input type="text" id="inputNuevoNumero" class="custom-input peer" placeholder="Ej: 15"></div>
+        <div class="bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-xs p-3 rounded-lg border border-indigo-100 dark:border-indigo-800/50 flex gap-2"><i class="fa-solid fa-info-circle mt-0.5"></i><span>Se crearán consecutivos a partir del último número existente.</span></div>
+        <div class="relative group">
+          <label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Cantidad de Puestos</label>
+          <i class="fa-solid fa-hashtag input-icon group-focus-within:text-indigo-500 transition-colors"></i>
+          <input type="number" id="inputCantidadPuestos" class="custom-input peer" placeholder="Ej: 10" min="1" max="500">
+        </div>
       </div>
       <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700 rounded-b-2xl flex justify-end gap-3 shrink-0">
         <button onclick="window.cerrarModalCrearPuesto()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">Cancelar</button>
@@ -129,7 +134,123 @@
     </div>
   </div>
 
-  <!-- MODAL ASIGNAR CLIENTE -->
+  <!-- ═══════════════════════════════════════════════════════════
+       MODAL FORMULARIO DEL PUESTO (NUEVO - se abre al clic)
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="modalFormularioPuesto" class="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[100] transition-opacity opacity-0">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4 transform transition-all scale-95 opacity-0 duration-200 flex flex-col max-h-[90vh]" id="modalFormularioPuestoContent">
+      <!-- Header -->
+      <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/30 rounded-t-2xl shrink-0">
+        <div class="flex items-center gap-3">
+          <span id="formPuestoNumero" class="text-2xl font-black text-slate-800 dark:text-white">#--</span>
+          <span id="formEstadoBadge"></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="formBtnEditar" onclick="formEditarNumero()" class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" title="Editar número"><i class="fa-solid fa-pen"></i></button>
+          <button onclick="cerrarFormulario()" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+
+      <!-- Body con scroll -->
+      <div class="p-6 overflow-y-auto flex-1 space-y-4">
+
+        <!-- SECCIÓN: LIBRE PURO -->
+        <div id="formSeccionLibre" class="hidden">
+          <div class="text-center py-8 space-y-3">
+            <div class="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto"><i class="fa-solid fa-square-parking text-emerald-600 dark:text-emerald-400 text-2xl"></i></div>
+            <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">Puesto disponible para asignar</p>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: DUEÑO FUERA -->
+        <div id="formSeccionDuenoFuera" class="hidden">
+          <div class="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 border border-amber-100 dark:border-amber-800/50 space-y-2">
+            <div class="flex items-center gap-2 text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-3"><i class="fa-solid fa-plane-departure"></i> Dueño Ausente</div>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+              <div><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Nombre</span><span id="formDuenoNombre" class="font-semibold text-slate-800 dark:text-white">---</span></div>
+              <div><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Placa</span><span id="formDuenoPlaca" class="font-mono font-semibold text-slate-800 dark:text-white">---</span></div>
+              <div><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Teléfono</span><span id="formDuenoTelefono" class="font-semibold text-slate-800 dark:text-white">---</span></div>
+              <div><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Fuera hace</span><span id="formDuenoDias" class="font-bold text-amber-700 dark:text-amber-300">---</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: OCUPADO CLIENTE -->
+        <div id="formSeccionOcupado" class="hidden">
+          <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4 border border-indigo-100 dark:border-indigo-800/50 space-y-3">
+            <div class="flex items-center gap-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider"><i class="fa-solid fa-user"></i> Datos del Cliente</div>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+              <div><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Nombre</span><span id="formOcupadoNombre" class="font-semibold text-slate-800 dark:text-white">---</span></div>
+              <div><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Placa</span><span id="formOcupadoPlaca" class="font-mono font-semibold text-slate-800 dark:text-white">---</span></div>
+              <div><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Teléfono</span><span id="formOcupadoTelefono" class="font-semibold text-slate-800 dark:text-white">---</span></div>
+              <div><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Vehículo</span><span id="formOcupadoTipo" class="font-semibold text-slate-800 dark:text-white">---</span></div>
+            </div>
+            <div class="grid grid-cols-3 gap-3 text-sm pt-2 border-t border-indigo-100 dark:border-indigo-800/50">
+              <div><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Entrada</span><span id="formOcupadoEntrada" class="font-semibold text-slate-700 dark:text-slate-200 text-xs">---</span></div>
+              <div><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Tiempo</span><span id="formOcupadoTiempo" class="font-bold text-amber-600 dark:text-amber-400">---</span></div>
+              <div><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Cuota</span><span id="formOcupadoCuota" class="font-bold text-emerald-700 dark:text-emerald-400">---</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: VISITANTE -->
+        <div id="formSeccionVisitante" class="hidden">
+          <div class="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 border border-amber-100 dark:border-amber-800/50 space-y-3">
+            <div class="flex items-center gap-2 text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider"><i class="fa-solid fa-user-group"></i> Datos del Visitante</div>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+              <div><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Nombre</span><span id="formVisitNombre" class="font-semibold text-slate-800 dark:text-white">---</span></div>
+              <div><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Placa</span><span id="formVisitPlaca" class="font-mono font-semibold text-slate-800 dark:text-white">---</span></div>
+              <div><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Teléfono</span><span id="formVisitTelefono" class="font-semibold text-slate-800 dark:text-white">---</span></div>
+              <div><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Vehículo</span><span id="formVisitTipo" class="font-semibold text-slate-800 dark:text-white">---</span></div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 text-sm pt-2 border-t border-amber-100 dark:border-amber-800/50">
+              <div><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Entrada</span><span id="formVisitEntrada" class="font-semibold text-slate-700 dark:text-slate-200 text-xs">---</span></div>
+              <div><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Tiempo</span><span id="formVisitTiempo" class="font-bold text-amber-600 dark:text-amber-400">---</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: INFO DUEÑO DENTRO DE VISITANTE -->
+        <div id="formSeccionDuenoEnVisitante" class="hidden">
+          <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-3 border border-indigo-100 dark:border-indigo-800/50 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-xs"><i class="fa-solid fa-user-shield text-indigo-500"></i><span class="text-indigo-600 dark:text-indigo-400 font-semibold">Dueño: <strong id="formDuenoVisitNombre">---</strong></span></div>
+            <span id="formDuenoVisitDias" class="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">---</span>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: COBRO POR DÍAS -->
+        <div id="formSeccionCobroDiario" class="hidden">
+          <div class="bg-slate-800 dark:bg-slate-900 rounded-xl p-4 border border-slate-700 dark:border-slate-600 space-y-2">
+            <div class="flex items-center gap-2 text-xs font-bold text-emerald-400 uppercase tracking-wider"><i class="fa-solid fa-calculator"></i> Cobro Calculado por Días</div>
+            <div class="grid grid-cols-3 gap-3 text-center">
+              <div class="bg-slate-700 dark:bg-slate-800 rounded-lg p-2"><div class="text-[10px] text-slate-400 uppercase font-bold">Días</div><div id="formCobroDias" class="text-lg font-black text-white">0</div></div>
+              <div class="bg-slate-700 dark:bg-slate-800 rounded-lg p-2"><div class="text-[10px] text-slate-400 uppercase font-bold">Tarifa</div><div id="formCobroTarifa" class="text-xs font-bold text-emerald-400">$0</div></div>
+              <div class="bg-emerald-600 rounded-lg p-2"><div class="text-[10px] text-emerald-200 uppercase font-bold">Total</div><div id="formCobroTotal" class="text-lg font-black text-white">$0</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: RESERVADO -->
+        <div id="formSeccionReservado" class="hidden">
+          <div class="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 border border-purple-100 dark:border-purple-800/50 space-y-2">
+            <div class="flex items-center gap-2 text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider"><i class="fa-solid fa-bookmark"></i> Datos de la Reserva</div>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+              <div><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Nombre</span><span id="formReservaNombre" class="font-semibold text-slate-800 dark:text-white">---</span></div>
+              <div><span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block">Placa</span><span id="formReservaPlaca" class="font-mono font-semibold text-slate-800 dark:text-white">---</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Acciones -->
+      <div id="formAcciones" class="px-6 py-4 bg-slate-50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700 rounded-b-2xl flex flex-wrap gap-2 shrink-0"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       MODAL ASIGNAR CLIENTE
+       ═══════════════════════════════════════════════════════════ -->
   <div id="modalAsignar" class="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[100] transition-opacity opacity-0">
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0 duration-200 flex flex-col max-h-[90vh]" id="modalAsignarContent">
       <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/30 rounded-t-2xl shrink-0">
@@ -140,7 +261,7 @@
         <input type="hidden" id="spotIdOculto" value="">
         <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Seleccione un cliente de la lista:</p>
         <div class="relative group"><i class="fa-solid fa-users input-icon group-focus-within:text-indigo-500 transition-colors"></i><select id="modalClienteSelect" class="custom-input appearance-none cursor-pointer"><option value="">-- Seleccione Cliente --</option></select><i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 dark:text-slate-500 pointer-events-none"></i></div>
-        <div class="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs p-3 rounded-lg border border-blue-100 dark:border-blue-800/50 flex gap-2"><i class="fa-solid fa-info-circle mt-0.5"></i> <span>El cliente seleccionado ocupará el puesto.</span></div>
+        <div class="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs p-3 rounded-lg border border-blue-100 dark:border-blue-800/50 flex gap-2"><i class="fa-solid fa-info-circle mt-0.5"></i><span>El cliente seleccionado ocupará el puesto.</span></div>
       </div>
       <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700 rounded-b-2xl flex justify-end gap-3 shrink-0">
         <button onclick="window.cerrarModal()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">Cancelar</button>
@@ -149,7 +270,9 @@
     </div>
   </div>
 
-  <!-- MODAL COBRO SALIDA -->
+  <!-- ═══════════════════════════════════════════════════════════
+       MODAL COBRO SALIDA (con info de cobro por días)
+       ═══════════════════════════════════════════════════════════ -->
   <div id="modalCobroSalida" class="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[100] transition-opacity opacity-0">
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0 duration-200 flex flex-col max-h-[90vh]" id="modalCobroSalidaContent">
       <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/30 rounded-t-2xl shrink-0">
@@ -163,8 +286,18 @@
           <div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase">Puesto</span><span id="cobroPuesto" class="text-sm font-bold text-indigo-600 dark:text-indigo-400">---</span></div>
           <div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase">Tiempo</span><span id="cobroTiempo" class="text-sm font-bold text-amber-600 dark:text-amber-400">---</span></div>
         </div>
+        <!-- Info cobro por días -->
+        <div id="cobroDiarioInfo" class="hidden bg-slate-800 dark:bg-slate-900 rounded-xl p-4 border border-slate-700 dark:border-slate-600">
+          <div class="flex items-center gap-2 text-xs font-bold text-emerald-400 uppercase tracking-wider mb-3"><i class="fa-solid fa-calculator"></i> Cobro por Días</div>
+          <div class="grid grid-cols-4 gap-2 text-center">
+            <div class="bg-slate-700 dark:bg-slate-800 rounded-lg p-2"><div class="text-[9px] text-slate-400 uppercase font-bold">Tipo</div><div id="cobroDiarioTipo" class="text-[11px] font-bold text-white">---</div></div>
+            <div class="bg-slate-700 dark:bg-slate-800 rounded-lg p-2"><div class="text-[9px] text-slate-400 uppercase font-bold">Días</div><div id="cobroDiarioDias" class="text-lg font-black text-white">0</div></div>
+            <div class="bg-slate-700 dark:bg-slate-800 rounded-lg p-2"><div class="text-[9px] text-slate-400 uppercase font-bold">Tarifa</div><div id="cobroDiarioTarifa" class="text-[11px] font-bold text-emerald-400">$0</div></div>
+            <div class="bg-emerald-600 rounded-lg p-2"><div class="text-[9px] text-emerald-200 uppercase font-bold">Total</div><div id="cobroDiarioTotal" class="text-lg font-black text-white">$0</div></div>
+          </div>
+        </div>
         <div class="relative group"><label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Monto a Cobrar ($)</label><i class="fa-solid fa-dollar-sign input-icon group-focus-within:text-emerald-500 transition-colors"></i><input type="number" id="cobroMonto" class="custom-input peer" placeholder="0" min="0"></div>
-        <div class="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-xs p-3 rounded-lg border border-red-100 dark:border-red-800/50 flex gap-2"><i class="fa-solid fa-triangle-exclamation mt-0.5"></i> <span>"Salir y Cobrar" libera el puesto <strong>definitivamente</strong>. Para salir de viaje use el botón "Salir" en la tarjeta del puesto.</span></div>
+        <div class="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-xs p-3 rounded-lg border border-red-100 dark:border-red-800/50 flex gap-2"><i class="fa-solid fa-triangle-exclamation mt-0.5"></i><span>"Salir y Cobrar" libera el puesto <strong>definitivamente</strong>. Para salir de viaje use el botón en el formulario del puesto.</span></div>
       </div>
       <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700 flex flex-col gap-2 shrink-0">
         <button id="btnRenovar" onclick="window.procesarRenovar()" class="w-full px-4 py-3 rounded-lg text-sm font-bold bg-indigo-600 text-white hover:bg-indigo-700 shadow-md dark:shadow-indigo-900/30 transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-rotate"></i> Renovar Mes (Solo Cobro)</button>
@@ -173,7 +306,9 @@
     </div>
   </div>
 
-  <!-- MODAL VISITANTE -->
+  <!-- ═══════════════════════════════════════════════════════════
+       MODAL VISITANTE (con tipo de vehículo)
+       ═══════════════════════════════════════════════════════════ -->
   <div id="modalVisitante" class="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[100] transition-opacity opacity-0">
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4 transform transition-all scale-95 opacity-0 duration-200 flex flex-col max-h-[90vh]" id="modalVisitanteContent">
       <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-amber-50 dark:bg-amber-900/30 rounded-t-2xl shrink-0">
@@ -193,6 +328,16 @@
           <div id="divVisitanteManual" class="space-y-3">
             <div class="relative group"><label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Nombre Visitante</label><i class="fa-regular fa-user input-icon group-focus-within:text-amber-500 transition-colors"></i><input id="visitanteNombre" class="custom-input peer" placeholder="Nombre completo"></div>
             <div class="relative group"><label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Placa</label><i class="fa-solid fa-id-card input-icon group-focus-within:text-amber-500 transition-colors"></i><input id="visitantePlaca" class="custom-input peer uppercase" placeholder="ABC-123"></div>
+            <div class="relative group">
+              <label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Tipo Vehículo</label>
+              <i class="fa-solid fa-car input-icon group-focus-within:text-amber-500 transition-colors"></i>
+              <select id="visitanteTipoVehiculo" class="custom-input appearance-none cursor-pointer">
+                <option value="Carro">Carro</option>
+                <option value="Camioneta">Camioneta</option>
+                <option value="Moto">Moto</option>
+              </select>
+              <i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 dark:text-slate-500 pointer-events-none"></i>
+            </div>
           </div>
           <div class="pt-2 border-t border-slate-100 dark:border-slate-700">
             <label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Asignar a Puesto</label>
@@ -207,7 +352,9 @@
     </div>
   </div>
 
-  <!-- MODAL RESERVAR -->
+  <!-- ═══════════════════════════════════════════════════════════
+       MODAL RESERVAR
+       ═══════════════════════════════════════════════════════════ -->
   <div id="modalReservar" class="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[100] transition-opacity opacity-0">
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm mx-4 transform transition-all scale-95 opacity-0 duration-200 flex flex-col" id="modalReservarContent">
       <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-purple-50 dark:bg-purple-900/30 rounded-t-2xl shrink-0">
@@ -226,7 +373,9 @@
     </div>
   </div>
 
-  <!-- MODAL OCUPAR RESERVA -->
+  <!-- ═══════════════════════════════════════════════════════════
+       MODAL OCUPAR RESERVA
+       ═══════════════════════════════════════════════════════════ -->
   <div id="modalOcuparReserva" class="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[100] transition-opacity opacity-0">
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0 duration-200 flex flex-col max-h-[90vh]" id="modalOcuparReservaContent">
       <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-purple-50 dark:bg-purple-900/30 rounded-t-2xl shrink-0">
@@ -237,7 +386,7 @@
         <input type="hidden" id="ocuparReservaId">
         <div id="ocuparReservaInfo" class="bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 text-sm p-3 rounded-lg border border-purple-100 dark:border-purple-800/50"></div>
         <div class="relative group"><label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Seleccionar Cliente (Opcional)</label><i class="fa-solid fa-users input-icon group-focus-within:text-indigo-500 transition-colors"></i><select id="ocuparReservaClienteSelect" class="custom-input appearance-none cursor-pointer"><option value="">-- Ocupar sin cliente registrado --</option></select><i class="fa-solid fa-chevron-down absolute right-4 top-9 text-xs text-slate-400 dark:text-slate-500 pointer-events-none"></i></div>
-        <div class="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs p-3 rounded-lg border border-blue-100 dark:border-blue-800/50 flex gap-2"><i class="fa-solid fa-info-circle mt-0.5"></i> <span>Si el cliente está registrado, selecciónelo para vincularlo. Si no, deje en blanco.</span></div>
+        <div class="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs p-3 rounded-lg border border-blue-100 dark:border-blue-800/50 flex gap-2"><i class="fa-solid fa-info-circle mt-0.5"></i><span>Si el cliente está registrado, selecciónelo. Si no, deje en blanco.</span></div>
       </div>
       <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700 rounded-b-2xl flex justify-end gap-3 shrink-0">
         <button onclick="window.cerrarModalOcuparReserva()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">Cancelar</button>
@@ -246,7 +395,9 @@
     </div>
   </div>
 
-  <!-- SCRIPTS AUXILIARES -->
+  <!-- ═══════════════════════════════════════════════════════════
+       SCRIPTS AUXILIARES
+       ═══════════════════════════════════════════════════════════ -->
   <script>
     function toggleMenu() {
       var sidebar = document.getElementById('sidebar');
@@ -275,105 +426,89 @@
     updateDate();
   </script>
 
-  <!-- ═══════════════════════════════════════════════════════
-       CADENA DE CARGA PUESTOS
-       ═══════════════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════════════════════════════════
+       CADENA DE CARGA
+       ═══════════════════════════════════════════════════════════ -->
   <script src="../js/auth-manager.js"></script>
   <script src="../js/main.js"></script>
   <script src="../js/timeline-panel.js"></script>
 
-  <!-- INYECTOR CORREGIDO para puestos.html -->
-<script>
-(function() {
-    // ✅ REGEX CORREGIDO
-    function esPlacaValida(texto) {
-        if (!texto || texto.length < 5 || texto.length > 8) return null;
-        
-        var regexCarro = /^[A-Za-z]{3}[-]?\d{2,4}$/;
-        var regexMoto = /^[A-Za-z]{3}\d{2,4}[A-Za-z]{1,2}$/;
-        
-        var limpio = texto.replace(/[^A-Za-z0-9]/g, '');
-        
-        if (regexCarro.test(limpio) || regexMoto.test(limpio)) {
-            var categorias = ['carro', 'moto', 'camioneta', 'visitante', 'puesto', 'disponible', 'ocupado', 'reservado'];
-            var textoLower = texto.toLowerCase();
-            if (!categorias.some(function(c) { return textoLower.includes(c); })) {
-                return limpio.toUpperCase();
-            }
-        }
-        return null;
-    }
+  <!-- INYECTOR para Timeline en puestos -->
+  <script>
+  (function() {
+      function esPlacaValida(texto) {
+          if (!texto || texto.length < 5 || texto.length > 8) return null;
+          var regexCarro = /^[A-Za-z]{3}[-]?\d{2,4}$/;
+          var regexMoto = /^[A-Za-z]{3}\d{2,4}[A-Za-z]{1,2}$/;
+          var limpio = texto.replace(/[^A-Za-z0-9]/g, '');
+          if (regexCarro.test(limpio) || regexMoto.test(limpio)) {
+              var categorias = ['carro', 'moto', 'camioneta', 'visitante', 'puesto', 'disponible', 'ocupado', 'reservado'];
+              var textoLower = texto.toLowerCase();
+              if (!categorias.some(function(c) { return textoLower.includes(c); })) {
+                  return limpio.toUpperCase();
+              }
+          }
+          return null;
+      }
 
-    function buscarPlacaEnTarjeta(node) {
-        // ✅ Buscar en spans con clase font-mono (las placas están ahí)
-        var placaSpans = node.querySelectorAll('.font-mono');
-        for (var i = 0; i < placaSpans.length; i++) {
-            var texto = placaSpans[i].textContent.trim();
-            var placa = esPlacaValida(texto);
-            if (placa) return placa;
-        }
-        
-        // ✅ Fallback: buscar en todo el texto
-        var walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
-        while (walker.nextNode()) {
-            var text = walker.currentNode.textContent.trim();
-            if (text.length >= 5 && text.length <= 8) {
-                var placa = esPlacaValida(text);
-                if (placa) return placa;
-            }
-        }
-        return null;
-    }
+      function buscarPlacaEnTarjeta(node) {
+          var placaSpans = node.querySelectorAll('.font-mono');
+          for (var i = 0; i < placaSpans.length; i++) {
+              var texto = placaSpans[i].textContent.trim();
+              var placa = esPlacaValida(texto);
+              if (placa) return placa;
+          }
+          var walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+          while (walker.nextNode()) {
+              var text = walker.currentNode.textContent.trim();
+              if (text.length >= 5 && text.length <= 8) {
+                  var placa = esPlacaValida(text);
+                  if (placa) return placa;
+              }
+          }
+          return null;
+      }
 
-    function inyectarEnTarjeta(tarjeta) {
-        var placa = buscarPlacaEnTarjeta(tarjeta);
-        if (placa && !tarjeta.querySelector('.btn-timeline-global')) {
-            // Asegurar que tenga la clase group para hover
-            tarjeta.classList.add('group');
-            tarjeta.style.position = 'relative';
-            
-            var btn = document.createElement('button');
-            btn.className = 'btn-timeline-global absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 shadow-sm transition-all z-10 opacity-0 group-hover:opacity-100';
-            btn.innerHTML = '<i class="fa-solid fa-timeline text-[10px]"></i>';
-            btn.title = 'Ver Historial de ' + placa;
-            btn.onclick = function(e) { 
-                e.stopPropagation(); 
-                window.abrirTimeline(placa); 
-            };
-            tarjeta.appendChild(btn);
-        }
-    }
+      function inyectarEnTarjeta(tarjeta) {
+          var placa = buscarPlacaEnTarjeta(tarjeta);
+          if (placa && !tarjeta.querySelector('.btn-timeline-global')) {
+              tarjeta.classList.add('group');
+              tarjeta.style.position = 'relative';
+              var btn = document.createElement('button');
+              btn.className = 'btn-timeline-global absolute top-1 left-1 w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 shadow-sm transition-all z-20 opacity-0 group-hover:opacity-100';
+              btn.innerHTML = '<i class="fa-solid fa-timeline text-[8px] sm:text-[10px]"></i>';
+              btn.title = 'Ver Historial de ' + placa;
+              btn.onclick = function(e) { e.stopPropagation(); window.abrirTimeline(placa); };
+              tarjeta.appendChild(btn);
+          }
+      }
 
-    function setupObserver() {
-        var container = document.getElementById('map-container');
-        if (!container) return;
-        
-        var observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                mutation.addedNodes.forEach(function(node) {
-                    if (node.nodeType !== 1) return;
-                    if (node.id === 'mobileMenuOverlay') return;
-                    if (node.id && node.id.startsWith('modal')) return;
-                    inyectarEnTarjeta(node);
-                });
-            });
-        });
-        observer.observe(container, { childList: true });
-    }
+      function setupObserver() {
+          var container = document.getElementById('map-container');
+          if (!container) return;
+          var observer = new MutationObserver(function(mutations) {
+              mutations.forEach(function(mutation) {
+                  mutation.addedNodes.forEach(function(node) {
+                      if (node.nodeType !== 1) return;
+                      if (node.id === 'mobileMenuOverlay') return;
+                      if (node.id && node.id.startsWith('modal')) return;
+                      inyectarEnTarjeta(node);
+                  });
+              });
+          });
+          observer.observe(container, { childList: true });
+      }
 
-    function init() {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-                setTimeout(setupObserver, 600);
-            });
-        } else {
-            setTimeout(setupObserver, 600);
-        }
-    }
-
-    init();
-})();
-</script>
+      function init() {
+          if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', function() { setTimeout(setupObserver, 600); });
+          } else {
+              setTimeout(setupObserver, 600);
+          }
+      }
+      init();
+  })();
+  </script>
 
   <script src="../js/puestos.js"></script>
 </body>

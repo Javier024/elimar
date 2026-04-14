@@ -1,8 +1,7 @@
 // parqueo/api/clientes.js
 import { db } from "./db.js";
-import { authGuard } from "./_lib/auth.js"; // <-- NUEVO
+import { authGuard } from "./_lib/auth.js";
 
-// Helper para formatear fechas consistentemente
 const formatDate = (dateInput) => {
     if (!dateInput) return new Date().toISOString().split("T")[0];
     return new Date(dateInput).toISOString().split("T")[0];
@@ -10,11 +9,9 @@ const formatDate = (dateInput) => {
 
 export default async function handler(req, res) {
     try {
-        const user = authGuard(req, res); if (!user) return; // <-- NUEVO
+        const user = authGuard(req, res); if (!user) return;
 
         if (req.method === "GET") {
-            // OPTIMIZACIÓN: Usamos LEFT JOIN en lugar de subconsulta por cada fila.
-            // Esto mejora drásticamente el rendimiento con muchos clientes.
             const result = await db.execute(`
                 SELECT c.*, 
                        MAX(caja.date) as last_payment_date
@@ -33,7 +30,6 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: "Nombre y Placa son obligatorios" });
             }
 
-            // Verificar duplicados
             const placaExistente = await db.execute({
                 sql: "SELECT id FROM clientes WHERE placa = ?",
                 args: [placa]
@@ -48,7 +44,6 @@ export default async function handler(req, res) {
             const timestampAhora = Date.now(); 
             const cuota = cuota_mensual || 0;
             
-            // El orden de las columnas coincide con el esquema y los argumentos
             await db.execute({
                 sql: `INSERT INTO clientes (nombre, telefono, placa, tipo_vehiculo, creado_en, created_at, fecha_registro, medio_pago, cuota_mensual) 
                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -81,7 +76,6 @@ export default async function handler(req, res) {
             const id = req.body.id || req.query.id;
             if (!id) return res.status(400).json({ error: "ID es requerido para eliminar" });
 
-            // Transacción simple: Liberar puesto y luego borrar
             await db.execute({ 
                 sql: "UPDATE puestos SET cliente_id=NULL, estado='libre', hora_inicio=NULL, llave_caracteristicas=NULL, puesto_info=NULL WHERE cliente_id = ?", 
                 args: [id] 
