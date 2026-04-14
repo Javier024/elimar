@@ -1,8 +1,27 @@
-// parqueo/js/configuracion.js
+var activeTextarea = null;
 
-document.addEventListener('DOMContentLoaded', async () => {
-    await cargarConfiguracion();
+document.addEventListener('DOMContentLoaded', function() {
+    // Rastrear qué textarea está activo para insertar variables
+    document.querySelectorAll('textarea').forEach(function(ta) {
+        ta.addEventListener('focus', function() { activeTextarea = ta.id; });
+    });
+    cargarConfiguracion();
 });
+
+// Función para insertar variables haciendo clic
+window.insertVar = function(text) {
+    if (!activeTextarea) activeTextarea = 'wa_msg_ingreso'; // Por defecto la primera
+    var ta = document.getElementById(activeTextarea);
+    if (ta) {
+        var start = ta.selectionStart;
+        var end = ta.selectionEnd;
+        var textBefore = ta.value.substring(0, start);
+        var textAfter = ta.value.substring(end);
+        ta.value = textBefore + text + textAfter;
+        ta.focus();
+        ta.selectionStart = ta.selectionEnd = start + text.length;
+    }
+};
 
 async function cargarConfiguracion() {
     try {
@@ -14,12 +33,42 @@ async function cargarConfiguracion() {
                    'tp_hora', 'tp_noche', 'tp_semana', 'tp_quincena', 'tp_mes', 
                    'tm_hora', 'tm_noche', 'tm_semana', 'tm_quincena', 'tm_mes', 
                    'tc_hora', 'tc_noche', 'tc_semana', 'tc_quincena', 'tc_mes', 
-                   'adminNombre', 'adminEmail', 'adminNotif', 'adminUser'];
+                   'adminNombre', 'adminEmail', 'adminNotif', 'adminUser', 'wa_numero'];
         
         ids.forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.value = data[id] || '';
         });
+
+        // Cargar mensajes de WhatsApp desde el JSON
+        var waMensajes = {};
+        try {
+            waMensajes = JSON.parse(data.wa_mensajes || '{}');
+        } catch(e) {
+            waMensajes = {};
+        }
+
+        document.getElementById('wa_msg_ingreso').value = waMensajes.ingreso || '🔔 *{{nombre_parqueadero}}*\n\nVehículo ingresado:\nPlaca: *{{placa}}*\nPuesto: #{{puesto}}\nFecha: {{fecha}}';
+        document.getElementById('wa_msg_salida').value = waMensajes.salida || '🚗 *{{nombre_parqueadero}}*\n\nSalida registrada:\nPlaca: *{{placa}}*\nPuesto: #{{puesto}}\nTiempo: {{tiempo}}';
+        document.getElementById('wa_msg_cobro').value = waMensajes.cobro || '💰 *Recibo de Pago - {{nombre_parqueadero}}*\n\nCliente: {{cliente}}\nPlaca: *{{placa}}*\nMonto: *${{monto}}*\nFecha: {{fecha}}';
+
+        // NUEVO: Actualizar el nombre del parqueadero en la barra lateral dinámicamente
+        if (data.nombre) {
+            var brandEl = document.getElementById('sidebar-brand-name');
+            if (brandEl) {
+                var nameParts = data.nombre.trim().split(/\s+/);
+                if (nameParts.length > 1) {
+                    var html = nameParts[0] + ' ' + nameParts.slice(1).map(function(w) { 
+                        return '<span class="text-indigo-600 dark:text-indigo-400">' + w.toUpperCase() + '</span>'; 
+                    }).join(' ');
+                    brandEl.innerHTML = html;
+                } else {
+                    brandEl.innerHTML = '<span class="text-indigo-600 dark:text-indigo-400">' + nameParts[0].toUpperCase() + '</span>';
+                }
+            }
+            // Actualizar el título de la pestaña del navegador
+            document.title = 'Configuración | ' + data.nombre;
+        }
 
     } catch (error) {
         console.error(error);
@@ -58,7 +107,14 @@ async function guardarConfiguracion(e) {
         admin_email: document.getElementById('adminEmail').value,
         admin_notif: document.getElementById('adminNotif').value,
         admin_user: document.getElementById('adminUser').value,
-        admin_pass: document.getElementById('adminPass').value
+        admin_pass: document.getElementById('adminPass').value,
+        wa_numero: document.getElementById('wa_numero').value,
+        // NUEVO: Empaquetar los mensajes de WhatsApp en un string JSON
+        wa_mensajes: JSON.stringify({
+            ingreso: document.getElementById('wa_msg_ingreso').value,
+            salida: document.getElementById('wa_msg_salida').value,
+            cobro: document.getElementById('wa_msg_cobro').value
+        })
     };
 
     try {
@@ -68,7 +124,25 @@ async function guardarConfiguracion(e) {
             body: JSON.stringify(formData)
         });
         const data = await res.json();
-        if(data.success) mostrarToast('Configuración actualizada correctamente');
+        if(data.success) {
+            mostrarToast('Configuración actualizada correctamente');
+            // Refrescar la UI del nombre sin recargar toda la página
+            if (formData.nombre) {
+                var brandEl = document.getElementById('sidebar-brand-name');
+                if (brandEl) {
+                    var nameParts = formData.nombre.trim().split(/\s+/);
+                    if (nameParts.length > 1) {
+                        var html = nameParts[0] + ' ' + nameParts.slice(1).map(function(w) { 
+                            return '<span class="text-indigo-600 dark:text-indigo-400">' + w.toUpperCase() + '</span>'; 
+                        }).join(' ');
+                        brandEl.innerHTML = html;
+                    } else {
+                        brandEl.innerHTML = '<span class="text-indigo-600 dark:text-indigo-400">' + nameParts[0].toUpperCase() + '</span>';
+                    }
+                }
+                document.title = 'Configuración | ' + formData.nombre;
+            }
+        }
         else mostrarToast(data.error, 'error');
     } catch (error) { 
         mostrarToast('Error de conexión', 'error'); 
@@ -181,14 +255,14 @@ function mostrarToast(msg, type) {
 
 function switchTab(tabName) {
     document.querySelectorAll('.tab-btn').forEach(function(btn) {
-        btn.classList.remove('border-indigo-500', 'text-indigo-600');
-        btn.classList.add('border-transparent', 'text-slate-500');
+        btn.classList.remove('border-indigo-500', 'text-indigo-600', 'dark:text-indigo-400');
+        btn.classList.add('border-transparent', 'text-slate-500', 'dark:text-slate-400');
     });
     
     var activeBtn = document.getElementById('tab-' + tabName);
     if (activeBtn) {
-        activeBtn.classList.remove('border-transparent', 'text-slate-500');
-        activeBtn.classList.add('border-indigo-500', 'text-indigo-600');
+        activeBtn.classList.remove('border-transparent', 'text-slate-500', 'dark:text-slate-400');
+        activeBtn.classList.add('border-indigo-500', 'text-indigo-600', 'dark:text-indigo-400');
     }
 
     document.querySelectorAll('.tab-content').forEach(function(content) {

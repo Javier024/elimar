@@ -1,7 +1,16 @@
-// parqueo/api/configuracion.js
 import { db } from "./db.js";
 import bcrypt from "bcryptjs"; 
 import { authGuard } from "./_lib/auth.js";
+
+// NUEVO: Auto-migrador para agregar las columnas de WhatsApp sin tocar la DB manualmente
+// Esto es 100% seguro, falla silenciosamente si las columnas ya existen.
+let hasAutoMigrated = false;
+async function autoMigrate() {
+    if (hasAutoMigrated) return;
+    hasAutoMigrated = true;
+    try { await db.execute("ALTER TABLE configuracion ADD COLUMN wa_mensajes TEXT DEFAULT '{}'"); } catch(e) {}
+    try { await db.execute("ALTER TABLE configuracion ADD COLUMN wa_numero TEXT DEFAULT ''"); } catch(e) {}
+}
 
 export default async function handler(req, res) {
   try {
@@ -12,29 +21,15 @@ export default async function handler(req, res) {
     if (req.method === "GET") {
       const action = req.query.action;
 
-      // ===== BACKUP COMPLETO (SEGUN TU LISTA EXACTA) =====
+      // ===== BACKUP COMPLETO =====
       if (action === "backup") {
         try {
-          // Función auxiliar para no explotar si falta alguna tabla
           const safeQuery = async (sql) => {
-            try {
-              const result = await db.execute(sql);
-              return result.rows;
-            } catch (err) {
-              console.warn(`[Backup Omitido] Error: ${err.message}`);
-              return [];
-            }
+            try { const result = await db.execute(sql); return result.rows; } catch (err) { console.warn(`[Backup Omitido] Error: ${err.message}`); return []; }
           };
 
-          // 1. consultamos todo en paralelo (Las 6 tablas que mencionaste + usuarios)
           const [
-            configuracion, 
-            clientes, 
-            puestos, 
-            caja, 
-            gastos, 
-            historial, 
-            usuariosRaw
+            configuracion, clientes, puestos, caja, gastos, historial, usuariosRaw
           ] = await Promise.all([
             safeQuery("SELECT * FROM configuracion"),
             safeQuery("SELECT * FROM clientes"),
@@ -45,38 +40,12 @@ export default async function handler(req, res) {
             safeQuery("SELECT * FROM usuarios")
           ]);
 
-          // Seguridad: Eliminar contraseña hasheada de los usuarios en el archivo
-          const usuarios = usuariosRaw.map(u => {
-            const copia = { ...u };
-            delete copia.password;
-            return copia;
-          });
+          const usuarios = usuariosRaw.map(u => { const copia = { ...u }; delete copia.password; return copia; });
 
           const backup = {
-            info: {
-              sistema: "PARQUEADERO ELIMAR",
-              version: "1.0",
-              fecha_generacion: new Date().toISOString(),
-              generado_por: user.nombre || user.usuario || "Admin"
-            },
-            tablas: {
-              configuracion,
-              clientes,
-              puestos,
-              caja,
-              gastos,
-              historial,
-              usuarios
-            },
-            resumen: {
-              total_configuracion: configuracion.length,
-              total_clientes: clientes.length,
-              total_puestos: puestos.length,
-              total_caja: caja.length,
-              total_gastos: gastos.length,
-              total_historial: historial.length,
-              total_usuarios: usuarios.length
-            }
+            info: { sistema: "PARQUEADERO ELIMAR", version: "1.0", fecha_generacion: new Date().toISOString(), generado_por: user.nombre || user.usuario || "Admin" },
+            tablas: { configuracion, clientes, puestos, caja, gastos, historial, usuarios },
+            resumen: { total_configuracion: configuracion.length, total_clientes: clientes.length, total_puestos: puestos.length, total_caja: caja.length, total_gastos: gastos.length, total_historial: historial.length, total_usuarios: usuarios.length }
           };
 
           return res.status(200).json(backup);
@@ -86,7 +55,10 @@ export default async function handler(req, res) {
         }
       }
 
-      // Lógica normal de GET (Obtener configuración)
+      // Ejecutar auto-migración antes de leer
+      await autoMigrate();
+
+      // Lógica normal de GET
       const result = await db.execute("SELECT * FROM configuracion WHERE id = 1");
       const data = result.rows.length > 0 ? result.rows[0] : {};
       return res.status(200).json(data);
@@ -94,6 +66,9 @@ export default async function handler(req, res) {
 
     // --- PASO 2: GUARDADO ---
     if (req.method === "POST") {
+      // Ejecutar auto-migración antes de guardar
+      await autoMigrate();
+
       const body = req.body;
       
       let hashedPass = body.admin_pass;
@@ -102,12 +77,14 @@ export default async function handler(req, res) {
           hashedPass = await bcrypt.hash(body.admin_pass, salt);
       }
 
+      // NUEVO: Se agregaron wa_numero y wa_mensajes a la lista de campos
       const fields = [
         'nombre', 'nit', 'direccion', 'telefono',
         'tarifa_particular_hora', 'tarifa_particular_noche', 'tarifa_particular_semana', 'tarifa_particular_quincena', 'tarifa_particular_mes',
         'tarifa_moto_hora', 'tarifa_moto_noche', 'tarifa_moto_semana', 'tarifa_moto_quincena', 'tarifa_moto_mes',
         'tarifa_camioneta_hora', 'tarifa_camioneta_noche', 'tarifa_camioneta_semana', 'tarifa_camioneta_quincena', 'tarifa_camioneta_mes',
-        'admin_nombre', 'admin_email', 'admin_notif', 'admin_user'
+        'admin_nombre', 'admin_email', 'admin_notif', 'admin_user',
+        'wa_numero', 'wa_mensajes' // CAMPOS NUEVOS
       ];
       
       const values = fields.map(f => body[f] || (f.startsWith('tarifa_') ? 0 : ''));
@@ -177,12 +154,10 @@ export default async function handler(req, res) {
         }
 
         try {
-          // Función segura para borrar sin explotar si falta alguna tabla
           const safeDelete = async (sql) => {
             try { await db.execute(sql); } catch (e) { console.warn("Format omitido:", e.message); }
           };
 
-          // Borramos exactamente las 6 tablas operativas
           await safeDelete("DELETE FROM historial");
           await safeDelete("DELETE FROM gastos");
           await safeDelete("DELETE FROM caja");
