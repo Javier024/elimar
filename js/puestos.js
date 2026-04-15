@@ -1,3 +1,4 @@
+// parqueo/js/puestos.js
 document.addEventListener('DOMContentLoaded', function() {
   initApp();
 });
@@ -127,7 +128,7 @@ function formatFechaCorta(date) {
   return date.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }
 
-/* ===== NUEVO: CONTADOR DE LLAVES ===== */
+/* ===== CONTADOR DE LLAVES ===== */
 function contarLlavesEntregadas() {
   var count = 0;
   allSpots.forEach(function(s) {
@@ -137,7 +138,7 @@ function contarLlavesEntregadas() {
   return count;
 }
 
-/* ===== NUEVO: INGRESO EXPRESS ===== */
+/* ===== INGRESO EXPRESS ===== */
 window.abrirIngresoExpress = function() {
   document.getElementById('expressPlaca').value = '';
   document.getElementById('expressResultado').innerHTML = '';
@@ -177,7 +178,6 @@ window.buscarExpressPlaca = function() {
     if (cliente) {
       var vencInfo = '';
       if (Number(cliente.cuota_mensual) > 0) {
-        var spotActual = allSpots.find(function(s) { return s.cliente_placa && s.cliente_placa.trim().toUpperCase() === placa; });
         var pagoFecha = null;
         allSpots.forEach(function(s) { if (s.cliente_placa && s.cliente_placa.trim().toUpperCase() === placa && s.ultimo_pago_fecha) pagoFecha = s.ultimo_pago_fecha; });
         var venc = calcularVencimiento(pagoFecha, cliente.cuota_mensual);
@@ -256,7 +256,6 @@ function renderMapa(busqueda) {
   busqueda = busqueda || "";
   var datos = allSpots;
 
-  /* NUEVO: Filtro vencidos */
   if (currentFilterStatus === 'vencidos') {
     datos = datos.filter(function(s) {
       if (s.estado !== 'ocupado' || !s.cliente_id) return false;
@@ -397,9 +396,21 @@ window.abrirFormularioPuesto = function(id) {
       document.getElementById('formSeccionCobroDiario').classList.remove('hidden');
     }
     document.getElementById('formSeccionOcupado').classList.remove('hidden');
-    var btns = '<button onclick="formCobrarSalida(\'cliente\')" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-money-bill-wave"></i> Cobrar Salida</button><button onclick="formSalirViaje()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-plane-departure"></i> Salir de Viaje</button>';
-    if (cuota > 0) btns += '<button onclick="formRenovarMes()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-rotate"></i> Renovar Mes</button>';
-    accionesDiv.innerHTML = btns;
+    /* ===== NUEVOS BOTONES: Cobrar Salida, Cobrar Mismo Día, Salir de Viaje, Renovar Mes, Limpiar ===== */
+    if (cuota > 0) {
+      accionesDiv.innerHTML =
+        '<button onclick="formCobrarSalida(\'cliente\')" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-money-bill-wave"></i> Cobrar Salida</button>' +
+        '<button onclick="formCobrarMismoDia()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-calendar-day"></i> Cobrar Día</button>' +
+        '<button onclick="formSalirViaje()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-plane-departure"></i> Viaje</button>' +
+        '<button onclick="formRenovarMes()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-rotate"></i> Renovar Mes</button>' +
+        '<button onclick="formLimpiar()" class="w-full bg-white hover:bg-red-50 text-red-500 border-2 border-red-200 dark:border-red-800/50 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-eraser"></i> Limpiar Datos</button>';
+    } else {
+      accionesDiv.innerHTML =
+        '<button onclick="formCobrarSalida(\'cliente\')" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-money-bill-wave"></i> Cobrar Salida</button>' +
+        '<button onclick="formCobrarMismoDia()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-calendar-day"></i> Cobrar Día</button>' +
+        '<button onclick="formSalirViaje()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-plane-departure"></i> Viaje</button>' +
+        '<button onclick="formLimpiar()" class="w-full bg-white hover:bg-red-50 text-red-500 border-2 border-red-200 dark:border-red-800/50 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-eraser"></i> Limpiar Datos</button>';
+    }
   } else if (spot.estado === 'ocupado' && isTempUser) {
     badgeEl.innerHTML = '<span class="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">VISITANTE</span>';
     editarBtn.classList.add('hidden');
@@ -413,8 +424,19 @@ window.abrirFormularioPuesto = function(id) {
       document.getElementById('formDuenoVisitNombre').innerText = ownerInfo.nombre;
       var dfEl2 = document.getElementById('formDuenoVisitDias'); dfEl2.innerText = formatDiasFuera(ownerInfo.fecha_salida); if (ownerInfo.fecha_salida) dfEl2.setAttribute('data-fecha-salida', ownerInfo.fecha_salida);
       document.getElementById('formSeccionDuenoEnVisitante').classList.remove('hidden');
-      accionesDiv.innerHTML = '<button onclick="formCobrarSalida(\'visitante\')" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-money-bill-wave"></i> Cobrar</button><button onclick="formSalirVisitante()" class="flex-1 bg-white hover:bg-red-50 text-red-600 border-2 border-red-200 py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2">Salir sin Cobro</button><button onclick="formRestaurarDueno()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-rotate-left"></i> Restaurar Dueño</button>';
-    } else { accionesDiv.innerHTML = '<button onclick="formCobrarSalida(\'visitante\')" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-money-bill-wave"></i> Cobrar</button><button onclick="formSalirVisitante()" class="flex-1 bg-white hover:bg-red-50 text-red-600 border-2 border-red-200 py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2">Salir sin Cobro</button>'; }
+      accionesDiv.innerHTML =
+        '<button onclick="formCobrarSalida(\'visitante\')" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-money-bill-wave"></i> Cobrar</button>' +
+        '<button onclick="formCobrarMismoDia()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-calendar-day"></i> Cobrar Día</button>' +
+        '<button onclick="formSalirVisitante()" class="flex-1 bg-white hover:bg-red-50 text-red-600 border-2 border-red-200 py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2">Sin Cobro</button>' +
+        '<button onclick="formRestaurarDueno()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-rotate-left"></i> Restaurar Dueño</button>' +
+        '<button onclick="formLimpiar()" class="w-full bg-white hover:bg-red-50 text-red-500 border-2 border-red-200 dark:border-red-800/50 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-eraser"></i> Limpiar Datos</button>';
+    } else {
+      accionesDiv.innerHTML =
+        '<button onclick="formCobrarSalida(\'visitante\')" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-money-bill-wave"></i> Cobrar</button>' +
+        '<button onclick="formCobrarMismoDia()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-calendar-day"></i> Cobrar Día</button>' +
+        '<button onclick="formSalirVisitante()" class="flex-1 bg-white hover:bg-red-50 text-red-600 border-2 border-red-200 py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2">Sin Cobro</button>' +
+        '<button onclick="formLimpiar()" class="w-full bg-white hover:bg-red-50 text-red-500 border-2 border-red-200 dark:border-red-800/50 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-eraser"></i> Limpiar Datos</button>';
+    }
   } else if (spot.estado === 'reservado') {
     badgeEl.innerHTML = '<span class="px-3 py-1 rounded-full text-[11px] font-bold bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50">RESERVADO</span>';
     editarBtn.classList.remove('hidden');
@@ -431,6 +453,30 @@ window.formAsignarCliente = function() { var id = formularioSpot.id, num = formu
 window.formIngresarVisitante = function() { cerrarFormulario(); setTimeout(function() { abrirModalVisitante(); }, 250); };
 window.formReservar = function() { var id = formularioSpot.id, num = formularioSpot.numero; cerrarFormulario(); setTimeout(function() { abrirModalReservar(id, num); }, 250); };
 window.formCobrarSalida = function(type) { var id = formularioSpot.id; cerrarFormulario(); setTimeout(function() { abrirModalCobro(id, type); }, 250); };
+
+/* ===== NUEVO: Cobrar Mismo Día ===== */
+window.formCobrarMismoDia = function() {
+  var spot = formularioSpot;
+  if (!spot) return;
+  var id = spot.id;
+  var type = spot._isTempUser ? 'visitante' : 'cliente';
+  cerrarFormulario();
+  setTimeout(function() { abrirModalCobro(id, type, 'sameday'); }, 250);
+};
+
+/* ===== NUEVO: Limpiar Datos del Puesto ===== */
+window.formLimpiar = function() {
+  if (!formularioSpot) return;
+  if (!confirm("¿LIMPIAR el puesto #" + formularioSpot.numero + "?\n\nSe eliminarán TODOS los datos del cliente/visitante.\nEl puesto quedará LIBRE sin registrar salida ni cobro.")) return;
+  fetch('/api/puestos?id=' + formularioSpot.id, { method: "PATCH" })
+    .then(function() {
+      cerrarFormulario();
+      cargarPuestos();
+      mostrarToast("Puesto limpiado correctamente");
+    })
+    .catch(function() { mostrarToast("Error al limpiar", "error"); });
+};
+
 window.formSalirViaje = function() { var s = formularioSpot; if (!confirm('¿SALIDA DE VIAJE?\n\n' + (s.cliente_nombre || 'Sin nombre') + '\n\nEl puesto quedará guardado con sus datos.\nPodrá ingresar un visitante temporalmente.')) return; fetch("/api/puestos", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: s.id, accion: "salida_viaje" }) }).then(function(r) { return r.json(); }).then(function(data) { if (data.success) { cerrarFormulario(); mostrarToast(data.message); cargarPuestos(); } else mostrarToast(data.error || "Error", "error"); }).catch(function() { mostrarToast("Error", "error"); }); };
 window.formRenovarMes = function() { var s = formularioSpot; var monto = s.cuota_mensual || 0; if (!monto) { var cd = clientesCache.find(function(x) { return x.placa === (s.cliente_placa || '').trim(); }); if (cd) monto = cd.cuota_mensual || 0; } if (!monto || monto <= 0) return mostrarToast("Sin cuota mensual configurada", "error"); var params = new URLSearchParams({ plate: s.cliente_placa || '', spot: s.numero, client: s.cliente_nombre || '', phone: s.cliente_telefono || '', entry: s.hora_inicio, amount: monto, period: 'Mes', renew: 'true' }); window.location.href = 'caja.html?' + params.toString(); };
 window.formSalirVisitante = function() { if (!confirm("¿Dar salida al visitante sin cobro?")) return; fetch("/api/puestos", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: formularioSpot.id, accion: "salir_visitante" }) }).then(function(r) { return r.json(); }).then(function(data) { if (data.success) { cerrarFormulario(); cargarPuestos(); mostrarToast(data.message); } else mostrarToast(data.error, "error"); }).catch(function() { mostrarToast("Error", "error"); }); };
@@ -443,9 +489,126 @@ window.cerrarModalCrearPuesto = function() { toggleModal('modalCrearPuesto', fal
 window.cambiarTabCrear = function(tab) { var tC = document.getElementById('tabCrearCantidad'), tM = document.getElementById('tabCrearManual'), dC = document.getElementById('divCrearCantidad'), dM = document.getElementById('divCrearManual'); if (tab === 'cantidad') { tC.classList.add('bg-slate-800', 'text-white'); tC.classList.remove('text-slate-600', 'dark:text-slate-400'); tM.classList.remove('bg-slate-800', 'text-white'); tM.classList.add('text-slate-600', 'dark:text-slate-400'); dC.classList.remove('hidden'); dM.classList.add('hidden'); } else { tM.classList.add('bg-slate-800', 'text-white'); tM.classList.remove('text-slate-600', 'dark:text-slate-400'); tC.classList.remove('bg-slate-800', 'text-white'); tC.classList.add('text-slate-600', 'dark:text-slate-400'); dM.classList.remove('hidden'); dC.classList.add('hidden'); setTimeout(function() { document.getElementById('inputNumeroManual').focus(); }, 50); } };
 window.confirmarCrearPuesto = function() { var dC = document.getElementById('divCrearCantidad'); if (!dC.classList.contains('hidden')) { var c = parseInt(document.getElementById('inputCantidadPuestos').value); if (!c || c < 1) return mostrarToast("Ingrese una cantidad válida", "error"); if (c > 500) return mostrarToast("Máximo 500 puestos", "error"); fetch("/api/puestos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cantidad: c }) }).then(function(r) { return r.json(); }).then(function(data) { if (data.success) { toggleModal('modalCrearPuesto', false); mostrarToast(data.message); cargarPuestos(); } else mostrarToast(data.error || "Error", "error"); }).catch(function() { mostrarToast("Error", "error"); }); } else { var n = document.getElementById('inputNumeroManual').value.trim(); if (!n) return mostrarToast("Ingrese un número", "error"); if (isNaN(n)) return mostrarToast("Ingrese solo números", "error"); fetch("/api/puestos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ numero: n }) }).then(function(r) { return r.json(); }).then(function(data) { if (data.success) { toggleModal('modalCrearPuesto', false); mostrarToast(data.message); cargarPuestos(); } else mostrarToast(data.error || "Error", "error"); }).catch(function() { mostrarToast("Error", "error"); }); } };
 
-window.abrirModalCobro = function(id, type) { var spot = allSpots.find(function(s) { return s.id === id; }); if (!spot) return; var monto = 0, nombre = "Visitante", placa = "---", tel = "", tipoVehiculo = 'Carro'; document.getElementById('cobroDiarioInfo').classList.add('hidden'); document.getElementById('cobroLlaveInfo').classList.add('hidden'); if (type === 'cliente') { monto = spot.cuota_mensual || 0; if (!monto) { var cd = clientesCache.find(function(x) { return x.placa === (spot.cliente_placa || '').trim(); }); if (cd) monto = cd.cuota_mensual || 0; } nombre = spot.cliente_nombre || 'Cliente'; placa = (spot.cliente_placa || '---').trim(); tel = spot.cliente_telefono || ''; tipoVehiculo = spot.cliente_tipo_vehiculo || 'Carro'; if (!monto) { var calc = calcularCobroDiario(spot.hora_inicio, tipoVehiculo); monto = calc.total; document.getElementById('cobroDiarioInfo').classList.remove('hidden'); document.getElementById('cobroDiarioTipo').innerText = calc.tipoLabel; document.getElementById('cobroDiarioDias').innerText = calc.dias; document.getElementById('cobroDiarioTarifa').innerText = '$' + calc.tarifa.toLocaleString('es-CO'); document.getElementById('cobroDiarioTotal').innerText = '$' + calc.total.toLocaleString('es-CO'); } } else { var m = {}; try { m = JSON.parse(spot.llave_caracteristicas || '{}'); } catch(e) {} nombre = (m.temp_user && m.temp_user.nombre) ? m.temp_user.nombre : 'Visitante'; placa = (m.temp_user && m.temp_user.placa) ? m.temp_user.placa.trim() : '---'; tipoVehiculo = (m.temp_user && m.temp_user.tipo_vehiculo) ? m.temp_user.tipo_vehiculo : 'Carro'; var vCalc = calcularCobroDiario(spot.hora_inicio, tipoVehiculo); monto = vCalc.total; document.getElementById('cobroDiarioInfo').classList.remove('hidden'); document.getElementById('cobroDiarioTipo').innerText = vCalc.tipoLabel; document.getElementById('cobroDiarioDias').innerText = vCalc.dias; document.getElementById('cobroDiarioTarifa').innerText = '$' + vCalc.tarifa.toLocaleString('es-CO'); document.getElementById('cobroDiarioTotal').innerText = '$' + vCalc.total.toLocaleString('es-CO'); } var llaveCobro = {}; try { llaveCobro = JSON.parse(spot.llave_caracteristicas || '{}').llave || {}; } catch(e) {} if (llaveCobro.tiene) { document.getElementById('cobroLlaveDesc').innerText = llaveCobro.desc || 'Sí'; document.getElementById('cobroLlaveInfo').classList.remove('hidden'); } else { document.getElementById('cobroLlaveInfo').classList.add('hidden'); } cobroData = { id: id, type: type, nombre: nombre, telefono: tel, placa: placa, hora_inicio: spot.hora_inicio, monto: monto, numero: spot.numero }; document.getElementById('cobroNombre').innerText = nombre; document.getElementById('cobroPlaca').innerText = placa; document.getElementById('cobroPuesto').innerText = '#' + spot.numero; document.getElementById('cobroTiempo').innerText = calcularTiempo(spot.hora_inicio); document.getElementById('cobroMonto').value = monto; var btnRenovar = document.getElementById('btnRenovar'), btnSalir = document.getElementById('btnSalir'), title = document.getElementById('tituloModalCobro'); if (type === 'cliente') { var tc = (spot.cuota_mensual > 0) || (clientesCache.find(function(x) { return x.placa === (spot.cliente_placa || '').trim(); }) || {}).cuota_mensual > 0; if (tc) { btnRenovar.classList.remove('hidden'); btnRenovar.style.display = 'flex'; } else { btnRenovar.classList.add('hidden'); btnRenovar.style.display = 'none'; } btnSalir.innerHTML = '<i class="fa-solid fa-arrow-right-from-bracket"></i> Salir y Cobrar'; title.innerText = "Gestión de Cobro"; } else { btnRenovar.classList.add('hidden'); btnRenovar.style.display = 'none'; btnSalir.innerHTML = '<i class="fa-solid fa-receipt"></i> Cobrar Salida'; title.innerText = "Cobro Visitante"; } toggleModal('modalCobroSalida', true); setTimeout(function() { document.getElementById('cobroMonto').focus(); }, 100); };
-window.procesarRenovar = function() { var a = document.getElementById('cobroMonto').value; if (!a || a <= 0) return alert("Ingrese un monto válido"); var p = new URLSearchParams({ plate: cobroData.placa, spot: cobroData.numero, client: cobroData.nombre, phone: cobroData.telefono, entry: cobroData.hora_inicio, amount: a, period: 'Mes', renew: 'true' }); window.location.href = 'caja.html?' + p.toString(); };
-window.procesarSalirYCobro = function() { var a = document.getElementById('cobroMonto').value; if (!a || a <= 0) return alert("Ingrese un monto válido"); var action = cobroData.type === 'cliente' ? 'salida_oficial' : 'salir_visitante'; fetch("/api/puestos", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: cobroData.id, accion: action }) }).then(function(r) { return r.json(); }).then(function(data) { mostrarToast("Liberando puesto..."); var p = new URLSearchParams({ plate: cobroData.placa, spot: cobroData.numero, client: cobroData.nombre, phone: cobroData.telefono, entry: cobroData.hora_inicio, amount: a, period: cobroData.type === 'cliente' ? 'Mes' : 'Visita', renew: 'false' }); window.location.href = 'caja.html?' + p.toString(); }).catch(function() { alert("Error de conexión"); }); };
+/* ===== MODAL COBRO — ahora con 3 opciones ===== */
+window.abrirModalCobro = function(id, type, mode) {
+  var spot = allSpots.find(function(s) { return s.id === id; });
+  if (!spot) return;
+  var monto = 0, nombre = "Visitante", placa = "---", tel = "", tipoVehiculo = 'Carro';
+  document.getElementById('cobroDiarioInfo').classList.add('hidden');
+  document.getElementById('cobroLlaveInfo').classList.add('hidden');
+
+  if (type === 'cliente') {
+    monto = spot.cuota_mensual || 0;
+    if (!monto) { var cd = clientesCache.find(function(x) { return x.placa === (spot.cliente_placa || '').trim(); }); if (cd) monto = cd.cuota_mensual || 0; }
+    nombre = spot.cliente_nombre || 'Cliente';
+    placa = (spot.cliente_placa || '---').trim();
+    tel = spot.cliente_telefono || '';
+    tipoVehiculo = spot.cliente_tipo_vehiculo || 'Carro';
+    if (!monto) {
+      var calc = calcularCobroDiario(spot.hora_inicio, tipoVehiculo);
+      monto = calc.total;
+      document.getElementById('cobroDiarioInfo').classList.remove('hidden');
+      document.getElementById('cobroDiarioTipo').innerText = calc.tipoLabel;
+      document.getElementById('cobroDiarioDias').innerText = calc.dias;
+      document.getElementById('cobroDiarioTarifa').innerText = '$' + calc.tarifa.toLocaleString('es-CO');
+      document.getElementById('cobroDiarioTotal').innerText = '$' + calc.total.toLocaleString('es-CO');
+    }
+  } else {
+    var m = {};
+    try { m = JSON.parse(spot.llave_caracteristicas || '{}'); } catch(e) {}
+    nombre = (m.temp_user && m.temp_user.nombre) ? m.temp_user.nombre : 'Visitante';
+    placa = (m.temp_user && m.temp_user.placa) ? m.temp_user.placa.trim() : '---';
+    tipoVehiculo = (m.temp_user && m.temp_user.tipo_vehiculo) ? m.temp_user.tipo_vehiculo : 'Carro';
+    var vCalc = calcularCobroDiario(spot.hora_inicio, tipoVehiculo);
+    monto = vCalc.total;
+    document.getElementById('cobroDiarioInfo').classList.remove('hidden');
+    document.getElementById('cobroDiarioTipo').innerText = vCalc.tipoLabel;
+    document.getElementById('cobroDiarioDias').innerText = vCalc.dias;
+    document.getElementById('cobroDiarioTarifa').innerText = '$' + vCalc.tarifa.toLocaleString('es-CO');
+    document.getElementById('cobroDiarioTotal').innerText = '$' + vCalc.total.toLocaleString('es-CO');
+  }
+
+  var llaveCobro = {};
+  try { llaveCobro = JSON.parse(spot.llave_caracteristicas || '{}').llave || {}; } catch(e) {}
+  if (llaveCobro.tiene) { document.getElementById('cobroLlaveDesc').innerText = llaveCobro.desc || 'Sí'; document.getElementById('cobroLlaveInfo').classList.remove('hidden'); }
+  else { document.getElementById('cobroLlaveInfo').classList.add('hidden'); }
+
+  cobroData = { id: id, type: type, nombre: nombre, telefono: tel, placa: placa, hora_inicio: spot.hora_inicio, monto: monto, numero: spot.numero };
+  document.getElementById('cobroNombre').innerText = nombre;
+  document.getElementById('cobroPlaca').innerText = placa;
+  document.getElementById('cobroPuesto').innerText = '#' + spot.numero;
+  document.getElementById('cobroTiempo').innerText = calcularTiempo(spot.hora_inicio);
+  document.getElementById('cobroMonto').value = monto;
+
+  var btnRenovar = document.getElementById('btnRenovar');
+  var btnSameday = document.getElementById('btnCobroMismoDia');
+  var btnSalir = document.getElementById('btnSalir');
+  var title = document.getElementById('tituloModalCobro');
+
+  /* Renovar Mes: solo si cliente con cuota */
+  if (type === 'cliente') {
+    var tc = (spot.cuota_mensual > 0) || (clientesCache.find(function(x) { return x.placa === (spot.cliente_placa || '').trim(); }) || {}).cuota_mensual > 0;
+    if (tc) { btnRenovar.classList.remove('hidden'); btnRenovar.style.display = 'flex'; }
+    else { btnRenovar.classList.add('hidden'); btnRenovar.style.display = 'none'; }
+  } else { btnRenovar.classList.add('hidden'); btnRenovar.style.display = 'none'; }
+
+  /* Cobrar Mismo Día: siempre visible */
+  btnSameday.classList.remove('hidden');
+  btnSameday.style.display = 'flex';
+
+  /* Salir y Cobrar: siempre visible */
+  btnSalir.classList.remove('hidden');
+  btnSalir.style.display = 'flex';
+
+  /* Título según modo */
+  if (mode === 'sameday') {
+    title.innerText = "Cobrar Mismo Día";
+  } else if (type === 'cliente') {
+    title.innerText = "Gestión de Cobro";
+  } else {
+    title.innerText = "Cobro Visitante";
+  }
+
+  toggleModal('modalCobroSalida', true);
+  setTimeout(function() { document.getElementById('cobroMonto').focus(); }, 100);
+};
+
+window.procesarRenovar = function() {
+  var a = document.getElementById('cobroMonto').value;
+  if (!a || a <= 0) return alert("Ingrese un monto válido");
+  var p = new URLSearchParams({ plate: cobroData.placa, spot: cobroData.numero, client: cobroData.nombre, phone: cobroData.telefono, entry: cobroData.hora_inicio, amount: a, period: 'Mes', renew: 'true' });
+  window.location.href = 'caja.html?' + p.toString();
+};
+
+/* ===== NUEVO: Procesar Cobro Mismo Día (sin liberar puesto) ===== */
+window.procesarCobroMismoDia = function() {
+  var a = document.getElementById('cobroMonto').value;
+  if (!a || a <= 0) return alert("Ingrese un monto válido");
+  var period = cobroData.type === 'cliente' ? 'Mismo Día' : 'Mismo Día Visita';
+  var p = new URLSearchParams({
+    plate: cobroData.placa,
+    spot: cobroData.numero,
+    client: cobroData.nombre,
+    phone: cobroData.telefono,
+    entry: cobroData.hora_inicio,
+    amount: a,
+    period: period,
+    renew: 'false',
+    sameday: 'true'
+  });
+  window.location.href = 'caja.html?' + p.toString();
+};
+
+window.procesarSalirYCobro = function() {
+  var a = document.getElementById('cobroMonto').value;
+  if (!a || a <= 0) return alert("Ingrese un monto válido");
+  var action = cobroData.type === 'cliente' ? 'salida_oficial' : 'salir_visitante';
+  fetch("/api/puestos", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: cobroData.id, accion: action }) }).then(function(r) { return r.json(); }).then(function(data) {
+    mostrarToast("Liberando puesto...");
+    var p = new URLSearchParams({ plate: cobroData.placa, spot: cobroData.numero, client: cobroData.nombre, phone: cobroData.telefono, entry: cobroData.hora_inicio, amount: a, period: cobroData.type === 'cliente' ? 'Salida' : 'Visita', renew: 'false' });
+    window.location.href = 'caja.html?' + p.toString();
+  }).catch(function() { alert("Error de conexión"); });
+};
 
 window.abrirModalAsignar = function(id, num) { var select = document.getElementById('modalClienteSelect'); select.innerHTML = '<option value="">-- Seleccione Cliente --</option>'; var available = clientesCache.filter(function(c) { return !allSpots.some(function(s) { return (s.cliente_placa || '').trim() === c.placa && s.estado === 'ocupado'; }); }); if (available.length === 0) { var opt = document.createElement("option"); opt.disabled = true; opt.text = "No hay clientes disponibles"; select.add(opt); } else { available.forEach(function(c) { var o = document.createElement("option"); o.value = c.id; o.text = c.nombre + ' (' + c.placa + ')'; select.add(o); }); } document.getElementById('modalAsignarTitle').innerText = 'Asignar #' + num; document.getElementById('spotIdOculto').value = id; resetKeyInput('asignarLlaveCheck', 'asignarLlaveDesc', 'asignarLlaveContainer'); toggleModal('modalAsignar', true); };
 window.cerrarModal = function() { toggleModal('modalAsignar', false); };
