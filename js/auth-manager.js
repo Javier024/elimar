@@ -20,35 +20,59 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    initInactivityTimer();
     loadUserInfo();
     preventBackButton();
+    
+    // Timer de inactividad - 2 HORAS (menos que el JWT de 8h)
+    // Esto es solo por seguridad si dejan la PC desatendida
+    initInactivityTimer(2 * 60 * 60 * 1000);
 });
+
+var inactivityTimeout;
+var WARNING_SHOWN = false;
+
+function initInactivityTimer(maxTime) {
+    maxTime = maxTime || (2 * 60 * 60 * 1000);
+    
+    function resetTimer() {
+        clearTimeout(inactivityTimeout);
+        WARNING_SHOWN = false;
+        inactivityTimeout = setTimeout(function() {
+            logoutWithWarning();
+        }, maxTime);
+    }
+
+    // Solo resetear con eventos reales del usuario
+    var events = ['mousemove', 'keypress', 'touchstart', 'click'];
+    events.forEach(function(evt) {
+        document.addEventListener(evt, resetTimer, { passive: true });
+    });
+    
+    // NO agregar 'scroll' - causaba reinicios constantes
+    resetTimer();
+}
+
+function logoutWithWarning() {
+    if (WARNING_SHOWN) {
+        // Segunda vez: cerrar sesión
+        logout();
+        return;
+    }
+    WARNING_SHOWN = true;
+    showToast('Sesión inactiva. Se cerrará en 1 minuto.', 'info');
+    
+    // Dar 1 minuto antes de cerrar
+    setTimeout(function() {
+        logout();
+    }, 60 * 1000);
+}
 
 function preventBackButton() {
     window.history.pushState(null, '', window.location.href);
     window.onpopstate = function() {
         window.history.pushState(null, '', window.location.href);
-        showToast('Para salir, usa el botón Cerrar Sesión', 'info');
+        showToast('Usa el botón "Cerrar Sesión" para salir', 'info');
     };
-}
-
-var inactivityTimeout;
-
-function initInactivityTimer() {
-    var MAX_TIME = 15 * 60 * 1000;
-
-    function resetTimer() {
-        clearTimeout(inactivityTimeout);
-        inactivityTimeout = setTimeout(logout, MAX_TIME);
-    }
-
-    window.addEventListener('load', resetTimer);
-    document.addEventListener('mousemove', resetTimer);
-    document.addEventListener('keypress', resetTimer);
-    document.addEventListener('touchstart', resetTimer);
-    document.addEventListener('click', resetTimer);
-    document.addEventListener('scroll', resetTimer);
 }
 
 function logout() {
@@ -79,7 +103,12 @@ function loadUserInfo() {
 }
 
 function showToast(msg, type) {
+    // Remover toasts anteriores del mismo tipo
+    document.querySelectorAll('.auth-toast').forEach(function(t) { t.remove(); });
+    
     var toast = document.createElement('div');
+    toast.className = 'auth-toast fixed top-5 right-5 z-50 px-6 py-3 rounded-lg shadow-2xl text-sm font-bold transition-all transform -translate-y-10 opacity-0 max-w-sm';
+    
     var iconClass = 'fa-circle-check';
     if (type === 'error') iconClass = 'fa-circle-xmark';
     if (type === 'info') iconClass = 'fa-circle-info';
@@ -88,9 +117,12 @@ function showToast(msg, type) {
     if (type === 'error') bgClass = 'bg-red-500 text-white';
     if (type === 'info') bgClass = 'bg-blue-500 text-white';
 
-    toast.className = 'fixed top-5 right-5 z-50 px-6 py-3 rounded-lg shadow-2xl text-sm font-bold transition-all transform -translate-y-10 opacity-0 ' + bgClass;
+    toast.classList.add(bgClass);
     toast.innerHTML = '<span class="flex items-center gap-2"><i class="fa-solid ' + iconClass + '"></i> ' + msg + '</span>';
     document.body.appendChild(toast);
     requestAnimationFrame(function() { toast.classList.remove('-translate-y-10', 'opacity-0'); });
-    setTimeout(function() { toast.classList.add('-translate-y-10', 'opacity-0'); setTimeout(function() { toast.remove(); }, 300); }, 3000);
+    setTimeout(function() { 
+        toast.classList.add('-translate-y-10', 'opacity-0'); 
+        setTimeout(function() { toast.remove(); }, 300); 
+    }, 4000);
 }

@@ -11,10 +11,30 @@ export default async function handler(req, res) {
       const action = req.query.action;
       const placa = req.query.placa;
 
-      if (action === "backup") {
-        // ... (código existente de backup sin tocar)
+      // Reemplazar esa sección completa
+if (action === "backup") {
+    try {
+        const [
+            historial
+        ] = await Promise.all([
+            db.execute("SELECT * FROM historial ORDER BY date DESC, id DESC")
+        ]);
+
+        const backup = {
+            info: { 
+                tabla: "historial", 
+                fecha_generacion: new Date().toISOString(),
+                total_registros: historial.rows.length 
+            },
+            datos: historial.rows
+        };
+
         return res.status(200).json(backup);
-      }
+    } catch (backupError) {
+        console.error("Error en backup historial:", backupError);
+        return res.status(500).json({ error: "Error al generar backup" });
+    }
+}
 
       let sql = "SELECT * FROM historial ORDER BY date DESC, entry DESC";
       let args = [];

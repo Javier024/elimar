@@ -3,22 +3,39 @@ import { db } from "./db.js";
 import { authGuard } from "./_lib/auth.js";
 
 async function isPlateAvailable(plate, currentSpotId = null) {
-    const safePlate = plate.replace(/"/g, '""');
+    const cleanPlate = plate.trim();
+    if (!cleanPlate) return true;
+
+    // Buscar en clientes oficiales
     const officialCheck = await db.execute({
         sql: `SELECT p.id FROM puestos p 
                JOIN clientes c ON p.cliente_id = c.id 
                WHERE p.estado = 'ocupado' AND c.placa = ? AND p.id != ?`,
-        args: [plate, currentSpotId || -1]
+        args: [cleanPlate, currentSpotId || -1]
     });
     if (officialCheck.rows.length > 0) return false;
-    const visitorCheck = await db.execute({
-        sql: `SELECT id FROM puestos 
-               WHERE estado = 'ocupado' 
-               AND llave_caracteristicas LIKE ? 
-               AND id != ?`,
-        args: [`%"placa":"${safePlate}"%`, currentSpotId || -1]
+
+    // Buscar en visitantes - MEJORADO: Usar JSON en vez de LIKE
+    const allSpots = await db.execute({
+        sql: `SELECT id, llave_caracteristicas FROM puestos WHERE estado = 'ocupado' AND id != ?`,
+        args: [currentSpotId || -1]
     });
-    return visitorCheck.rows.length === 0;
+
+    for (const spot of allSpots.rows) {
+        try {
+            const meta = JSON.parse(spot.llave_caracteristicas || '{}');
+            if (meta.temp_user && meta.temp_user.placa) {
+                // Comparación exacta, sin inyección SQL
+                if (meta.temp_user.placa.trim().toUpperCase() === cleanPlate.toUpperCase()) {
+                    return false;
+                }
+            }
+        } catch(e) {
+            // JSON inválido, ignorar
+        }
+    }
+
+    return true;
 }
 
 export default async function handler(req, res) {

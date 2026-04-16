@@ -8,7 +8,7 @@ export function generateToken(user) {
         id: user.id, 
         nombre: user.nombre, 
         rol: user.rol,
-        exp: Date.now() + (15 * 60 * 1000) // Expira en 15 minutos
+        exp: Date.now() + (8 * 60 * 60 * 1000) // Expira en 8 horas
     })).toString('base64url');
     
     const signature = crypto.createHmac('sha256', SECRET).update(`${header}.${body}`).digest('base64url');

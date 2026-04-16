@@ -19,17 +19,101 @@
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
-        .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
-        .input-group label { display: block; font-size: 0.75rem; font-weight: 600; color: #64748b; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .input-group label { 
+            display: block; 
+            font-size: 0.75rem; 
+            font-weight: 600; 
+            color: #64748b; 
+            margin-bottom: 0.5rem; 
+            text-transform: uppercase; 
+            letter-spacing: 0.05em; 
+        }
         .dark .input-group label { color: #94a3b8; }
         
-        .input-custom { width: 100%; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 0.875rem; transition: border-color 0.2s; background-color: white; color: #1e293b; }
-        .input-custom:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
-        .dark .input-custom { background-color: #1e293b; border-color: #334155; color: #f1f5f9; }
-        .dark .input-custom:focus { border-color: #818cf8; box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2); }
+        .input-custom { 
+            width: 100%; 
+            padding: 0.75rem 1rem; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 0.5rem; 
+            font-size: 0.875rem; 
+            transition: border-color 0.2s; 
+            background-color: white; 
+            color: #1e293b; 
+        }
+        .input-custom:focus { 
+            outline: none; 
+            border-color: #6366f1; 
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); 
+        }
+        .dark .input-custom { 
+            background-color: #1e293b; 
+            border-color: #334155; 
+            color: #f1f5f9; 
+        }
+        .dark .input-custom:focus { 
+            border-color: #818cf8; 
+            box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2); 
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: #cbd5e1;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+            flex-shrink: 0;
+        }
+        .toggle-switch.active { background: #22c55e; }
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .toggle-switch.active::after { transform: translateX(20px); }
+        .dark .toggle-switch { background: #475569; }
+        .dark .toggle-switch.active { background: #16a34a; }
+
+        .wa-preview {
+            background: #dcf8c6;
+            border-radius: 0 12px 12px 12px;
+            padding: 8px 12px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #1a1a1a;
+            max-width: 100%;
+            min-height: 120px;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .wa-preview::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -8px;
+            width: 0;
+            height: 0;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-right: 8px solid #dcf8c6;
+        }
+        .dark .wa-preview {
+            background: #1a3a2a;
+            color: #e5e5e5;
+        }
+        .dark .wa-preview::before { border-right-color: #1a3a2a; }
     </style>
 </head>
 
@@ -43,7 +127,6 @@
                 <i class="fa-solid fa-square-parking text-white text-sm"></i>
             </div>
             <div class="min-w-0">
-                <!-- SE AGREGÓ ID PARA CAMBIAR EL NOMBRE DINÁMICAMENTE -->
                 <h1 id="sidebar-brand-name" class="text-lg font-bold text-slate-800 dark:text-white truncate">ELI<span class="text-indigo-600 dark:text-indigo-400">MAR</span></h1>
                 <p class="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate" id="sidebar-user-name">Sistema</p>
             </div>
@@ -101,104 +184,205 @@
                         </nav>
                     </div>
 
-                    <!-- GENERAL -->
+                    <!-- ==================== GENERAL ==================== -->
                     <div id="content-general" class="tab-content">
                         <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 mb-6">
                             <h3 class="text-lg font-medium text-slate-900 dark:text-white mb-1">Información del Negocio</h3>
-                            <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Configura los datos que aparecen en tus reportes y en el sistema.</p>
+                            <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Estos datos se muestran en facturas, mensajes y reportes.</p>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div class="input-group"><label>Nombre del Parqueadero</label><input type="text" id="confNombre" class="input-custom" placeholder="Ej. Parqueadero Elimar"></div>
-                                <div class="input-group"><label>NIT</label><input type="text" id="confNit" class="input-custom" placeholder="900.123.456-7"></div>
-                                <div class="input-group md:col-span-2"><label>Dirección</label><input type="text" id="confDireccion" class="input-custom" placeholder="Calle Principal #123"></div>
-                                <div class="input-group"><label>Teléfono de Contacto</label><input type="tel" id="confTelefono" class="input-custom" placeholder="+57 300 123 4567"></div>
+                                <div class="input-group">
+                                    <label><i class="fa-solid fa-building mr-1"></i> Nombre del Parqueadero</label>
+                                    <input type="text" id="confNombre" class="input-custom" placeholder="Ej: Parqueadero Elimar">
+                                    <p class="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1"><i class="fa-solid fa-check-circle mr-1"></i>Se actualiza automáticamente en toda la app</p>
+                                </div>
+                                <div class="input-group">
+                                    <label><i class="fa-solid fa-id-card mr-1"></i> NIT</label>
+                                    <input type="text" id="confNit" class="input-custom" placeholder="900.123.456-7">
+                                </div>
+                                <div class="input-group md:col-span-2">
+                                    <label><i class="fa-solid fa-location-dot mr-1"></i> Dirección</label>
+                                    <input type="text" id="confDireccion" class="input-custom" placeholder="Calle Principal #123">
+                                </div>
+                                <div class="input-group">
+                                    <label><i class="fa-solid fa-phone mr-1"></i> Teléfono de Contacto</label>
+                                    <input type="tel" id="confTelefono" class="input-custom" placeholder="+57 300 123 4567">
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- TARIFAS -->
+                    <!-- ==================== TARIFAS ==================== -->
                     <div id="content-tarifas" class="tab-content hidden">
+                        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-lg p-4 mb-6">
+                            <div class="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                                <i class="fa-solid fa-circle-info"></i>
+                                <p class="text-sm font-medium">Las tarifas se usan automáticamente al calcular cobros por días en el módulo de Puestos.</p>
+                            </div>
+                        </div>
+                        
                         <div class="space-y-6">
                             <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 overflow-hidden">
-                                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex items-center"><div class="p-2 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 mr-3"><i class="fa-solid fa-car"></i></div><h4 class="font-medium text-slate-900 dark:text-white">Carro Particular</h4></div>
-                                <div class="p-6"><div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                                    <div class="input-group"><label>Hora</label><input type="number" id="tp_hora" class="input-custom text-center" placeholder="0"></div>
-                                    <div class="input-group"><label>Noche</label><input type="number" id="tp_noche" class="input-custom text-center" placeholder="0"></div>
-                                    <div class="input-group"><label>Semana</label><input type="number" id="tp_semana" class="input-custom text-center" placeholder="0"></div>
-                                    <div class="input-group"><label>Quincena</label><input type="number" id="tp_quincena" class="input-custom text-center" placeholder="0"></div>
-                                    <div class="input-group"><label>Mes</label><input type="number" id="tp_mes" class="input-custom text-center" placeholder="0"></div>
-                                </div></div>
+                                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex items-center">
+                                    <div class="p-2 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 mr-3">
+                                        <i class="fa-solid fa-car text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-slate-900 dark:text-white">Carro Particular</h4>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400">Tarifas estándar para automóviles</p>
+                                    </div>
+                                </div>
+                                <div class="p-6">
+                                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                                        <div class="input-group"><label>Hora</label><input type="number" id="tp_hora" class="input-custom text-center" placeholder="0"></div>
+                                        <div class="input-group"><label>Noche</label><input type="number" id="tp_noche" class="input-custom text-center" placeholder="0"></div>
+                                        <div class="input-group"><label>Semana</label><input type="number" id="tp_semana" class="input-custom text-center" placeholder="0"></div>
+                                        <div class="input-group"><label>Quincena</label><input type="number" id="tp_quincena" class="input-custom text-center" placeholder="0"></div>
+                                        <div class="input-group"><label>Mes</label><input type="number" id="tp_mes" class="input-custom text-center" placeholder="0"></div>
+                                    </div>
+                                </div>
                             </div>
+
                             <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 overflow-hidden">
-                                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex items-center"><div class="p-2 rounded-md bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 mr-3"><i class="fa-solid fa-motorcycle"></i></div><h4 class="font-medium text-slate-900 dark:text-white">Motocicletas</h4></div>
-                                <div class="p-6"><div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                                    <div class="input-group"><label>Hora</label><input type="number" id="tm_hora" class="input-custom text-center" placeholder="0"></div>
-                                    <div class="input-group"><label>Noche</label><input type="number" id="tm_noche" class="input-custom text-center" placeholder="0"></div>
-                                    <div class="input-group"><label>Semana</label><input type="number" id="tm_semana" class="input-custom text-center" placeholder="0"></div>
-                                    <div class="input-group"><label>Quincena</label><input type="number" id="tm_quincena" class="input-custom text-center" placeholder="0"></div>
-                                    <div class="input-group"><label>Mes</label><input type="number" id="tm_mes" class="input-custom text-center" placeholder="0"></div>
-                                </div></div>
+                                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex items-center">
+                                    <div class="p-2 rounded-md bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 mr-3">
+                                        <i class="fa-solid fa-motorcycle text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-slate-900 dark:text-white">Motocicletas</h4>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400">Tarifas reducidas para motos</p>
+                                    </div>
+                                </div>
+                                <div class="p-6">
+                                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                                        <div class="input-group"><label>Hora</label><input type="number" id="tm_hora" class="input-custom text-center" placeholder="0"></div>
+                                        <div class="input-group"><label>Noche</label><input type="number" id="tm_noche" class="input-custom text-center" placeholder="0"></div>
+                                        <div class="input-group"><label>Semana</label><input type="number" id="tm_semana" class="input-custom text-center" placeholder="0"></div>
+                                        <div class="input-group"><label>Quincena</label><input type="number" id="tm_quincena" class="input-custom text-center" placeholder="0"></div>
+                                        <div class="input-group"><label>Mes</label><input type="number" id="tm_mes" class="input-custom text-center" placeholder="0"></div>
+                                    </div>
+                                </div>
                             </div>
+
                             <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 overflow-hidden">
-                                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex items-center"><div class="p-2 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 mr-3"><i class="fa-solid fa-truck-pickup"></i></div><h4 class="font-medium text-slate-900 dark:text-white">Camionetas / SUV</h4></div>
-                                <div class="p-6"><div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                                    <div class="input-group"><label>Hora</label><input type="number" id="tc_hora" class="input-custom text-center" placeholder="0"></div>
-                                    <div class="input-group"><label>Noche</label><input type="number" id="tc_noche" class="input-custom text-center" placeholder="0"></div>
-                                    <div class="input-group"><label>Semana</label><input type="number" id="tc_semana" class="input-custom text-center" placeholder="0"></div>
-                                    <div class="input-group"><label>Quincena</label><input type="number" id="tc_quincena" class="input-custom text-center" placeholder="0"></div>
-                                    <div class="input-group"><label>Mes</label><input type="number" id="tc_mes" class="input-custom text-center" placeholder="0"></div>
-                                </div></div>
+                                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex items-center">
+                                    <div class="p-2 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 mr-3">
+                                        <i class="fa-solid fa-truck-pickup text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-slate-900 dark:text-white">Camionetas / SUV</h4>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400">Tarifas premium para camionetas</p>
+                                    </div>
+                                </div>
+                                <div class="p-6">
+                                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                                        <div class="input-group"><label>Hora</label><input type="number" id="tc_hora" class="input-custom text-center" placeholder="0"></div>
+                                        <div class="input-group"><label>Noche</label><input type="number" id="tc_noche" class="input-custom text-center" placeholder="0"></div>
+                                        <div class="input-group"><label>Semana</label><input type="number" id="tc_semana" class="input-custom text-center" placeholder="0"></div>
+                                        <div class="input-group"><label>Quincena</label><input type="number" id="tc_quincena" class="input-custom text-center" placeholder="0"></div>
+                                        <div class="input-group"><label>Mes</label><input type="number" id="tc_mes" class="input-custom text-center" placeholder="0"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- WHATSAPP (NUEVO) -->
+                    <!-- ==================== WHATSAPP ==================== -->
                     <div id="content-whatsapp" class="tab-content hidden">
                         <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 mb-6">
                             <h3 class="text-lg font-medium text-slate-900 dark:text-white mb-1 flex items-center gap-2">
-                                <i class="fa-brands fa-whatsapp text-green-600"></i> Mensajes de WhatsApp
+                                <i class="fa-brands fa-whatsapp text-green-600 text-xl"></i> Mensajes de WhatsApp
                             </h3>
-                            <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Personaliza las plantillas de los mensajes que se envían a los clientes.</p>
+                            <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Personaliza las plantillas y activa/desactiva según necesites.</p>
                             
+                            <div class="input-group mb-6">
+                                <label><i class="fa-brands fa-whatsapp mr-1"></i> Número de WhatsApp por defecto</label>
+                                <input type="text" id="wa_numero" class="input-custom" placeholder="Ej: 573001234567">
+                                <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Sin el signo '+'. Código de país incluido.</p>
+                            </div>
+
                             <div class="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700 mb-6">
-                                <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2"><i class="fa-solid fa-code"></i> Variables Disponibles</h4>
+                                <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                    <i class="fa-solid fa-code"></i> Variables Disponibles
+                                </h4>
                                 <div class="flex flex-wrap gap-2">
-                                    <span class="bg-white dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-600 text-xs font-mono text-indigo-600 dark:text-indigo-400 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors" onclick="insertVar(this.innerText)">{{nombre_parqueadero}}</span>
-                                    <span class="bg-white dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-600 text-xs font-mono text-indigo-600 dark:text-indigo-400 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors" onclick="insertVar(this.innerText)">{{cliente}}</span>
-                                    <span class="bg-white dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-600 text-xs font-mono text-indigo-600 dark:text-indigo-400 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors" onclick="insertVar(this.innerText)">{{placa}}</span>
-                                    <span class="bg-white dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-600 text-xs font-mono text-indigo-600 dark:text-indigo-400 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors" onclick="insertVar(this.innerText)">{{puesto}}</span>
-                                    <span class="bg-white dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-600 text-xs font-mono text-indigo-600 dark:text-indigo-400 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors" onclick="insertVar(this.innerText)">{{monto}}</span>
-                                    <span class="bg-white dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-600 text-xs font-mono text-indigo-600 dark:text-indigo-400 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors" onclick="insertVar(this.innerText)">{{tiempo}}</span>
-                                    <span class="bg-white dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-600 text-xs font-mono text-indigo-600 dark:text-indigo-400 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors" onclick="insertVar(this.innerText)">{{fecha}}</span>
+                                    <button type="button" onclick="insertVar('{{nombre_parqueadero}}')" class="bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-xs font-mono text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">{{nombre_parqueadero}}</button>
+                                    <button type="button" onclick="insertVar('{{cliente}}')" class="bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-xs font-mono text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">{{cliente}}</button>
+                                    <button type="button" onclick="insertVar('{{placa}}')" class="bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-xs font-mono text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">{{placa}}</button>
+                                    <button type="button" onclick="insertVar('{{puesto}}')" class="bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-xs font-mono text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">{{puesto}}</button>
+                                    <button type="button" onclick="insertVar('{{monto}}')" class="bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-xs font-mono text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">{{monto}}</button>
+                                    <button type="button" onclick="insertVar('{{tiempo}}')" class="bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-xs font-mono text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">{{tiempo}}</button>
+                                    <button type="button" onclick="insertVar('{{fecha}}')" class="bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-xs font-mono text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">{{fecha}}</button>
+                                    <button type="button" onclick="insertVar('{{cuota}}')" class="bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-xs font-mono text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">{{cuota}}</button>
+                                    <button type="button" onclick="insertVar('{{saludo}}')" class="bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-xs font-mono text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">{{saludo}}</button>
                                 </div>
-                                <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-2"><i class="fa-solid fa-hand-pointer mr-1"></i> Haz clic en una variable para insertarla automáticamente en el último campo que editaste.</p>
+                                <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-2"><i class="fa-solid fa-hand-pointer mr-1"></i>Haz clic en una variable para insertarla en el campo activo.</p>
                             </div>
 
                             <div class="space-y-6">
-                                <div class="input-group">
-                                    <label>Número de WhatsApp por defecto</label>
-                                    <input type="text" id="wa_numero" class="input-custom" placeholder="Ej: 573001234567">
-                                    <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Sin el signo '+'. Código de país incluido.</p>
+                                <!-- Ingreso -->
+                                <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                    <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center"><i class="fa-solid fa-right-to-bracket text-emerald-600 dark:text-emerald-400 text-lg"></i></div>
+                                            <div><h4 class="font-semibold text-slate-900 dark:text-white">Mensaje de Ingreso</h4><p class="text-xs text-slate-500 dark:text-slate-400">Se envía cuando ingresa un vehículo</p></div>
+                                        </div>
+                                        <div class="flex items-center gap-2"><span class="text-[10px] text-slate-400">Activo:</span><div id="toggle-ingreso" class="toggle-switch active" onclick="toggleWaMessage('ingreso', this)"></div></div>
+                                    </div>
+                                    <div class="p-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                        <div><textarea id="wa_msg_ingreso" class="input-custom h-40 font-mono text-sm" placeholder="Escribe el mensaje..." oninput="updateWaPreview('ingreso')"></textarea></div>
+                                        <div><p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-2">Vista Previa:</p><div id="preview-ingreso" class="wa-preview"></div></div>
+                                    </div>
                                 </div>
 
-                                <div class="input-group">
-                                    <label class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-right-to-bracket"></i> Mensaje de Ingreso</label>
-                                    <textarea id="wa_msg_ingreso" class="input-custom h-36 font-mono text-sm" placeholder="Ej: 🔔 Ingreso registrado..."></textarea>
+                                <!-- Salida -->
+                                <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                    <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center"><i class="fa-solid fa-right-from-bracket text-blue-600 dark:text-blue-400 text-lg"></i></div>
+                                            <div><h4 class="font-semibold text-slate-900 dark:text-white">Mensaje de Salida</h4><p class="text-xs text-slate-500 dark:text-slate-400">Se envía cuando sale un vehículo</p></div>
+                                        </div>
+                                        <div class="flex items-center gap-2"><span class="text-[10px] text-slate-400">Activo:</span><div id="toggle-salida" class="toggle-switch active" onclick="toggleWaMessage('salida', this)"></div></div>
+                                    </div>
+                                    <div class="p-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                        <div><textarea id="wa_msg_salida" class="input-custom h-40 font-mono text-sm" placeholder="Escribe el mensaje..." oninput="updateWaPreview('salida')"></textarea></div>
+                                        <div><p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-2">Vista Previa:</p><div id="preview-salida" class="wa-preview"></div></div>
+                                    </div>
                                 </div>
 
-                                <div class="input-group">
-                                    <label class="flex items-center gap-2 text-red-600 dark:text-red-400"><i class="fa-solid fa-right-from-bracket"></i> Mensaje de Salida</label>
-                                    <textarea id="wa_msg_salida" class="input-custom h-36 font-mono text-sm" placeholder="Ej: 🚗 Salida registrada..."></textarea>
+                                <!-- Cobro -->
+                                <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                    <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center"><i class="fa-solid fa-money-bill-wave text-indigo-600 dark:text-indigo-400 text-lg"></i></div>
+                                            <div><h4 class="font-semibold text-slate-900 dark:text-white">Mensaje de Cobro</h4><p class="text-xs text-slate-500 dark:text-slate-400">Se envía con el recibo de pago</p></div>
+                                        </div>
+                                        <div class="flex items-center gap-2"><span class="text-[10px] text-slate-400">Activo:</span><div id="toggle-cobro" class="toggle-switch active" onclick="toggleWaMessage('cobro', this)"></div></div>
+                                    </div>
+                                    <div class="p-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                        <div><textarea id="wa_msg_cobro" class="input-custom h-40 font-mono text-sm" placeholder="Escribe el mensaje..." oninput="updateWaPreview('cobro')"></textarea></div>
+                                        <div><p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-2">Vista Previa:</p><div id="preview-cobro" class="wa-preview"></div></div>
+                                    </div>
                                 </div>
 
-                                <div class="input-group">
-                                    <label class="flex items-center gap-2 text-blue-600 dark:text-blue-400"><i class="fa-solid fa-money-bill-wave"></i> Mensaje de Cobro / Recibo</label>
-                                    <textarea id="wa_msg_cobro" class="input-custom h-36 font-mono text-sm" placeholder="Ej: 💰 Recibo de pago..."></textarea>
+                                <!-- Deudor -->
+                                <div class="bg-white dark:bg-slate-800 rounded-xl border border-red-200 dark:border-red-800/50 overflow-hidden">
+                                    <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-red-50/50 dark:bg-red-900/20 flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center"><i class="fa-solid fa-user-clock text-red-600 dark:text-red-400 text-lg"></i></div>
+                                            <div><h4 class="font-semibold text-red-800 dark:text-red-300">Recordatorio para Deudores</h4><p class="text-xs text-red-600/70 dark:text-red-400/70">Se usa desde el dashboard y módulo de caja</p></div>
+                                        </div>
+                                        <div class="flex items-center gap-2"><span class="text-[10px] text-slate-400">Activo:</span><div id="toggle-deudor" class="toggle-switch active" onclick="toggleWaMessage('deudor', this)"></div></div>
+                                    </div>
+                                    <div class="p-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                        <div><textarea id="wa_msg_deudor" class="input-custom h-40 font-mono text-sm" placeholder="Escribe el mensaje..." oninput="updateWaPreview('deudor')"></textarea></div>
+                                        <div><p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-2">Vista Previa:</p><div id="preview-deudor" class="wa-preview"></div></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- ACCESO -->
+                    <!-- ==================== ACCESO ADMIN ==================== -->
                     <div id="content-acceso" class="tab-content hidden">
                         <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 mb-6">
                             <h3 class="text-lg font-medium text-slate-900 dark:text-white mb-1">Credenciales de Administrador</h3>
@@ -220,41 +404,38 @@
                         </div>
                     </div>
 
-                    <!-- SISTEMA -->
+                    <!-- ==================== SISTEMA ==================== -->
                     <div id="content-sistema" class="tab-content hidden">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700 p-6 flex flex-col">
                                 <div class="flex items-center gap-3 mb-4">
                                     <div class="p-3 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-database text-2xl"></i></div>
-                                    <div>
-                                        <h4 class="font-bold text-slate-900 dark:text-white text-lg">Copia de Seguridad</h4>
-                                        <p class="text-xs text-slate-500 dark:text-slate-400">Respaldo completo en JSON</p>
-                                    </div>
+                                    <div><h4 class="font-bold text-slate-900 dark:text-white text-lg">Copia de Seguridad</h4><p class="text-xs text-slate-500 dark:text-slate-400">Respaldo completo en JSON</p></div>
                                 </div>
-                                <p class="text-sm text-slate-600 dark:text-slate-300 mb-6 flex-1">Descarga un archivo <span class="font-mono bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs">.json</span> con <strong>todas</strong> las tablas del sistema.</p>
-                                <button type="button" onclick="descargarBackup()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm">
-                                    <i class="fa-solid fa-download"></i> Descargar Backup
-                                </button>
+                                <p class="text-sm text-slate-600 dark:text-slate-300 mb-6 flex-1">Descarga un archivo <span class="font-mono bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs">.json</span> con todas las tablas.</p>
+                                <button type="button" onclick="descargarBackup()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm mb-3"><i class="fa-solid fa-download"></i> Descargar Backup</button>
+                                <div class="relative">
+                                    <input type="file" id="restoreFileInput" accept=".json" class="hidden" onchange="restaurarBackup(this)">
+                                    <button type="button" onclick="document.getElementById('restoreFileInput').click()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm"><i class="fa-solid fa-upload"></i> Restaurar Backup</button>
+                                    <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1 text-center">Los usuarios NO se restauran por seguridad</p>
+                                </div>
+                                <div id="restoreStatus" class="hidden mt-2 p-2 rounded text-xs text-center"></div>
                             </div>
+
                             <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm dark:shadow-none border-2 border-red-200 dark:border-red-900/50 p-6 flex flex-col relative overflow-hidden">
                                 <div class="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">Peligro</div>
-                                <div class="flex items-center gap-3 mb-4">
+                                <div class="flex items-center gap-3 mb-4 mt-2">
                                     <div class="p-3 rounded-xl bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"><i class="fa-solid fa-triangle-exclamation text-2xl"></i></div>
-                                    <div>
-                                        <h4 class="font-bold text-red-700 dark:text-red-400 text-lg">Formatear Sistema</h4>
-                                        <p class="text-xs text-red-500 dark:text-red-400/70">Borrar todo el contenido</p>
-                                    </div>
+                                    <div><h4 class="font-bold text-red-700 dark:text-red-400 text-lg">Formatear Sistema</h4><p class="text-xs text-red-500 dark:text-red-400/70">Borrar todo el contenido</p></div>
                                 </div>
                                 <p class="text-sm text-slate-600 dark:text-slate-300 mb-6 flex-1">Elimina <strong class="text-red-600 dark:text-red-400">PERMANENTEMENTE</strong> todos los datos operativos. Se mantendrá tu usuario admin.</p>
-                                <button type="button" onclick="formatearSistema()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm">
-                                    <i class="fa-solid fa-trash-can"></i> Formatear Todo
-                                </button>
+                                <button type="button" onclick="formatearSistema()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm"><i class="fa-solid fa-trash-can"></i> Formatear Todo</button>
                             </div>
                         </div>
                     </div>
 
                     <div id="btnGuardarWrapper" class="flex justify-end pt-6">
-                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-6 rounded shadow transition-colors flex items-center">
+                        <button type="submit" id="btnGuardar" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-6 rounded shadow transition-colors flex items-center">
                             <i class="fa-solid fa-save mr-2"></i> Guardar Cambios
                         </button>
                     </div>
@@ -265,20 +446,20 @@
     </main>
 
     <script>
+        /* ═════════════ SIDEBAR MOBILE ═════════════ */
         function toggleMenu() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('mobileMenuOverlay');
+            var sidebar = document.getElementById('sidebar');
+            var overlay = document.getElementById('mobileMenuOverlay');
             if (sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.remove('-translate-x-full');
                 overlay.classList.remove('hidden');
-                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
             } else {
                 sidebar.classList.add('-translate-x-full');
-                overlay.classList.add('opacity-0');
-                setTimeout(() => overlay.classList.add('hidden'), 300);
+                overlay.classList.add('hidden');
             }
         }
 
+        /* ═════════════ RELOJ ═════════════ */
         function updateDate() {
             var d = new Date();
             var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -291,10 +472,352 @@
         }
         setInterval(updateDate, 1000);
         updateDate();
+
+        /* ═════════════ TABS ═════════════ */
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(function(btn) {
+                btn.classList.remove('border-indigo-500', 'text-indigo-600', 'dark:text-indigo-400');
+                btn.classList.add('border-transparent', 'text-slate-500', 'dark:text-slate-400');
+            });
+            var activeBtn = document.getElementById('tab-' + tabName);
+            if (activeBtn) {
+                activeBtn.classList.remove('border-transparent', 'text-slate-500', 'dark:text-slate-400');
+                activeBtn.classList.add('border-indigo-500', 'text-indigo-600', 'dark:text-indigo-400');
+            }
+            document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.add('hidden'); });
+            var activeContent = document.getElementById('content-' + tabName);
+            if (activeContent) activeContent.classList.remove('hidden');
+            var wrapper = document.getElementById('btnGuardarWrapper');
+            if (wrapper) wrapper.style.display = (tabName === 'sistema') ? 'none' : 'flex';
+        }
+
+        /* ═════════════ WHATSAPP: VARIABLES + TOGGLES + PREVIEW ═════════════ */
+        var activeTextarea = null;
+        var waActivos = { ingreso: true, salida: true, cobro: true, deudor: true };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            ['wa_msg_ingreso', 'wa_msg_salida', 'wa_msg_cobro', 'wa_msg_deudor'].forEach(function(id) {
+                var ta = document.getElementById(id);
+                if (ta) ta.addEventListener('focus', function() { activeTextarea = id; });
+            });
+        });
+
+        function insertVar(text) {
+            if (!activeTextarea) activeTextarea = 'wa_msg_ingreso';
+            var ta = document.getElementById(activeTextarea);
+            if (!ta) return;
+            var start = ta.selectionStart;
+            var end = ta.selectionEnd;
+            ta.value = ta.value.substring(0, start) + text + ta.value.substring(end);
+            ta.focus();
+            ta.selectionStart = ta.selectionEnd = start + text.length;
+            var msgType = activeTextarea.replace('wa_msg_', '');
+            if (msgType) updateWaPreview(msgType);
+        }
+
+        function toggleWaMessage(type, element) {
+            element.classList.toggle('active');
+            waActivos[type] = element.classList.contains('active');
+        }
+
+        function updateWaPreview(type) {
+            var textarea = document.getElementById('wa_msg_' + type);
+            var previewDiv = document.getElementById('preview-' + type);
+            if (!textarea || !previewDiv) return;
+            var mensaje = textarea.value;
+            var ejemplo = {
+                '{{nombre_parqueadero}}': 'PARQUEADERO ELIMAR',
+                '{{cliente}}': 'Juan Pérez',
+                '{{placa}}': 'ABC-123',
+                '{{puesto}}': '15',
+                '{{monto}}': '$50.000',
+                '{{tiempo}}': '2 horas 30 min',
+                '{{fecha}}': new Date().toLocaleDateString('es-CO'),
+                '{{cuota}}': '$80.000',
+                '{{saludo}}': new Date().getHours() < 12 ? '☀️ Buenos días' : '🌙 Buenas noches'
+            };
+            mensaje = mensaje.replace(/\{\{([^}]+)\}\}/g, function(match, key) {
+                return ejemplo[key] || match;
+            });
+            mensaje = mensaje.replace(/\*([^*]+)\*/g, '<strong>$1</strong>');
+            previewDiv.innerHTML = mensaje || '<span style="color:#999">Escribe un mensaje para ver la vista previa...</span>';
+        }
+
+        /* ═════════════ HELPERS ═════════════ */
+        function getVal(id) {
+            var el = document.getElementById(id);
+            return el ? el.value : '';
+        }
+
+        function mostrarToast(msg, type) {
+            type = type || 'success';
+            var toast = document.createElement('div');
+            var bg = type === 'error' ? 'bg-red-600' : 'bg-slate-800 dark:bg-slate-700 dark:text-white text-white';
+            var icon = type === 'error' ? 'fa-circle-xmark' : 'fa-circle-check';
+            toast.className = 'fixed bottom-5 right-5 z-[150] px-6 py-3 rounded-lg shadow-xl text-sm font-bold transition-all transform translate-y-10 opacity-0 ' + bg;
+            toast.innerHTML = '<span class="flex items-center gap-2"><i class="fa-solid ' + icon + '"></i> ' + msg + '</span>';
+            document.body.appendChild(toast);
+            requestAnimationFrame(function() { toast.classList.remove('translate-y-10', 'opacity-0'); });
+            setTimeout(function() {
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(function() { toast.remove(); }, 300);
+            }, 3500);
+        }
+
+        function actualizarNombreSidebar(nombre) {
+            if (!nombre) return;
+            var brandEl = document.getElementById('sidebar-brand-name');
+            if (brandEl) {
+                var parts = nombre.trim().split(/\s+/);
+                if (parts.length > 1) {
+                    brandEl.innerHTML = parts[0] + ' ' + parts.slice(1).map(function(w) {
+                        return '<span class="text-indigo-600 dark:text-indigo-400">' + w.toUpperCase() + '</span>';
+                    }).join(' ');
+                } else {
+                    brandEl.innerHTML = '<span class="text-indigo-600 dark:text-indigo-400">' + parts[0].toUpperCase() + '</span>';
+                }
+            }
+            document.title = 'Configuración | ' + nombre;
+        }
+
+        /* ═════════════ CARGAR CONFIGURACIÓN ═════════════ */
+        async function cargarConfiguracion() {
+            try {
+                var res = await fetch('/api/configuracion');
+                if (!res.ok) throw new Error('Error de servidor: ' + res.status);
+                var data = await res.json();
+
+                // Campos simples
+                var ids = ['confNombre', 'confNit', 'confDireccion', 'confTelefono',
+                           'tp_hora', 'tp_noche', 'tp_semana', 'tp_quincena', 'tp_mes',
+                           'tm_hora', 'tm_noche', 'tm_semana', 'tm_quincena', 'tm_mes',
+                           'tc_hora', 'tc_noche', 'tc_semana', 'tc_quincena', 'tc_mes',
+                           'adminNombre', 'adminEmail', 'adminUser', 'wa_numero'];
+                ids.forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) el.value = data[id] || '';
+                });
+
+                // Checkbox adminNotif
+                var notifEl = document.getElementById('adminNotif');
+                if (notifEl) notifEl.checked = (data.admin_notif == 1);
+
+                // Mensajes WhatsApp
+                var waMensajes = {};
+                try { waMensajes = (typeof data.wa_mensajes === 'string') ? JSON.parse(data.wa_mensajes) : (data.wa_mensajes || {}); }
+                catch(e) { waMensajes = {}; }
+
+                document.getElementById('wa_msg_ingreso').value = waMensajes.ingreso || '';
+                document.getElementById('wa_msg_salida').value = waMensajes.salida || '';
+                document.getElementById('wa_msg_cobro').value = waMensajes.cobro || '';
+                document.getElementById('wa_msg_deudor').value = waMensajes.deudor || '';
+
+                // Toggles WhatsApp
+                var waEstado = {};
+                try { waEstado = (typeof data.wa_mensajes_activos === 'string') ? JSON.parse(data.wa_mensajes_activos) : {}; }
+                catch(e) { waEstado = {}; }
+
+                ['ingreso', 'salida', 'cobro', 'deudor'].forEach(function(tipo) {
+                    var toggle = document.getElementById('toggle-' + tipo);
+                    if (toggle) {
+                        waActivos[tipo] = (waEstado[tipo] !== false);
+                        if (waActivos[tipo]) toggle.classList.add('active');
+                        else toggle.classList.remove('active');
+                    }
+                });
+
+                // Nombre en sidebar
+                actualizarNombreSidebar(data.nombre);
+
+                // Previews
+                ['ingreso', 'salida', 'cobro', 'deudor'].forEach(updateWaPreview);
+
+            } catch (error) {
+                console.error(error);
+                mostrarToast('Error cargando configuración', 'error');
+            }
+        }
+
+        /* ═════════════ GUARDAR CONFIGURACIÓN ═════════════ */
+        async function guardarConfiguracion(e) {
+            e.preventDefault();
+
+            var btn = document.getElementById('btnGuardar');
+            var originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Guardando...';
+
+            var formData = {
+                nombre: getVal('confNombre'),
+                nit: getVal('confNit'),
+                direccion: getVal('confDireccion'),
+                telefono: getVal('confTelefono'),
+                tarifa_particular_hora: getVal('tp_hora'),
+                tarifa_particular_noche: getVal('tp_noche'),
+                tarifa_particular_semana: getVal('tp_semana'),
+                tarifa_particular_quincena: getVal('tp_quincena'),
+                tarifa_particular_mes: getVal('tp_mes'),
+                tarifa_moto_hora: getVal('tm_hora'),
+                tarifa_moto_noche: getVal('tm_noche'),
+                tarifa_moto_semana: getVal('tm_semana'),
+                tarifa_moto_quincena: getVal('tm_quincena'),
+                tarifa_moto_mes: getVal('tm_mes'),
+                tarifa_camioneta_hora: getVal('tc_hora'),
+                tarifa_camioneta_noche: getVal('tc_noche'),
+                tarifa_camioneta_semana: getVal('tc_semana'),
+                tarifa_camioneta_quincena: getVal('tc_quincena'),
+                tarifa_camioneta_mes: getVal('tc_mes'),
+                admin_nombre: getVal('adminNombre'),
+                admin_email: getVal('adminEmail'),
+                admin_notif: document.getElementById('adminNotif').checked ? 1 : 0,
+                admin_user: getVal('adminUser'),
+                admin_pass: getVal('adminPass'),
+                wa_numero: getVal('wa_numero'),
+                wa_mensajes: JSON.stringify({
+                    ingreso: getVal('wa_msg_ingreso'),
+                    salida: getVal('wa_msg_salida'),
+                    cobro: getVal('wa_msg_cobro'),
+                    deudor: getVal('wa_msg_deudor')
+                }),
+                wa_mensajes_activos: JSON.stringify(waActivos)
+            };
+
+            try {
+                var res = await fetch('/api/configuracion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                var data = await res.json();
+                if (data.success) {
+                    mostrarToast('Configuración guardada correctamente');
+                    actualizarNombreSidebar(formData.nombre);
+                } else {
+                    mostrarToast(data.error || 'Error al guardar', 'error');
+                }
+            } catch (error) {
+                mostrarToast('Error de conexión', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        /* ═════════════ BACKUP ═════════════ */
+        async function descargarBackup() {
+            if (!confirm("¿Generar y descargar la copia de seguridad completa?")) return;
+            var btn = event.target.closest('button');
+            var originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Generando...';
+
+            try {
+                var res = await fetch('/api/configuracion?action=backup');
+                if (!res.ok) throw new Error("Error en la petición");
+                var data = await res.json();
+                var jsonString = JSON.stringify(data, null, 2);
+                var blob = new Blob([jsonString], { type: 'application/json' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                var fecha = new Date().toISOString().split('T')[0];
+                var hora = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }).replace(':', '-');
+                a.download = 'BACKUP_' + (data.info ? data.info.sistema : 'PARQUEO') + '_' + fecha + '_' + hora + '.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                var resumen = data.resumen || {};
+                mostrarToast('Backup descargado (' + (resumen.total_historial || 0) + ' registros)');
+            } catch (error) {
+                console.error(error);
+                mostrarToast('Error al generar backup', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        /* ═════════════ RESTAURAR ═════════════ */
+        async function restaurarBackup(input) {
+            var file = input.files[0];
+            if (!file) return;
+            if (!confirm('¿Restaurar el backup?\n\nEsto REEMPLAZARÁ todos los datos.\nLos USUARIOS no se modifican por seguridad.\n\n¿Continuar?')) {
+                input.value = '';
+                return;
+            }
+            var statusDiv = document.getElementById('restoreStatus');
+            statusDiv.className = 'mt-2 p-2 rounded text-xs text-center bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50';
+            statusDiv.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Restaurando...';
+            statusDiv.classList.remove('hidden');
+
+            try {
+                var text = await file.text();
+                var backup = JSON.parse(text);
+                if (!backup.tablas) throw new Error('Formato de backup inválido');
+                var res = await fetch('/api/configuracion?action=restore', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: backup })
+                });
+                var data = await res.json();
+                if (data.success) {
+                    statusDiv.className = 'mt-2 p-2 rounded text-xs text-center bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50';
+                    statusDiv.innerHTML = '✅ ' + data.message;
+                    setTimeout(function() { cargarConfiguracion(); statusDiv.classList.add('hidden'); }, 2000);
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                statusDiv.className = 'mt-2 p-2 rounded text-xs text-center bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/50';
+                statusDiv.innerHTML = '❌ ' + error.message;
+                console.error('Error restaurando:', error);
+            }
+            input.value = '';
+        }
+
+        /* ═════════════ FORMATEAR ═════════════ */
+        async function formatearSistema() {
+            if (!confirm("¿Estás SEGURO de que quieres FORMATEAR TODO el sistema?")) return;
+            if (!confirm("Esta acción ELIMINARÁ:\n- Todos los clientes\n- Todo el historial\n- Todos los gastos\n- Las tarifas y configuración\n\nNO se puede deshacer. ¿Continuar?")) return;
+            var pass = prompt("Escribe tu contraseña de administrador para confirmar:");
+            if (!pass) return;
+            var btn = event.target.closest('button');
+            var originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Formateando...';
+
+            try {
+                var res = await fetch('/api/configuracion?action=format', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ confirm_pass: pass })
+                });
+                var data = await res.json();
+                if (res.status === 401) {
+                    mostrarToast("Contraseña incorrecta", "error");
+                } else if (data.success) {
+                    mostrarToast("Sistema formateado. Cerrando sesión...");
+                    setTimeout(function() { sessionStorage.clear(); window.location.href = '/'; }, 2000);
+                } else {
+                    mostrarToast(data.error || "Error desconocido", "error");
+                }
+            } catch (error) {
+                console.error(error);
+                mostrarToast('Error de conexión', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        /* ═════════════ INIT ═════════════ */
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarConfiguracion();
+        });
     </script>
     
     <script src="../js/auth-manager.js"></script>
     <script src="../js/main.js"></script>
-    <script src="../js/configuracion.js"></script>
 </body>
 </html>
