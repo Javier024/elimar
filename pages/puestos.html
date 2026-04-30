@@ -191,6 +191,7 @@
   </div>
 
   <!-- MODAL COBRO SALIDA — con 3 botones: Renovar Mes, Cobrar Mismo Día, Salir y Cobrar -->
+    <!-- MODAL COBRO SALIDA — 3 opciones claras -->
   <div id="modalCobroSalida" class="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[100] transition-opacity opacity-0">
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0 duration-200 flex flex-col max-h-[90vh]" id="modalCobroSalidaContent">
       <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/30 rounded-t-2xl shrink-0"><h3 id="tituloModalCobro" class="text-lg font-bold text-slate-800 dark:text-white">Gestión de Cobro</h3><button onclick="toggleModal('modalCobroSalida', false)" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"><i class="fa-solid fa-xmark"></i></button></div>
@@ -212,16 +213,16 @@
           </div>
         </div>
         <div class="relative group"><label class="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 mb-1 block">Monto a Cobrar ($)</label><i class="fa-solid fa-dollar-sign input-icon group-focus-within:text-emerald-500 transition-colors"></i><input type="number" id="cobroMonto" class="custom-input peer" placeholder="0" min="0"></div>
-        <div class="bg-slate-50 dark:bg-slate-900/30 rounded-lg p-3 border border-slate-200 dark:border-slate-700 space-y-1.5">
-          <div class="flex items-start gap-2 text-[11px] text-slate-500 dark:text-slate-400"><i class="fa-solid fa-circle-info mt-0.5 text-indigo-400 shrink-0"></i><span><strong class="text-indigo-600 dark:text-indigo-400">Renovar Mes:</strong> Solo registra el pago, el vehículo sigue.</span></div>
-<div class="flex items-start gap-2 text-[11px] text-slate-500 dark:text-slate-400"><i class="fa-solid fa-circle-info mt-0.5 text-emerald-400 shrink-0"></i><span><strong class="text-emerald-600 dark:text-emerald-400">Cobrar Pago:</strong> Registra el pago sin liberar el puesto.</span></div>
-          <div class="flex items-start gap-2 text-[11px] text-red-500 dark:text-red-400"><i class="fa-solid fa-triangle-exclamation mt-0.5 shrink-0"></i><span><strong>Salir y Cobrar:</strong> Libera el puesto definitivamente.</span></div>
+        <div class="bg-slate-50 dark:bg-slate-900/30 rounded-lg p-3 border border-slate-200 dark:border-slate-700 space-y-2">
+          <div class="flex items-start gap-2 text-[11px] text-slate-500 dark:text-slate-400"><i class="fa-solid fa-circle-info mt-0.5 text-indigo-400 shrink-0"></i><span><strong class="text-indigo-600 dark:text-indigo-400">Renovar Mensualidad:</strong> Solo registra el pago, el vehículo sigue en el puesto.</span></div>
+          <div class="flex items-start gap-2 text-[11px] text-slate-500 dark:text-slate-400"><i class="fa-solid fa-circle-info mt-0.5 text-emerald-400 shrink-0"></i><span><strong class="text-emerald-600 dark:text-emerald-400">Cobrar:</strong> Registra el pago pero el puesto sigue ocupado.</span></div>
+          <div class="flex items-start gap-2 text-[11px] text-red-500 dark:text-red-400"><i class="fa-solid fa-triangle-exclamation mt-0.5 shrink-0"></i><span><strong>Cobrar y Liberar:</strong> El puesto queda libre inmediatamente.</span></div>
         </div>
       </div>
       <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700 flex flex-col gap-2 shrink-0">
-        <button id="btnRenovar" onclick="window.procesarRenovar()" class="w-full px-4 py-3 rounded-lg text-sm font-bold bg-indigo-600 text-white hover:bg-indigo-700 shadow-md dark:shadow-indigo-900/30 transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-rotate"></i> Renovar Mes (Solo Cobro)</button>
-        <button id="btnCobroMismoDia" onclick="window.procesarCobroMismoDia()" class="w-full px-4 py-3 rounded-lg text-sm font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-md transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-receipt"></i> Cobrar Pago (Sin Liberar)</button>
-        <button id="btnSalir" onclick="window.procesarSalirYCobro()" class="w-full px-4 py-3 rounded-lg text-sm font-bold bg-red-600 text-white hover:bg-red-700 shadow-md transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-arrow-right-from-bracket"></i> Salir y Cobrar (Definitivo)</button>
+        <button id="btnRenovar" onclick="window.procesarRenovar()" class="w-full px-4 py-3 rounded-lg text-sm font-bold bg-indigo-600 text-white hover:bg-indigo-700 shadow-md dark:shadow-indigo-900/30 transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-rotate"></i> Renovar Mensualidad</button>
+        <button id="btnCobroMismoDia" onclick="window.procesarCobroMismoDia()" class="w-full px-4 py-3 rounded-lg text-sm font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-md transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-receipt"></i> Cobrar</button>
+        <button id="btnSalir" onclick="window.procesarSalirYCobro()" class="w-full px-4 py-3 rounded-lg text-sm font-bold bg-red-600 text-white hover:bg-red-700 shadow-md transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-arrow-right-from-bracket"></i> Cobrar y Liberar</button>
       </div>
     </div>
   </div>

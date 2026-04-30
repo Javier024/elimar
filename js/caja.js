@@ -5,6 +5,9 @@ let clients = [];
 let currentPage = 1;
 const itemsPerPage = 8;
 
+// Variable para trackear el modo de operación desde puestos
+let modoOperacion = null; // 'renovar' | 'cobrar' | 'liberar' | null
+
 // --- INICIALIZACIÓN ---
 document.addEventListener('DOMContentLoaded', () => {
     const dateInput = document.getElementById("cajaDate");
@@ -71,6 +74,21 @@ function findActiveSpot(plateToFind) {
     });
 }
 
+// --- MAPEO DE PERÍODOS DESDE PUESTOS.JS ---
+function mapearPeriodoDesdePuestos(periodParam) {
+    const mapa = {
+        'Mes': 'Mes',
+        'Noche': 'Noche',
+        'Dias': 'Dias',
+        'Semana': 'Semana',
+        'Pago': 'Noche',
+        'Pago Visita': 'Noche',
+        'Salida': 'Noche',
+        'Visita': 'Noche'
+    };
+    return mapa[periodParam] || 'Noche';
+}
+
 // --- FUNCIÓN CLAVE: LLENAR DATOS DESDE PUESTOS ---
 function checkUrlParamsAndFillData() {
     const params = new URLSearchParams(window.location.search);
@@ -83,14 +101,31 @@ function checkUrlParamsAndFillData() {
     const amountParam = params.get('amount');
     const periodParam = params.get('period');
     const renewParam = params.get('renew');
+    const liberarParam = params.get('liberar');
 
-    if (!plate) return;
+    // Si no hay placa, no viene de puestos → resetear a modo normal
+    if (!plate) {
+        resetModoOperacion();
+        limpiarSessionLiberar();
+        return;
+    }
 
+    // DETERMINAR EL MODO DE OPERACIÓN
+    if (renewParam === 'true') {
+        modoOperacion = 'renovar';
+    } else if (liberarParam === 'true') {
+        modoOperacion = 'liberar';
+    } else {
+        modoOperacion = 'cobrar';
+    }
+
+    // Llenar campos del formulario
     document.getElementById('cajaPlaca').value = plate;
     document.getElementById('cajaPuesto').value = spot || "---";
     if (clientName) document.getElementById('cajaCliente').value = decodeURIComponent(clientName);
     if (phone) document.getElementById('cajaTelefono').value = phone;
 
+    // --- Fecha de entrada ---
     const entryDisplay = document.getElementById('cajaFechaEntradaDisplay');
     const hiddenEntry = document.getElementById('cajaEntryTimestamp');
     
@@ -117,7 +152,7 @@ function checkUrlParamsAndFillData() {
                 if (!isNaN(fechaObj.getTime())) {
                     const dia = fechaObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
                     const hora = fechaObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-                    entryDisplay.value = `Entró: ${dia} ${hora}`;
+                    entryDisplay.value = 'Entró: ' + dia + ' ' + hora;
                     hiddenEntry.value = finalTimestamp;
                 } else {
                     entryDisplay.value = "Fecha inválida";
@@ -133,8 +168,8 @@ function checkUrlParamsAndFillData() {
         entryDisplay.value = "Sin registro";
     }
 
+    // --- Monto ---
     const montoInput = document.getElementById('cajaMonto');
-    const periodSelect = document.getElementById('cajaPeriodType');
     let montoFinal = 0;
 
     if (amountParam && parseFloat(amountParam) > 0) {
@@ -147,9 +182,11 @@ function checkUrlParamsAndFillData() {
     }
     montoInput.value = montoFinal;
 
+    // --- Período ---
+    const periodSelect = document.getElementById('cajaPeriodType');
     if (periodSelect) {
         if (periodParam) {
-            periodSelect.value = periodParam;
+            periodSelect.value = mapearPeriodoDesdePuestos(periodParam);
         } else {
             const clientData = clients.find(c => c.placa === plate);
             if (clientData) {
@@ -161,43 +198,89 @@ function checkUrlParamsAndFillData() {
                 periodSelect.value = 'Noche';
             }
         }
+        periodSelect.disabled = false;
     }
 
-    const submitBtn = document.querySelector('form button[type="submit"]');
-    
-    if (renewParam === 'false') {
-        if (submitBtn) {
-            submitBtn.innerHTML = '<i class="fa-solid fa-money-bill-wave mr-2"></i> Registrar Pago Final (Salida)';
-            submitBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
-            submitBtn.classList.add('bg-red-600', 'hover:bg-red-700');
-        }
-    } else {
-        if (submitBtn) {
-            submitBtn.innerHTML = '<i class="fa-solid fa-money-bill-wave mr-2"></i> Registrar Pago (Renovación)';
-            submitBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
-            submitBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
-        }
-        if (periodSelect) {
-            periodSelect.disabled = false;
+    // --- Banner informativo según modo ---
+    const infoDiv = document.getElementById('cajaInfo');
+    if (infoDiv) {
+        if (modoOperacion === 'renovar') {
+            infoDiv.innerHTML = '<div class="flex items-center gap-2 text-indigo-700 dark:text-indigo-300"><i class="fa-solid fa-rotate"></i><span class="font-bold text-xs">RENOVAR MENSUALIDAD</span></div><p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">El vehículo sigue en el puesto. Solo se registra el pago de la mensualidad.</p>';
+        } else if (modoOperacion === 'liberar') {
+            infoDiv.innerHTML = '<div class="flex items-center gap-2 text-red-600 dark:text-red-400"><i class="fa-solid fa-arrow-right-from-bracket"></i><span class="font-bold text-xs">COBRAR Y LIBERAR</span></div><p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Confirme el monto en el siguiente paso para liberar el puesto.</p>';
+        } else {
+            infoDiv.innerHTML = '<div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-receipt"></i><span class="font-bold text-xs">COBRAR</span></div><p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">El vehículo sigue en el puesto. Solo se registra el pago parcial o por días.</p>';
         }
     }
 
+    // --- Configurar botón según modo ---
+    configurarBotonSegunModo();
+
+    // Limpiar URL para que no se repita al recargar
     window.history.replaceState({}, document.title, "caja.html");
-    setTimeout(() => montoInput.focus(), 300);
+    
+    // Focus al monto
+    setTimeout(function() { montoInput.focus(); }, 300);
+}
+
+// --- CONFIGURAR BOTÓN SEGÚN MODO DE OPERACIÓN ---
+function configurarBotonSegunModo() {
+    const submitBtn = document.querySelector('form button[type="submit"]');
+    if (!submitBtn) return;
+
+    submitBtn.classList.remove(
+        'bg-indigo-600', 'hover:bg-indigo-700',
+        'bg-red-600', 'hover:bg-red-700',
+        'bg-emerald-600', 'hover:bg-emerald-700',
+        'shadow-indigo-200', 'dark:shadow-indigo-900/30',
+        'shadow-red-200', 'dark:shadow-red-900/30',
+        'shadow-emerald-200', 'dark:shadow-emerald-900/30'
+    );
+
+    switch(modoOperacion) {
+        case 'renovar':
+            submitBtn.innerHTML = '<i class="fa-solid fa-rotate mr-2"></i> Registrar Renovación';
+            submitBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700', 'shadow-indigo-200', 'dark:shadow-indigo-900/30');
+            break;
+        case 'liberar':
+            submitBtn.innerHTML = '<i class="fa-solid fa-arrow-right-from-bracket mr-2"></i> Registrar Salida';
+            submitBtn.classList.add('bg-red-600', 'hover:bg-red-700', 'shadow-red-200', 'dark:shadow-red-900/30');
+            break;
+        case 'cobrar':
+            submitBtn.innerHTML = '<i class="fa-solid fa-receipt mr-2"></i> Registrar Cobro';
+            submitBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700', 'shadow-emerald-200', 'dark:shadow-emerald-900/30');
+            break;
+        default:
+            submitBtn.innerHTML = '<i class="fa-solid fa-check mr-2"></i> Registrar';
+            submitBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700', 'shadow-indigo-200', 'dark:shadow-indigo-900/30');
+    }
+}
+
+// --- RESETEAR A MODO NORMAL ---
+function resetModoOperacion() {
+    modoOperacion = null;
+    configurarBotonSegunModo();
+    const infoDiv = document.getElementById('cajaInfo');
+    if (infoDiv) infoDiv.innerHTML = '';
+}
+
+// --- LIMPIAR SESSION DE LIBERACIÓN ---
+function limpiarSessionLiberar() {
+    sessionStorage.removeItem('liberarPuestoId');
+    sessionStorage.removeItem('liberarPuestoNum');
+    sessionStorage.removeItem('liberarAccion');
 }
 
 // --- PRELLENAR DESDE DEUDORES ---
 window.preFillFromDebtor = function(plate, nombre, telefono) {
+    modoOperacion = 'renovar';
+
     document.getElementById('cajaPlaca').value = plate;
     document.getElementById('cajaCliente').value = nombre;
     document.getElementById('cajaTelefono').value = telefono;
     
-    const submitBtn = document.querySelector('form button[type="submit"]');
-    if (submitBtn) {
-        submitBtn.innerHTML = '<i class="fa-solid fa-money-bill-wave mr-2"></i> Registrar Cobro';
-        submitBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
-        submitBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
-    }
+    configurarBotonSegunModo();
+
     const periodSelect = document.getElementById('cajaPeriodType');
     if (periodSelect) periodSelect.disabled = false;
 
@@ -213,11 +296,16 @@ window.preFillFromDebtor = function(plate, nombre, telefono) {
              const fechaObj = new Date(ts * 1000);
              const dia = fechaObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
              const hora = fechaObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-             document.getElementById('cajaFechaEntradaDisplay').value = `Entró: ${dia} ${hora}`;
+             document.getElementById('cajaFechaEntradaDisplay').value = 'Entró: ' + dia + ' ' + hora;
         }
     } else {
         document.getElementById('cajaPuesto').value = "---";
         document.getElementById('cajaFechaEntradaDisplay').value = "Sin registro";
+    }
+
+    const infoDiv = document.getElementById('cajaInfo');
+    if (infoDiv) {
+        infoDiv.innerHTML = '<div class="flex items-center gap-2 text-indigo-700 dark:text-indigo-300"><i class="fa-solid fa-rotate"></i><span class="font-bold text-xs">RENOVAR MENSUALIDAD</span></div><p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Cobro de mensualidad desde deudores.</p>';
     }
 
     document.querySelector('.sticky.top-4')?.scrollIntoView({ behavior: 'smooth' });
@@ -225,11 +313,16 @@ window.preFillFromDebtor = function(plate, nombre, telefono) {
     const clientData = clients.find(c => c.placa === plate);
     if (clientData) {
         document.getElementById('cajaMonto').value = clientData.cuota_mensual || 0;
+        if (periodSelect) {
+            const medio = (clientData.medio_pago || '').toLowerCase();
+            if (medio.includes('mensual')) periodSelect.value = 'Mes';
+            else if (medio.includes('semanal')) periodSelect.value = 'Semana';
+            else periodSelect.value = 'Noche';
+        }
     }
-    setTimeout(() => document.getElementById('cajaMonto')?.focus(), 500);
+    setTimeout(function() { document.getElementById('cajaMonto')?.focus(); }, 500);
 };
 
-// --- RENDERIZAR LISTA DE DEUDORES ---
 // --- RENDERIZAR LISTA DE DEUDORES ---
 function renderDeudoresList(deudores) {
     const container = document.getElementById('deudoresList');
@@ -241,27 +334,22 @@ function renderDeudoresList(deudores) {
     }
 
     let html = '';
-    deudores.forEach(d => {
+    deudores.forEach(function(d) {
         const phoneClean = d.telefono ? d.telefono.replace(/\D/g, '') : '';
         const whatsappMsg = generarMensajeDeudorWhatsApp(d.nombre, d.placa, d.cuota_mensual, d.medio_pago);
-        const whatsappLink = phoneClean ? `https://wa.me/57${phoneClean}?text=${encodeURIComponent(whatsappMsg)}` : '#';
+        const whatsappLink = phoneClean ? 'https://wa.me/57' + phoneClean + '?text=' + encodeURIComponent(whatsappMsg) : '#';
+        const nombreEscaped = d.nombre.replace(/'/g, "\\'");
         
-        html += `
-            <div class="flex items-center justify-between p-3 bg-white dark:bg-slate-700/50 border border-slate-100 dark:border-slate-600/50 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                <div class="flex-1">
-                    <p class="text-sm font-bold text-slate-800 dark:text-slate-200">${d.nombre}</p>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">${d.placa}</p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <a href="${whatsappLink}" target="_blank" class="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-full transition-colors" title="Enviar WhatsApp">
-                        <i class="fa-brands fa-whatsapp text-lg"></i>
-                    </a>
-                    <button onclick="preFillFromDebtor('${d.placa}', '${d.nombre.replace(/'/g, "\\'")}', '${d.telefono || ''}')" class="p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-colors" title="Ir a Cobrar">
-                        <i class="fa-solid fa-money-bill-wave"></i>
-                    </button>
-                </div>
-            </div>
-        `;
+        html += '<div class="flex items-center justify-between p-3 bg-white dark:bg-slate-700/50 border border-slate-100 dark:border-slate-600/50 rounded-lg shadow-sm hover:shadow-md transition-shadow">' +
+            '<div class="flex-1">' +
+                '<p class="text-sm font-bold text-slate-800 dark:text-slate-200">' + d.nombre + '</p>' +
+                '<p class="text-xs text-slate-500 dark:text-slate-400 font-mono">' + d.placa + '</p>' +
+            '</div>' +
+            '<div class="flex items-center gap-2">' +
+                '<a href="' + whatsappLink + '" target="_blank" class="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-full transition-colors" title="Enviar WhatsApp"><i class="fa-brands fa-whatsapp text-lg"></i></a>' +
+                '<button onclick="preFillFromDebtor(\'' + d.placa + '\', \'' + nombreEscaped + '\', \'' + (d.telefono || '') + '\')" class="p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-colors" title="Ir a Cobrar"><i class="fa-solid fa-money-bill-wave"></i></button>' +
+            '</div>' +
+        '</div>';
     });
     container.innerHTML = html;
 }
@@ -274,8 +362,10 @@ function handleClientSearch(query) {
     datalist.innerHTML = ''; 
     if (query.length < 2) return;
 
-    const filtered = clients.filter(c => c.nombre.toLowerCase().includes(query.toLowerCase()) || c.placa.toLowerCase().includes(query.toLowerCase()));
-    filtered.forEach(client => {
+    const filtered = clients.filter(function(c) {
+        return c.nombre.toLowerCase().includes(query.toLowerCase()) || c.placa.toLowerCase().includes(query.toLowerCase());
+    });
+    filtered.forEach(function(client) {
         const option = document.createElement('option');
         option.value = client.nombre; 
         option.setAttribute('data-id', client.id);
@@ -287,13 +377,13 @@ function handleClientSearch(query) {
     });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
     const clientInput = document.getElementById('cajaCliente');
     if(clientInput) {
         clientInput.addEventListener('change', function(e) {
             const datalist = document.getElementById('clientListDatalist');
             if(!datalist) return;
-            const selectedOption = datalist.querySelector(`option[value="${e.target.value}"]`);
+            const selectedOption = datalist.querySelector('option[value="' + e.target.value + '"]');
             if (selectedOption) {
                 const phone = selectedOption.getAttribute('data-phone');
                 const plate = selectedOption.getAttribute('data-plate');
@@ -318,7 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const fechaObj = new Date(ts * 1000);
                         const dia = fechaObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
                         const hora = fechaObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-                        dateDisplay.value = `Entró: ${dia} ${hora}`;
+                        dateDisplay.value = 'Entró: ' + dia + ' ' + hora;
                     }
                     if(hiddenEntry && !hiddenEntry.value) hiddenEntry.value = activeSpot.hora_inicio;
                 } else {
@@ -326,7 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if(dateDisplay) dateDisplay.value = "No registrado en puesto";
                 }
 
-                const clientData = clients.find(c => c.placa === plate);
+                const clientData = clients.find(function(c) { return c.placa === plate; });
                 if (clientData) {
                     if(montoInput) montoInput.value = clientData.cuota_mensual || 0;
                     if (periodSelect) {
@@ -340,22 +430,25 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- RENDERIZADO TABLA ---
-function renderTable(filterText = '') {
+function renderTable(filterText) {
+    filterText = filterText || '';
     const tbody = document.getElementById('listaCajaBody');
     if(!tbody) return;
     tbody.innerHTML = '';
-    const filtered = transactions.filter(t => t.client.toLowerCase().includes(filterText.toLowerCase()) || t.plate.toLowerCase().includes(filterText.toLowerCase()));
+    const filtered = transactions.filter(function(t) {
+        return t.client.toLowerCase().includes(filterText.toLowerCase()) || t.plate.toLowerCase().includes(filterText.toLowerCase());
+    });
     const pageInfo = document.getElementById('pageInfo');
     const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;
-    if(pageInfo) pageInfo.innerText = `Página ${currentPage} de ${totalPages}`;
+    if(pageInfo) pageInfo.innerText = 'Página ' + currentPage + ' de ' + totalPages;
     const start = (currentPage - 1) * itemsPerPage;
     const pageData = filtered.slice(start, start + itemsPerPage);
     
     if (pageData.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-slate-400 dark:text-slate-500">No hay transacciones</td></tr>'; return; }
 
-    pageData.forEach(tx => {
+    pageData.forEach(function(tx) {
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 dark:hover:bg-slate-700/30 border-b border-slate-100 dark:border-slate-700/50 transition-colors";
         const fechaPago = tx.date || '---';
@@ -377,57 +470,30 @@ function renderTable(filterText = '') {
             try {
                 const dateObj = new Date(tsToUse * 1000);
                 if (!isNaN(dateObj.getTime())) {
-                    entradaStr = `${dateObj.toLocaleDateString('es-CO', {day:'2-digit', month:'2-digit', year:'2-digit'})} ${dateObj.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'})}`;
+                    entradaStr = dateObj.toLocaleDateString('es-CO', {day:'2-digit', month:'2-digit', year:'2-digit'}) + ' ' + dateObj.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
                 }
             } catch(e) {
-                console.error("Error fecha entrada:", e);
                 entradaStr = "Error formato";
             }
         }
         
         let vehicleType = tx.cliente_tipo_vehiculo || '---';
         if (vehicleType === '---') {
-             const localClient = clients.find(c => c.placa === tx.plate);
+             const localClient = clients.find(function(c) { return c.placa === tx.plate; });
              if (localClient) vehicleType = localClient.tipo_vehiculo || '---';
         }
 
-        tr.innerHTML = `
-            <td class="px-4 py-3 whitespace-nowrap">
-                <div class="text-sm font-medium text-slate-900 dark:text-slate-200">${fechaPago}</div>
-                <div class="text-xs text-slate-500 dark:text-slate-400">${horaPago}</div>
-            </td>
-            <td class="px-4 py-3">
-                <div class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-1">Entrada</div>
-                <div class="text-xs text-slate-500 dark:text-slate-400">${entradaStr}</div>
-            </td>
-            <td class="px-6 py-4">
-                <div class="text-sm font-medium text-slate-900 dark:text-slate-200">${tx.client}</div>
-                <div class="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1"><i class="fa-solid fa-phone text-[10px]"></i> ${tx.phone || '---'}</div>
-            </td>
-            <td class="px-6 py-4">
-                <div class="flex flex-col gap-1">
-                    <div class="flex items-center gap-2">
-                        <span class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold px-2 py-1 rounded uppercase">${tx.plate.toUpperCase()}</span>
-                        <span class="text-[10px] text-slate-400 dark:text-slate-500">Puesto: ${tx.spot}</span>
-                    </div>
-                    <span class="inline-flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 font-medium bg-slate-50 dark:bg-slate-800 w-fit px-2 py-0.5 rounded border border-slate-100 dark:border-slate-700">
-                        <i class="fa-solid fa-car-side"></i> ${vehicleType}
-                    </span>
-                </div>
-            </td>
-            <td class="px-6 py-4">
-                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium ${tx.method === 'Efectivo' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'}">${tx.method}</span>
-            </td>
-            <td class="px-6 py-4 text-right">
-                <div class="text-sm font-bold text-slate-900 dark:text-slate-200">$${Number(tx.amount).toLocaleString('es-CO')}</div>
-                <div class="text-[10px] text-slate-500 dark:text-slate-400">${tx.period_type || ''} x${tx.period_quantity || 1}</div>
-            </td>
-            <td class="px-6 py-4 text-center">
-                <button onclick="printReceipt(${tx.id})" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 mr-2" title="Imprimir Factura"><i class="fa-solid fa-print"></i></button>
-                <button onclick="editTransaction(${tx.id})" class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 mr-2" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                <button onclick="deleteTransaction(${tx.id})" class="text-red-400 hover:text-red-600 dark:hover:text-red-400" title="Anular"><i class="fa-solid fa-trash"></i></button>
-            </td>
-        `;
+        let methodClass = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400';
+        if (tx.method === 'Tarjeta') methodClass = 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400';
+        else if (tx.method === 'Transferencia') methodClass = 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400';
+
+        tr.innerHTML = '<td class="px-4 py-3 whitespace-nowrap"><div class="text-sm font-medium text-slate-900 dark:text-slate-200">' + fechaPago + '</div><div class="text-xs text-slate-500 dark:text-slate-400">' + horaPago + '</div></td>' +
+            '<td class="px-4 py-3"><div class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-1">Entrada</div><div class="text-xs text-slate-500 dark:text-slate-400">' + entradaStr + '</div></td>' +
+            '<td class="px-6 py-4"><div class="text-sm font-medium text-slate-900 dark:text-slate-200">' + tx.client + '</div><div class="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1"><i class="fa-solid fa-phone text-[10px]"></i> ' + (tx.phone || '---') + '</div></td>' +
+            '<td class="px-6 py-4"><div class="flex flex-col gap-1"><div class="flex items-center gap-2"><span class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold px-2 py-1 rounded uppercase">' + tx.plate.toUpperCase() + '</span><span class="text-[10px] text-slate-400 dark:text-slate-500">Puesto: ' + tx.spot + '</span></div><span class="inline-flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 font-medium bg-slate-50 dark:bg-slate-800 w-fit px-2 py-0.5 rounded border border-slate-100 dark:border-slate-700"><i class="fa-solid fa-car-side"></i> ' + vehicleType + '</span></div></td>' +
+            '<td class="px-6 py-4"><span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium ' + methodClass + '">' + tx.method + '</span></td>' +
+            '<td class="px-6 py-4 text-right"><div class="text-sm font-bold text-slate-900 dark:text-slate-200">$' + Number(tx.amount).toLocaleString('es-CO') + '</div><div class="text-[10px] text-slate-500 dark:text-slate-400">' + (tx.period_type || '') + ' x' + (tx.period_quantity || 1) + '</div></td>' +
+            '<td class="px-6 py-4 text-center"><button onclick="printReceipt(' + tx.id + ')" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 mr-2" title="Imprimir Factura"><i class="fa-solid fa-print"></i></button><button onclick="editTransaction(' + tx.id + ')" class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 mr-2" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="deleteTransaction(' + tx.id + ')" class="text-red-400 hover:text-red-600 dark:hover:text-red-400" title="Anular"><i class="fa-solid fa-trash"></i></button></td>';
         tbody.appendChild(tr);
     });
     
@@ -438,7 +504,7 @@ function renderTable(filterText = '') {
 }
 
 function changePage(direction) {
-    const filtered = transactions.filter(t => {
+    const filtered = transactions.filter(function(t) {
         const searchVal = document.getElementById('searchInput')?.value || '';
         return t.client.toLowerCase().includes(searchVal.toLowerCase()) || t.plate.toLowerCase().includes(searchVal.toLowerCase());
     });
@@ -455,10 +521,10 @@ function changePage(direction) {
 // --- FACTURACIÓN ---
 
 async function printReceipt(id) {
-    const tx = transactions.find(t => t.id === id);
+    const tx = transactions.find(function(t) { return t.id === id; });
     if(!tx) return;
 
-    const clientData = clients.find(c => c.placa === tx.plate);
+    const clientData = clients.find(function(c) { return c.placa === tx.plate; });
     const vehicleType = tx.cliente_tipo_vehiculo || (clientData ? clientData.tipo_vehiculo : 'Carro'); 
 
     let entryDate = null;
@@ -509,11 +575,11 @@ async function generarFacturaDesdeFormulario() {
     const date = document.getElementById('cajaDate').value;
     const spot = document.getElementById('cajaPuesto').value;
     const phone = document.getElementById('cajaTelefono').value;
-    const entryTimestampVal = document.getElementById('cajaEntryTimestamp').value;
+    const entryTimestampVal = document.getElementById('caboxEntryTimestamp') || document.getElementById('cajaEntryTimestamp').value;
 
     if (!client || !amount) { alert("Complete los datos básicos para generar la factura."); return false; }
     
-    const clientData = clients.find(c => c.placa === plate);
+    const clientData = clients.find(function(c) { return c.placa === plate; });
     const vehicleType = clientData ? (clientData.tipo_vehiculo || 'Carro') : 'Carro';
     
     let entryDate = null;
@@ -545,16 +611,16 @@ async function generarFacturaDesdeFormulario() {
 
     createPDF({ 
         id: Date.now(), 
-        client, 
+        client: client, 
         phone: phone, 
-        plate, 
-        spot, 
-        amount, 
-        method, 
+        plate: plate, 
+        spot: spot, 
+        amount: amount, 
+        method: method, 
         period_type: finalPeriodType, 
         period_quantity: periodQty, 
-        date, 
-        vehicleType,
+        date: date, 
+        vehicleType: vehicleType,
         entryDate: entryDate,
         exitDate: exitDate,
         dueDate: dueDate,
@@ -582,7 +648,6 @@ async function createPDF(data) {
     try {
         doc.addImage('/img/logo.jpg', 'JPEG', logoX, logoY, logoW, logoH); 
     } catch (err) {
-        console.error("Error cargando imagen banner:", err);
         doc.setFillColor(20, 50, 80);
         doc.roundedRect(logoX, logoY, logoW, logoH, 4, 4, 'F');
         doc.setTextColor(255, 255, 255);
@@ -596,7 +661,6 @@ async function createPDF(data) {
         const progress = (i + 1) / fadeSteps;
         const inset = progress * maxFade;
         const alpha = 0.2 * (1 - progress);
-        
         try {
             const gs = new doc.GState({ opacity: alpha });
             doc.setGState(gs);
@@ -605,14 +669,10 @@ async function createPDF(data) {
             doc.rect(logoX, logoY + logoH - inset, logoW, inset, 'F');
             doc.rect(logoX, logoY, inset, logoH, 'F');
             doc.rect(logoX + logoW - inset, logoY, inset, logoH, 'F');
-        } catch(e) {
-            console.error("Error con GState:", e);
-        }
+        } catch(e) {}
     }
     
-    try {
-        doc.setGState(new doc.GState({ opacity: 1 }));
-    } catch(e) {}
+    try { doc.setGState(new doc.GState({ opacity: 1 })); } catch(e) {}
 
     const textBlockX = logoX + logoW + 12;
     const textBlockTopY = logoY + 5;
@@ -662,7 +722,7 @@ async function createPDF(data) {
     const dateObj = data.date ? new Date(data.date + 'T12:00:00') : now;
     const dateStr = dateObj.toLocaleDateString('es-CO', {day:'2-digit', month:'2-digit', year:'numeric'});
     const timeStr = now.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-    doc.text(`${dateStr}  ${timeStr}`, col1X + valOffset, y);
+    doc.text(dateStr + '  ' + timeStr, col1X + valOffset, y);
     y += 7;
 
     doc.setFont("helvetica", "bold");
@@ -670,7 +730,7 @@ async function createPDF(data) {
     doc.text("# RECIBO", col1X, y);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(30, 30, 30);
-    doc.text(`${data.id || '---'}`, col1X + valOffset, y);
+    doc.text(String(data.id || '---'), col1X + valOffset, y);
     y += 7;
 
     doc.setFont("helvetica", "bold");
@@ -698,7 +758,7 @@ async function createPDF(data) {
     let entryDateText = "No disponible";
     if (data.entryDate) {
         const d = data.entryDate;
-        entryDateText = `${d.toLocaleDateString('es-CO', {day:'2-digit', month:'2-digit', year:'numeric'})}  ${d.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'})}`;
+        entryDateText = d.toLocaleDateString('es-CO', {day:'2-digit', month:'2-digit', year:'numeric'}) + '  ' + d.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
     }
     doc.setTextColor(data.entryDate ? 30 : 160);
     doc.text(entryDateText, col1X + valOffset, y);
@@ -711,7 +771,7 @@ async function createPDF(data) {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(20, 50, 80);
     doc.setFontSize(14);
-    doc.text(`${(data.plate || '---').toUpperCase()}`, col2X + valOffset, col2Y);
+    doc.text((data.plate || '---').toUpperCase(), col2X + valOffset, col2Y);
     doc.setFontSize(10);
 
     col2Y += 7;
@@ -720,7 +780,7 @@ async function createPDF(data) {
     doc.text("VEHÍCULO", col2X, col2Y);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(30, 30, 30);
-    doc.text(`${data.vehicleType || '---'}`, col2X + valOffset, col2Y);
+    doc.text(data.vehicleType || '---', col2X + valOffset, col2Y);
 
     col2Y += 7;
     doc.setFont("helvetica", "bold");
@@ -728,7 +788,7 @@ async function createPDF(data) {
     doc.text("PUESTO", col2X, col2Y);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(30, 30, 30);
-    doc.text(`${data.spot || '---'}`, col2X + valOffset, col2Y);
+    doc.text(data.spot || '---', col2X + valOffset, col2Y);
 
     col2Y += 7;
     doc.setFont("helvetica", "bold");
@@ -736,7 +796,7 @@ async function createPDF(data) {
     doc.text("PERIODO", col2X, col2Y);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(30, 30, 30);
-    doc.text(`${data.period_type || 'Noche'} x ${data.period_quantity || 1}`, col2X + valOffset, col2Y);
+    doc.text((data.period_type || 'Noche') + ' x ' + (data.period_quantity || 1), col2X + valOffset, col2Y);
 
     col2Y += 7;
     doc.setFont("helvetica", "bold");
@@ -744,7 +804,7 @@ async function createPDF(data) {
     doc.text("SALIDA/PAGO", col2X, col2Y);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(30, 30, 30);
-    const exitDateStr = `${now.toLocaleDateString('es-CO', {day:'2-digit', month:'2-digit', year:'numeric'})}  ${now.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit', second:'2-digit'})}`;
+    const exitDateStr = now.toLocaleDateString('es-CO', {day:'2-digit', month:'2-digit', year:'numeric'}) + '  ' + now.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
     doc.text(exitDateStr, col2X + valOffset, col2Y);
 
     y += 12;
@@ -778,14 +838,14 @@ async function createPDF(data) {
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
 
-    const desc = `Servicio de Parqueadero (${data.spot || 'General'}) - ${data.period_type || 'Noche'}`;
+    const desc = 'Servicio de Parqueadero (' + (data.spot || 'General') + ') - ' + (data.period_type || 'Noche');
     const splitDesc = doc.splitTextToSize(desc, contentWidth - 65); 
     doc.text(splitDesc, margin + 3, y);
 
-    const periodQtyText = `${data.period_quantity || 1} ${data.period_type || 'Noche'}`;
+    const periodQtyText = (data.period_quantity || 1) + ' ' + (data.period_type || 'Noche');
     doc.text(periodQtyText, margin + contentWidth - 58, y + ((splitDesc.length - 1) * 4));
     
-    const amountStr = `$${Number(data.amount).toLocaleString('es-CO')}`;
+    const amountStr = '$' + Number(data.amount).toLocaleString('es-CO');
     doc.setFont("helvetica", "bold");
     doc.text(amountStr, margin + contentWidth - 5, y + ((splitDesc.length - 1) * 4), { align: 'right' });
 
@@ -802,7 +862,7 @@ async function createPDF(data) {
     doc.setTextColor(200, 220, 240);
     doc.setFont("helvetica", "normal");
     doc.text("TOTAL A PAGAR", totalBoxX + 8, y + 9);
-    doc.text(`MÉTODO: ${data.method || 'Efectivo'}`, totalBoxX + 8, y + 16);
+    doc.text("MÉTODO: " + (data.method || 'Efectivo'), totalBoxX + 8, y + 16);
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
@@ -828,7 +888,7 @@ async function createPDF(data) {
         "Este documento certifica el pago realizado, cualquier inquietud no dude en comunicarse con nosotros."
     ];
 
-    footerLines.forEach(line => {
+    footerLines.forEach(function(line) {
         doc.text(line, centerX, y, { align: 'center' });
         y += 4;
     });
@@ -877,99 +937,226 @@ async function handleCustomPeriod(e) {
     registrarCobro(e);
 }
 
-// --- REGISTRAR COBRO ---
+// --- REGISTRAR COBRO (Redirige a confirmación si es liberar) ---
 async function registrarCobro(e) {
     e.preventDefault();
-    const btn = e.target.querySelector('button[type="submit"]'); 
-    const originalText = btn.innerHTML;
-    btn.disabled = true; 
+
+    // Si es modo LIBERAR → mostrar modal de confirmación
+    if (modoOperacion === 'liberar') {
+        mostrarModalConfirmacionLiberar();
+        return;
+    }
+
+    // Modo normal: registrar directo
+    await ejecutarRegistroCobro(e);
+}
+
+// ============================================
+// --- CONFIRMACIÓN ANTES DE LIBERAR ---
+// ============================================
+
+function mostrarModalConfirmacionLiberar() {
+    var puestoNum = sessionStorage.getItem('liberarPuestoNum') || '---';
+    var cliente = document.getElementById('cajaCliente').value || '---';
+    var placa = document.getElementById('cajaPlaca').value || '---';
+    var monto = document.getElementById('cajaMonto').value || '0';
+    var metodo = document.getElementById('cajaMetodo').value || '---';
+
+    document.getElementById('confirmPuesto').innerText = '#' + puestoNum;
+    document.getElementById('confirmCliente').innerText = cliente;
+    document.getElementById('confirmPlaca').innerText = placa.toUpperCase();
+    document.getElementById('confirmMonto').innerText = '$' + Number(monto).toLocaleString('es-CO');
+    document.getElementById('confirmMetodo').innerText = metodo;
+
+    var modal = document.getElementById('modalConfirmarLiberar');
+    var content = document.getElementById('modalConfirmarLiberarContent');
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    setTimeout(function() {
+        modal.classList.remove('opacity-0');
+        content.classList.remove('scale-95', 'opacity-0');
+        content.classList.add('scale-100', 'opacity-100');
+    }, 10);
+}
+
+function cancelarLiberacion() {
+    var modal = document.getElementById('modalConfirmarLiberar');
+    var content = document.getElementById('modalConfirmarLiberarContent');
+
+    content.classList.remove('scale-100', 'opacity-100');
+    content.classList.add('scale-95', 'opacity-0');
+    modal.classList.add('opacity-0');
+
+    setTimeout(function() {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+        modal.classList.remove('opacity-0');
+        content.classList.remove('scale-95', 'opacity-0');
+    }, 200);
+}
+
+async function ejecutarLiberacion() {
+    var btn = document.getElementById('btnEjecutarLiberacion');
+    var btnCancelar = btn.previousElementSibling;
+    
+    btn.disabled = true;
+    btnCancelar.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+
+    try {
+        // PASO 1: Registrar el cobro en caja
+        var result = await ejecutarRegistroCobroRaw();
+
+        // PASO 2: Si el pago fue exitoso, liberar el puesto
+        if (result.exito) {
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Liberando puesto...';
+
+            var puestoId = sessionStorage.getItem('liberarPuestoId');
+            var accionLiberar = sessionStorage.getItem('liberarAccion') || 'salir_visitante';
+
+            if (puestoId) {
+                try {
+                    var liberarRes = await fetch('/api/puestos', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: puestoId, accion: accionLiberar })
+                    });
+                    var liberarData = await liberarRes.json();
+
+                    if (!liberarRes.ok) {
+                        cancelarLiberacion();
+                        alert('⚠️ El cobro quedó registrado PERO no se pudo liberar el puesto.\n\nError: ' + (liberarData.error || 'Desconocido') + '\n\nLibérelo manualmente desde puestos.');
+                        limpiarSessionLiberar();
+                        resetModoOperacion();
+                        loadData();
+                        return;
+                    }
+                } catch (libErr) {
+                    cancelarLiberacion();
+                    alert('⚠️ El cobro quedó registrado PERO no se pudo liberar el puesto por error de conexión.\n\nLibérelo manualmente desde puestos.');
+                    limpiarSessionLiberar();
+                    resetModoOperacion();
+                    loadData();
+                    return;
+                }
+            }
+
+            // Todo OK → cerrar modal y volver a puestos
+            cancelarLiberacion();
+            alert('✅ Cobro registrado y puesto liberado correctamente');
+            limpiarSessionLiberar();
+            window.location.href = 'puestos.html';
+            return;
+        }
+
+    } catch (error) {
+        cancelarLiberacion();
+        alert('Error: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btnCancelar.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Confirmar';
+    }
+}
+
+// --- REGISTRO DE COBRO RAW (sin liberar, reutilizable) ---
+async function ejecutarRegistroCobroRaw() {
+    var client = document.getElementById('cajaCliente').value;
+    var plate = document.getElementById('cajaPlaca').value;
+    var spot = document.getElementById('cajaPuesto').value;
+    var phone = document.getElementById('cajaTelefono').value;
+    var amount = document.getElementById('cajaMonto').value;
+    var method = document.getElementById('cajaMetodo').value;
+    var periodType = document.getElementById('cajaPeriodType').value;
+    var periodQty = document.getElementById('cajaPeriodQty').value;
+    var date = document.getElementById('cajaDate').value;
     
-    const client = document.getElementById('cajaCliente').value;
-    const plate = document.getElementById('cajaPlaca').value;
-    const spot = document.getElementById('cajaPuesto').value;
-    const phone = document.getElementById('cajaTelefono').value;
-    const amount = document.getElementById('cajaMonto').value;
-    const method = document.getElementById('cajaMetodo').value;
-    const periodType = document.getElementById('cajaPeriodType').value;
-    const periodQty = document.getElementById('cajaPeriodQty').value;
-    const date = document.getElementById('cajaDate').value;
-    
-    let entrada_timestamp = document.getElementById('cajaEntryTimestamp').value;
+    var entrada_timestamp = document.getElementById('cajaEntryTimestamp').value;
     
     if (!entrada_timestamp && plate) {
-        const activeSpot = findActiveSpot(plate);
+        var activeSpot = findActiveSpot(plate);
         if (activeSpot && activeSpot.hora_inicio) {
             entrada_timestamp = activeSpot.hora_inicio;
             document.getElementById('cajaEntryTimestamp').value = entrada_timestamp;
         }
     }
 
-    let isRenewal = true;
+    var isRenewal = true;
     if (periodType === 'Cierre') {
         isRenewal = false;
     }
 
+    var res = await fetch('/api/caja', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ 
+            client: client, 
+            plate: plate, 
+            spot: spot, 
+            phone: phone, 
+            amount: amount, 
+            method: method, 
+            period_type: periodType, 
+            period_quantity: periodQty, 
+            date: date, 
+            entrada_timestamp: entrada_timestamp,
+            renew: isRenewal 
+        }) 
+    }); 
+
+    var result = await res.json(); 
+    if (!res.ok) throw new Error(result.error || 'Error al registrar');
+
+    // Registrar en historial
     try {
-        const res = await fetch('/api/caja', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ 
-                client, 
-                plate, 
-                spot, 
-                phone, 
-                amount, 
-                method, 
-                period_type: periodType, 
-                period_quantity: periodQty, 
-                date, 
-                entrada_timestamp,
-                renew: isRenewal 
-            }) 
-        }); 
-        const result = await res.json(); 
-        if (!res.ok) throw new Error(result.error || 'Error al registrar');
+        var horaAhora = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+        var clientData = clients.find(function(c) { return c.placa === plate; });
+        var tipoVehiculo = clientData ? (clientData.tipo_vehiculo || '') : '';
 
-        try {
-            const horaAhora = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-            const clientData = clients.find(c => c.placa === plate);
-            const tipoVehiculo = clientData ? (clientData.tipo_vehiculo || '') : '';
+        var detalleSpot = [
+            client ? ('c:' + client) : '',
+            spot && spot !== '---' ? ('p:' + spot) : '',
+            method ? ('m:' + method) : '',
+            periodType ? ('t:' + periodType) : '',
+            periodQty ? ('n:' + periodQty) : '',
+            tipoVehiculo ? ('v:' + tipoVehiculo) : ''
+        ].filter(Boolean).join('|');
 
-            const detalleSpot = [
-                client ? ('c:' + client) : '',
-                spot && spot !== '---' ? ('p:' + spot) : '',
-                method ? ('m:' + method) : '',
-                periodType ? ('t:' + periodType) : '',
-                periodQty ? ('n:' + periodQty) : '',
-                tipoVehiculo ? ('v:' + tipoVehiculo) : ''
-            ].filter(Boolean).join('|');
+        await fetch('/api/historial', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                plate: (plate || '---').trim(),
+                type: 'pago_caja',
+                spot: detalleSpot,
+                entry: horaAhora,
+                date: date,
+                paid: parseFloat(amount) || 0,
+                exit: null
+            })
+        });
+    } catch (histErr) {
+        console.warn("Error guardando historial:", histErr);
+    }
 
-            const historialRes = await fetch('/api/historial', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    plate: (plate || '---').trim(),
-                    type: 'pago_caja',
-                    spot: detalleSpot,
-                    entry: horaAhora,
-                    date: date,
-                    paid: parseFloat(amount) || 0,
-                    exit: null
-                })
-            });
+    return { exito: true };
+}
 
-            if (!historialRes.ok) {
-                const errData = await historialRes.json().catch(() => ({}));
-                console.warn("Historial no guardado:", errData.detalle || errData.error || historialRes.status);
-            }
-        } catch (histErr) {
-            console.warn("Error secundario guardando en historial (el cobro ya quedó registrado):", histErr);
-        }
-        
+// --- REGISTRO NORMAL (con UI) ---
+async function ejecutarRegistroCobro(e) {
+    var btn = e.target.querySelector('button[type="submit"]'); 
+    var originalText = btn.innerHTML;
+    btn.disabled = true; 
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+    
+    try {
+        await ejecutarRegistroCobroRaw();
         alert("Cobro registrado con éxito"); 
         e.target.reset(); 
         document.getElementById('cajaDate').valueAsDate = new Date(); 
+        resetModoOperacion();
         loadData(); 
     } catch (error) { 
         alert("Error: " + error.message); 
@@ -980,17 +1167,15 @@ async function registrarCobro(e) {
 }
 
 // ============================================
-// --- EDITAR TRANSACCIÓN (FUNCIONES AGREGADAS) ---
+// --- EDITAR TRANSACCIÓN ---
 // ============================================
 
 async function editTransaction(id) {
-    // Buscar en la lista local primero
-    let tx = transactions.find(t => t.id === id);
+    let tx = transactions.find(function(t) { return t.id === id; });
     
-    // Si no está, hacer fetch a la API
     if (!tx) {
         try {
-            const res = await fetch(`/api/caja?id=${id}`);
+            const res = await fetch('/api/caja?id=' + id);
             if (!res.ok) throw new Error('No encontrado');
             tx = await res.json();
         } catch (error) {
@@ -999,7 +1184,6 @@ async function editTransaction(id) {
         }
     }
     
-    // Llenar campos del modal
     document.getElementById('editId').value = tx.id;
     document.getElementById('editDate').value = tx.date || '';
     document.getElementById('editAmount').value = tx.amount || 0;
@@ -1009,15 +1193,13 @@ async function editTransaction(id) {
     document.getElementById('editPeriodType').value = tx.period_type || 'Noche';
     document.getElementById('editPeriodQty').value = tx.period_quantity || 1;
     
-    // Mostrar modal con animación
     const modal = document.getElementById('modalEdit');
     const content = document.getElementById('modalEditContent');
     
     modal.classList.remove('hidden');
     modal.classList.add('flex');
     
-    // Timeout para permitir que el DOM se actualice antes de animar
-    setTimeout(() => {
+    setTimeout(function() {
         modal.classList.remove('opacity-0');
         content.classList.remove('scale-95', 'opacity-0');
         content.classList.add('scale-100', 'opacity-100');
@@ -1028,16 +1210,13 @@ function closeEditModal() {
     const modal = document.getElementById('modalEdit');
     const content = document.getElementById('modalEditContent');
     
-    // Animación de salida
     content.classList.remove('scale-100', 'opacity-100');
     content.classList.add('scale-95', 'opacity-0');
     modal.classList.add('opacity-0');
     
-    // Esperar a que termine la animación para ocultar
-    setTimeout(() => {
+    setTimeout(function() {
         modal.classList.remove('flex');
         modal.classList.add('hidden');
-        // Resetear estado para próxima apertura
         modal.classList.remove('opacity-0');
         content.classList.remove('scale-95', 'opacity-0');
     }, 200);
@@ -1053,7 +1232,6 @@ async function saveEditTransaction() {
     const periodType = document.getElementById('editPeriodType').value;
     const periodQty = document.getElementById('editPeriodQty').value;
     
-    // Validaciones
     if (!client || client.trim() === '') {
         alert('El nombre del cliente es requerido');
         return;
@@ -1064,7 +1242,6 @@ async function saveEditTransaction() {
         return;
     }
     
-    // Deshabilitar botón mientras guarda
     const saveBtn = document.querySelector('#modalEdit button[onclick="saveEditTransaction()"]');
     const originalBtnText = saveBtn.innerHTML;
     saveBtn.disabled = true;
@@ -1075,14 +1252,14 @@ async function saveEditTransaction() {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                id,
+                id: id,
                 client: client.trim(),
                 plate: plate.toUpperCase(),
                 amount: parseFloat(amount),
-                method,
+                method: method,
                 period_type: periodType,
                 period_quantity: parseInt(periodQty) || 1,
-                date
+                date: date
             })
         });
         
@@ -1094,12 +1271,11 @@ async function saveEditTransaction() {
         
         alert('Transacción actualizada correctamente');
         closeEditModal();
-        loadData(); // Recargar datos
+        loadData();
         
     } catch (error) {
         alert('Error: ' + error.message);
     } finally {
-        // Restaurar botón
         saveBtn.disabled = false;
         saveBtn.innerHTML = originalBtnText;
     }
@@ -1112,19 +1288,18 @@ async function saveEditTransaction() {
 async function deleteTransaction(id) {
     if(!confirm("¿Anular este cobro?")) return; 
 
-    const tx = transactions.find(t => t.id === id);
+    const tx = transactions.find(function(t) { return t.id === id; });
 
     try { 
-        const res = await fetch(`/api/caja?id=${id}`, { method: 'DELETE' }); 
+        const res = await fetch('/api/caja?id=' + id, { method: 'DELETE' }); 
         if (!res.ok) throw new Error("Error al eliminar"); 
         
-        // Registrar anulación en historial
         if (tx) {
             try {
                 const horaAhora = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
                 const fechaHoy = new Date().toISOString().split("T")[0];
 
-                const detalleSpot = [
+                var detalleSpot = [
                     tx.client ? ('c:' + tx.client) : '',
                     tx.spot && tx.spot !== '---' ? ('p:' + tx.spot) : '',
                     tx.method ? ('m:' + tx.method) : '',
@@ -1132,7 +1307,7 @@ async function deleteTransaction(id) {
                     tx.period_quantity ? ('n:' + tx.period_quantity) : ''
                 ].filter(Boolean).join('|');
 
-                const anulRes = await fetch('/api/historial', {
+                await fetch('/api/historial', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1145,11 +1320,6 @@ async function deleteTransaction(id) {
                         exit: null
                     })
                 });
-
-                if (!anulRes.ok) {
-                    const errData = await anulRes.json().catch(() => ({}));
-                    console.warn("Anulación en historial no guardada:", errData.detalle || errData.error || anulRes.status);
-                }
             } catch (anulErr) {
                 console.warn("Error guardando anulación en historial:", anulErr);
             }
@@ -1164,17 +1334,17 @@ async function deleteTransaction(id) {
 
 // --- ACTUALIZAR KPIs ---
 function updateKPIs() {
-    const total = transactions.reduce((sum, t) => sum + Number(t.amount), 0); 
-    const cash = transactions.filter(t => t.method === 'Efectivo').reduce((sum, t) => sum + Number(t.amount), 0); 
-    const card = transactions.filter(t => t.method !== 'Efectivo').reduce((sum, t) => sum + Number(t.amount), 0);
+    const total = transactions.reduce(function(sum, t) { return sum + Number(t.amount); }, 0); 
+    const cash = transactions.filter(function(t) { return t.method === 'Efectivo'; }).reduce(function(sum, t) { return sum + Number(t.amount); }, 0); 
+    const card = transactions.filter(function(t) { return t.method !== 'Efectivo'; }).reduce(function(sum, t) { return sum + Number(t.amount); }, 0);
     
     const elTotal = document.getElementById('kpiTotal'); 
     const elCash = document.getElementById('kpiCash'); 
     const elCard = document.getElementById('kpiCard'); 
     const elCount = document.getElementById('kpiCount');
     
-    if(elTotal) elTotal.innerText = `$${total.toLocaleString('es-CO')}`; 
-    if(elCash) elCash.innerText = `$${cash.toLocaleString('es-CO')}`; 
-    if(elCard) elCard.innerText = `$${card.toLocaleString('es-CO')}`; 
+    if(elTotal) elTotal.innerText = '$' + total.toLocaleString('es-CO'); 
+    if(elCash) elCash.innerText = '$' + cash.toLocaleString('es-CO'); 
+    if(elCard) elCard.innerText = '$' + card.toLocaleString('es-CO'); 
     if(elCount) elCount.innerText = transactions.length;
 }

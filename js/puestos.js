@@ -19,8 +19,9 @@ function mostrarToast(mensaje, tipo) {
   toast.id = 'custom-toast';
   toast.className = 'fixed top-5 right-5 z-[150] px-6 py-4 rounded-xl shadow-2xl border transform transition-all duration-300 max-w-[90%] flex items-center gap-3 ';
   if (tipo === 'error') { toast.className += 'bg-red-50 text-red-800 border-red-200'; }
+  else if (tipo === 'warning') { toast.className += 'bg-amber-50 text-amber-800 border-amber-200'; }
   else { toast.className += 'bg-emerald-50 text-emerald-800 border-emerald-200'; }
-  var icon = tipo === 'error' ? '<i class="fa-solid fa-circle-exclamation"></i>' : '<i class="fa-solid fa-circle-check"></i>';
+  var icon = tipo === 'error' ? '<i class="fa-solid fa-circle-exclamation"></i>' : tipo === 'warning' ? '<i class="fa-solid fa-triangle-exclamation"></i>' : '<i class="fa-solid fa-circle-check"></i>';
   toast.innerHTML = icon + ' <span class="font-bold text-sm">' + mensaje + '</span>';
   document.body.appendChild(toast);
   requestAnimationFrame(function() { toast.classList.remove('translate-x-full', 'opacity-0'); });
@@ -126,6 +127,7 @@ function calcularVencimiento(fechaPagoStr, cuotaMensual) {
   var diffDias = Math.floor((hoy - fechaVencimiento) / 86400000);
   return { fechaPago: fechaPago, fechaVencimiento: fechaVencimiento, vencido: diffDias > 0, diasVencido: diffDias > 0 ? diffDias : 0, diasParaVencer: diffDias <= 0 ? Math.abs(diffDias) : 0 };
 }
+
 function formatFechaCorta(date) {
   if (!date || isNaN(date.getTime())) return '---';
   return date.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' });
@@ -155,6 +157,7 @@ window.abrirIngresoExpress = function() {
   toggleModal('modalIngresoExpress', true);
   setTimeout(function() { document.getElementById('expressPlaca').focus(); }, 150);
 };
+
 window.cerrarIngresoExpress = function() { toggleModal('modalIngresoExpress', false); };
 
 window.buscarExpressPlaca = function() {
@@ -336,7 +339,7 @@ function getSlotHTML(s) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   FORMULARIO DEL PUESTO — Botones unificados con COBRAR único
+   FORMULARIO DEL PUESTO
    ═══════════════════════════════════════════════════════════ */
 window.abrirFormularioPuesto = function(id) {
   var spot = allSpots.find(function(s) { return s.id === id; });
@@ -360,7 +363,6 @@ window.abrirFormularioPuesto = function(id) {
   var badgeEl = document.getElementById('formEstadoBadge');
   var editarBtn = document.getElementById('formBtnEditar');
 
-  /* --- LIBRE sin dueño --- */
   if (spot.estado === 'libre' && !hasOwner) {
     badgeEl.innerHTML = '<span class="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50">DISPONIBLE</span>';
     editarBtn.classList.remove('hidden');
@@ -371,7 +373,6 @@ window.abrirFormularioPuesto = function(id) {
       '<button onclick="formReservar()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-bookmark"></i> Reservar</button>';
   }
 
-  /* --- LIBRE con dueño fuera --- */
   else if (spot.estado === 'libre' && hasOwner) {
     badgeEl.innerHTML = '<span class="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">DUEÑO FUERA</span>';
     editarBtn.classList.remove('hidden');
@@ -387,7 +388,6 @@ window.abrirFormularioPuesto = function(id) {
       '<button onclick="formRestaurarDueno()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-rotate-left"></i> Restaurar Dueño</button>';
   }
 
-  /* --- OCUPADO: Cliente registrado (con o sin cuota) --- */
   else if (spot.estado === 'ocupado' && !isTempUser) {
     badgeEl.innerHTML = '<span class="px-3 py-1 rounded-full text-[11px] font-bold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/50">OCUPADO</span>';
     editarBtn.classList.add('hidden');
@@ -434,14 +434,12 @@ window.abrirFormularioPuesto = function(id) {
     }
     document.getElementById('formSeccionOcupado').classList.remove('hidden');
 
-    // UN SOLO BOTÓN COBRAR + Viaje + Limpiar
     accionesDiv.innerHTML =
       '<button onclick="formCobrar()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 dark:shadow-emerald-900/30"><i class="fa-solid fa-money-bill-wave"></i> Cobrar</button>' +
       '<button onclick="formSalirViaje()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-md"><i class="fa-solid fa-plane-departure"></i> Viaje</button>' +
       '<button onclick="formLimpiar()" class="w-full bg-white hover:bg-red-50 text-red-500 border-2 border-red-200 dark:border-red-800/50 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-eraser"></i> Limpiar Datos</button>';
   }
 
-  /* --- OCUPADO: Visitante SIN dueño guardado --- */
   else if (spot.estado === 'ocupado' && isTempUser && !hasOwner) {
     badgeEl.innerHTML = '<span class="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">VISITANTE</span>';
     editarBtn.classList.add('hidden');
@@ -466,7 +464,6 @@ window.abrirFormularioPuesto = function(id) {
       '<button onclick="formLimpiar()" class="w-full bg-white hover:bg-red-50 text-red-500 border-2 border-red-200 dark:border-red-800/50 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-eraser"></i> Limpiar Datos</button>';
   }
 
-  /* --- OCUPADO: Visitante CON dueño guardado (puesto del dueño) --- */
   else if (spot.estado === 'ocupado' && isTempUser && hasOwner) {
     badgeEl.innerHTML = '<span class="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">VISITANTE</span>';
     editarBtn.classList.add('hidden');
@@ -497,7 +494,6 @@ window.abrirFormularioPuesto = function(id) {
       '<button onclick="formLimpiar()" class="w-full bg-white hover:bg-red-50 text-red-500 border-2 border-red-200 dark:border-red-800/50 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-eraser"></i> Limpiar Datos</button>';
   }
 
-  /* --- RESERVADO --- */
   else if (spot.estado === 'reservado') {
     badgeEl.innerHTML = '<span class="px-3 py-1 rounded-full text-[11px] font-bold bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50">RESERVADO</span>';
     editarBtn.classList.remove('hidden');
@@ -530,7 +526,6 @@ window.formAsignarCliente = function() { var id = formularioSpot.id, num = formu
 window.formIngresarVisitante = function() { cerrarFormulario(); setTimeout(function() { abrirModalVisitante(); }, 250); };
 window.formReservar = function() { var id = formularioSpot.id, num = formularioSpot.numero; cerrarFormulario(); setTimeout(function() { abrirModalReservar(id, num); }, 250); };
 
-/* --- UNificado: Un solo botón COBRAR abre el modal con las 3 opciones --- */
 window.formCobrar = function() {
   var spot = formularioSpot;
   if (!spot) return;
@@ -544,15 +539,6 @@ window.formSalirViaje = function() {
   if (!confirm('¿SALIDA DE VIAJE?\n\n' + (s.cliente_nombre || 'Sin nombre') + '\n\nEl puesto quedará guardado con sus datos.\nPodrá ingresar un visitante temporalmente.')) return;
   fetch("/api/puestos", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: s.id, accion: "salida_viaje" }) })
     .then(function(r) { return r.json(); }).then(function(data) { if (data.success) { cerrarFormulario(); mostrarToast(data.message); cargarPuestos(); } else mostrarToast(data.error, "error"); }).catch(function() { mostrarToast("Error", "error"); });
-};
-
-window.formRenovarMes = function() {
-  var s = formularioSpot;
-  var monto = s.cuota_mensual || 0;
-  if (!monto) { var cd = clientesCache.find(function(x) { return x.placa === (s.cliente_placa || '').trim(); }); if (cd) monto = cd.cuota_mensual || 0; }
-  if (!monto || monto <= 0) return mostrarToast("Sin cuota mensual configurada", "error");
-  var params = new URLSearchParams({ plate: s.cliente_placa || '', spot: s.numero, client: s.cliente_nombre || '', phone: s.cliente_telefono || '', entry: s.hora_inicio, amount: monto, period: 'Mes', renew: 'true' });
-  window.location.href = 'caja.html?' + params.toString();
 };
 
 window.formSalirVisitante = function() {
@@ -589,7 +575,7 @@ window.formLimpiar = function() {
 };
 
 /* ═══════════════════════════════════════════════════════════
-   MODAL COBRO — 3 opciones dentro
+   MODAL COBRO — 3 opciones claras
    ═══════════════════════════════════════════════════════════ */
 window.abrirModalCobro = function(id, type) {
   var spot = allSpots.find(function(s) { return s.id === id; });
@@ -641,7 +627,6 @@ window.abrirModalCobro = function(id, type) {
   document.getElementById('cobroTiempo').innerText = calcularTiempo(spot.hora_inicio);
   document.getElementById('cobroMonto').value = monto;
 
-  // Mostrar/ocultar botón Renovar según si tiene cuota
   var btnRenovar = document.getElementById('btnRenovar');
   if (type === 'cliente') {
     var tieneCuota = Number(spot.cuota_mensual) > 0;
@@ -653,62 +638,73 @@ window.abrirModalCobro = function(id, type) {
     btnRenovar.style.display = 'none';
   }
 
-  // Siempre visibles: Cobrar Día y Salir y Cobrar
   document.getElementById('btnCobroMismoDia').classList.remove('hidden');
   document.getElementById('btnCobroMismoDia').style.display = 'flex';
   document.getElementById('btnSalir').classList.remove('hidden');
   document.getElementById('btnSalir').style.display = 'flex';
 
-  // Título dinámico
   var title = document.getElementById('tituloModalCobro');
-  if (type === 'cliente') {
-    title.innerText = "Gestión de Cobro";
-  } else {
-    title.innerText = "Cobro Visitante";
-  }
+  title.innerText = type === 'cliente' ? "Gestión de Cobro" : "Cobro Visitante";
 
   toggleModal('modalCobroSalida', true);
   setTimeout(function() { document.getElementById('cobroMonto').focus(); }, 100);
 };
 
-/* --- Opción 1: Renovar Mes (solo registro de pago, vehículo se queda) --- */
+/* --- OPCIÓN 1: RENOVAR MENSUALIDAD ---
+   Solo registra el pago. El vehículo SE QUEDA. */
 window.procesarRenovar = function() {
   var a = document.getElementById('cobroMonto').value;
-  if (!a || a <= 0) return alert("Ingrese un monto válido");
-  var p = new URLSearchParams({ plate: cobroData.placa, spot: cobroData.numero, client: cobroData.nombre, phone: cobroData.telefono, entry: cobroData.hora_inicio, amount: a, period: 'Mes', renew: 'true' });
-  window.location.href = 'caja.html?' + p.toString();
-};
-
-/* --- Opción 2: Cobrar Mismo Día (solo pago, SIN liberar puesto) --- */
-window.procesarCobroMismoDia = function() {
-  var a = document.getElementById('cobroMonto').value;
-  if (!a || a <= 0) return alert("Ingrese un monto válido");
-  var period = cobroData.type === 'cliente' ? 'Pago' : 'Pago Visita';
+  if (!a || Number(a) <= 0) return mostrarToast("Ingrese un monto válido", "error");
   var p = new URLSearchParams({
-    plate: cobroData.placa, spot: cobroData.numero, client: cobroData.nombre, phone: cobroData.telefono,
-    entry: cobroData.hora_inicio, amount: a, period: period, renew: 'false'
+    plate: cobroData.placa, spot: cobroData.numero, client: cobroData.nombre,
+    phone: cobroData.telefono, entry: cobroData.hora_inicio, amount: a,
+    period: 'Mes', renew: 'true'
   });
   window.location.href = 'caja.html?' + p.toString();
 };
 
-/* --- Opción 3: Salir y Cobrar (libera puesto + va a caja) --- */
+/* --- OPCIÓN 2: COBRAR ---
+   Registra el pago. El vehículo SE QUEDA. */
+window.procesarCobroMismoDia = function() {
+  var a = document.getElementById('cobroMonto').value;
+  if (!a || Number(a) <= 0) return mostrarToast("Ingrese un monto válido", "error");
+  var period = cobroData.type === 'cliente' ? 'Pago' : 'Pago Visita';
+  var p = new URLSearchParams({
+    plate: cobroData.placa, spot: cobroData.numero, client: cobroData.nombre,
+    phone: cobroData.telefono, entry: cobroData.hora_inicio, amount: a,
+    period: period, renew: 'false'
+  });
+  window.location.href = 'caja.html?' + p.toString();
+};
+
+/* --- OPCIÓN 3: COBRAR Y LIBERAR ---
+   NO libera el puesto aquí. Pasa el control a caja.
+   Caja mostrará confirmación y liberará DESPUÉS del pago. */
 window.procesarSalirYCobro = function() {
   var a = document.getElementById('cobroMonto').value;
-  if (!a || a <= 0) return alert("Ingrese un monto válido");
-  var action = cobroData.type === 'cliente' ? 'salida_oficial' : 'salir_visitante';
-  fetch("/api/puestos", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: cobroData.id, accion: action }) })
-    .then(function(r) { return r.json(); }).then(function(data) {
-      mostrarToast("Liberando puesto...");
-      var p = new URLSearchParams({
-        plate: cobroData.placa, spot: cobroData.numero, client: cobroData.nombre, phone: cobroData.telefono,
-        entry: cobroData.hora_inicio, amount: a, period: cobroData.type === 'cliente' ? 'Salida' : 'Visita', renew: 'false'
-      });
-      window.location.href = 'caja.html?' + p.toString();
-    }).catch(function() { alert("Error de conexión"); });
+  if (!a || Number(a) <= 0) return mostrarToast("Ingrese un monto válido", "error");
+
+  // Guardar datos del puesto para que caja pueda liberar después
+  sessionStorage.setItem('liberarPuestoId', String(cobroData.id));
+  sessionStorage.setItem('liberarPuestoNum', String(cobroData.numero));
+  sessionStorage.setItem('liberarAccion', cobroData.type === 'cliente' ? 'salida_oficial' : 'salir_visitante');
+
+  mostrarToast("Confirme el cobro en caja para liberar", "warning");
+
+  var period = cobroData.type === 'cliente' ? 'Salida' : 'Visita';
+  var p = new URLSearchParams({
+    plate: cobroData.placa, spot: cobroData.numero, client: cobroData.nombre,
+    phone: cobroData.telefono, entry: cobroData.hora_inicio, amount: a,
+    period: period, renew: 'false', liberar: 'true'
+  });
+
+  setTimeout(function() {
+    window.location.href = 'caja.html?' + p.toString();
+  }, 600);
 };
 
 /* ═══════════════════════════════════════════════════════════
-   MODALES SECUNDARIOS (Asignar, Visitante, Reservar, etc.)
+   MODALES SECUNDARIOS
    ═══════════════════════════════════════════════════════════ */
 
 window.abrirModalCrearPuesto = function() {
@@ -833,7 +829,7 @@ window.confirmarOcuparReserva = function() {
 window.cerrarModalOcuparReserva = function() { toggleModal('modalOcuparReserva', false); };
 
 /* ═══════════════════════════════════════════════════════════
-   ACCIONES RÁPIDAS (desde timeline-panel y otros)
+   ACCIONES RÁPIDAS
    ═══════════════════════════════════════════════════════════ */
 window.liberar = function(id) { if (!confirm("¿Cancelar reserva?")) return; fetch("/api/puestos", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: id, accion: "salir_visitante" }) }).then(function() { cargarPuestos(); mostrarToast("Reserva cancelada"); }).catch(function() { mostrarToast("Error", "error"); }); };
 window.salirVisitante = function(id) { if (!confirm("¿Dar salida al visitante sin cobro?")) return; fetch("/api/puestos", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: id, accion: "salir_visitante" }) }).then(function() { cargarPuestos(); mostrarToast("Visitante salió"); }).catch(function() { mostrarToast("Error", "error"); }); };
